@@ -14,7 +14,7 @@ export const WRONG_PASSWORD_LOCK_MS = 2000;
 export const GONE_TEXT = "This game has started or is full.";
 
 const FIELD_TEXT: Record<string, string> = {
-  name: "Enter a name (1–20 characters).",
+  name: `Enter a name (1–${PLAYER_NAME_MAX} characters).`,
   password: "Passwords are 4–64 characters.",
 };
 

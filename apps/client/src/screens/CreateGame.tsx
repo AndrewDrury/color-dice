@@ -4,6 +4,7 @@ import {
   MIN_PLAYERS,
   PLAYER_NAME_MAX,
   ROOM_NAME_MAX,
+  ROOM_NAME_MIN,
 } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { createGame } from "../api";
@@ -14,8 +15,8 @@ import { navigate } from "../router";
 import { saveSession } from "../session";
 
 const FIELD_TEXT: Record<string, string> = {
-  roomName: "Room names are 3–30 characters.",
-  name: "Enter a name (1–20 characters).",
+  roomName: `Room names are ${ROOM_NAME_MIN}–${ROOM_NAME_MAX} characters.`,
+  name: `Enter a name (1–${PLAYER_NAME_MAX} characters).`,
   password: "Passwords are 4–64 characters.",
   maxPlayers: "Pick 2 to 5 players.",
 };

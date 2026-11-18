@@ -141,7 +141,7 @@ describe("CreateGame", () => {
   it("shows inline field errors and does not submit invalid input", () => {
     render(<CreateGame />);
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
-    expect(screen.getByText("Room names are 3–30 characters.")).toBeTruthy();
+    expect(screen.getByText("Room names are 3–50 characters.")).toBeTruthy();
     expect(screen.getByText("Passwords are 4–64 characters.")).toBeTruthy();
     expect(api.createGame).not.toHaveBeenCalled();
   });
