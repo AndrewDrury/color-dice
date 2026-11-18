@@ -5,5 +5,5 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "helpers/**/*.ts"]
 }

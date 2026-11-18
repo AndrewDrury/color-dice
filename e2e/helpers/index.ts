@@ -1,0 +1,90 @@
+import type { Browser } from "@playwright/test";
+import { expect, type Player, SERVER } from "../fixtures";
+
+let ipCounter = 0;
+/** A unique fake client IP (the server rate-limits per CF-Connecting-IP; "local" is shared). */
+export function uniqueIp(): string {
+  ipCounter += 1;
+  const n = (Date.now() % 60_000) * 100 + ipCounter;
+  return `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}`;
+}
+
+/**
+ * Like fixtures.newPlayer, but every HTTP request to the API carries its own
+ * CF-Connecting-IP, so specs do not exhaust the shared per-IP create/join limits.
+ */
+export async function newPlayer(browser: Browser, name: string, ip = uniqueIp()): Promise<Player> {
+  const context = await browser.newContext();
+  await context.route(`${SERVER}/**`, (route) =>
+    route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": ip } }),
+  );
+  const page = await context.newPage();
+  return { context, page, name };
+}
+
+export async function closeAll(players: Player[]) {
+  await Promise.all(players.map((p) => p.context.close().catch(() => {})));
+}
+
+/** Waits for the game-over results dialog. */
+export async function expectGameOver(page: Player["page"]) {
+  await expect(page.getByRole("dialog", { name: "Results" })).toBeVisible({ timeout: 20_000 });
+}
+
+/** name -> total score, read from the results table. */
+export async function finalScores(page: Player["page"]): Promise<Record<string, number>> {
+  // The totals count up; wait until they settle on their data-value.
+  const rows = page.locator(".g-results tbody tr");
+  const n = await rows.count();
+  const out: Record<string, number> = {};
+  for (let i = 0; i < n; i++) {
+    const row = rows.nth(i);
+    const name = (await row.locator(".g-name").innerText()).trim();
+    const total = Number(await row.locator(".g-total-cell .num").getAttribute("data-value"));
+    out[name] = total;
+  }
+  return out;
+}
+
+/** Reads the turn's active player: the page that shows the Roll button. */
+export async function waitForRoller(players: Player[]): Promise<Player> {
+  let found: Player | undefined;
+  await expect
+    .poll(
+      async () => {
+        for (const p of players) {
+          if (await p.page.locator(".g-primary", { hasText: "Roll" }).isVisible()) {
+            found = p;
+            return true;
+          }
+        }
+        return false;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+  return found as Player;
+}
+
+/** A white pair that sums to `s` (2..12). */
+export function whitePair(s: number): [number, number] {
+  const a = Math.min(6, s - 1);
+  return [s - a, a];
+}
+
+/** Scripted faces for one roll: two whites (summing to `sum`) then `colors` colored dice (all 1). */
+export function rollFaces(sum: number, colors = 4): number[] {
+  return [...whitePair(sum), ...Array<number>(colors).fill(1)];
+}
+
+/**
+ * fixtures.roll never resolves once a row is locked: removed dice have no data-face.
+ * Same as roll(), but ignores `.is-removed` dice.
+ */
+export async function roll(page: Player["page"]) {
+  await page.locator(".g-primary", { hasText: "Roll" }).click();
+  await expect(page.locator("[data-die][data-face]").first()).toBeVisible();
+  await expect
+    .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
+    .toBe(0);
+}
