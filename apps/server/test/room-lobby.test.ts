@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import type { GameRoom } from "../src/game-room";
 import { publicEntry, removeSeat } from "../src/room-lobby-ops";
 import type { RoomMeta, SeatRecord } from "../src/room-store";
+import { connect } from "./helpers/client";
 
 const BASE = "https://worker.test";
 const PW = "hunter22";
@@ -171,6 +172,23 @@ describe("lockout", () => {
         expect(meta.joinLockedUntil).toBeNull();
       },
     );
+  });
+});
+
+describe("lockout broadcast", () => {
+  it("host's live socket gets a higher-version view with the lockout flag", async () => {
+    const host = await create();
+    const conn = await connect(host.code, host.token);
+    const before = conn.view();
+    expect(before.room.joinLockedUntil).toBeNull();
+    for (let i = 0; i < 10; i++)
+      expect((await join(host.code, "Bob", "wrong-pw")).status).toBe(401);
+    const v = await conn.until(() => {
+      const x = conn.view();
+      return x.room.joinLockedUntil !== null ? x : undefined;
+    });
+    expect(v.version).toBeGreaterThan(before.version);
+    conn.close();
   });
 });
 

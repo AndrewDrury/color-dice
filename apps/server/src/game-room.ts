@@ -373,8 +373,11 @@ export class GameRoom extends DurableObject<Env> {
       if (meta.failedJoins >= LOCKOUT_FAILED_ATTEMPTS) {
         meta.joinLockedUntil = now + LOCKOUT_MS;
         meta.failedJoins = 0;
+        // Clients drop views whose version is not strictly higher, so bump it for this event
+        // (lastActivityAt untouched: a lockout is not activity).
+        meta.version += 1;
         await this.store.putMetaQuiet(meta);
-        // Lock state is visible to the host (C7): tell them, without counting it as activity.
+        // Lock state is visible to the host (C7): tell them.
         await this.broadcast(meta, await this.store.getSeats());
       } else {
         await this.store.putMetaQuiet(meta);

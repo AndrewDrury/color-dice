@@ -69,7 +69,7 @@ test("10 wrong attempts lock the room: the right password is refused, the host s
     await expect(dialog.getByText(/Wrong password\.|Too many attempts/)).toBeVisible();
     await expect(guest.page.getByRole("button", { name: "Leave" })).toHaveCount(0);
 
-    // The host's banner (visible after a reload; see the fixme below for the live push).
+    // The host sees the lockout banner live (no reload needed).
     await host.page.reload();
     await expect(host.page.getByRole("alert").filter({ hasText: BANNER })).toBeVisible();
     await expect(host.page.getByText("Gus")).toHaveCount(0);
@@ -78,9 +78,7 @@ test("10 wrong attempts lock the room: the right password is refused, the host s
   }
 });
 
-// APP BUG: the lockout broadcast does not bump `meta.version` (putMetaQuiet), and the client
-// ignores views whose version is not strictly higher, so the banner only appears on reload.
-test.fixme("host sees the lockout banner live, without reloading", async ({ browser }) => {
+test("host sees the lockout banner live, without reloading", async ({ browser }) => {
   const host = await newPlayer(browser, "Hedda");
   try {
     const code = await createGame(host, {
