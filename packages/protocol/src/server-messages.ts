@@ -1,5 +1,6 @@
 import type {
   Action1Decision,
+  Action2Decision,
   Color,
   EndReason,
   Face,
@@ -96,7 +97,16 @@ export interface ViewYou {
   seat: number | null;
   /** Only your own decision; never another seat's. */
   action1Decision: Action1Decision | null;
+  /**
+   * Your own early Action 2 (active player, ACTION_1 only, K1.2); never another
+   * seat's. The server always sends it; optional only for older fixtures.
+   */
+  pendingAction2?: Action2Decision | null;
   legalAction1: Action1Decision[];
+  /**
+   * ACTION_2: the active player's options. ACTION_1: the active player's early
+   * Action 2 options once their own Action 1 is in and nothing is pending (K1.2).
+   */
   legalAction2: LegalAction2[];
   canRoll: boolean;
 }
@@ -166,6 +176,7 @@ const GAME_EVENT_TYPES = [
   "ROW_LOCKED",
   "DIE_REMOVED",
   "ACTION2_PASSED",
+  "ACTION2_VOIDED",
   "PENALTY",
   "GAME_ENDED",
 ] as const satisfies readonly GameEventType[];
@@ -180,6 +191,10 @@ const PhaseSchema = z.enum(["SETUP", "AWAIT_ROLL", "ACTION_1", "ACTION_2", "GAME
 const Action1DecisionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("PASS") }).strict(),
   z.object({ kind: z.literal("MARK"), color: ColorSchema }).strict(),
+]);
+const Action2DecisionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("PASS") }).strict(),
+  z.object({ kind: z.literal("MARK"), whiteDie: z.literal([0, 1]), color: ColorSchema }).strict(),
 ]);
 const LegalAction2Schema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("PASS") }).strict(),
@@ -285,6 +300,7 @@ export const ViewMessageSchema = z
         host: z.boolean(),
         seat: NonNegInt.nullable(),
         action1Decision: Action1DecisionSchema.nullable(),
+        pendingAction2: Action2DecisionSchema.nullable().optional(),
         legalAction1: z.array(Action1DecisionSchema),
         legalAction2: z.array(LegalAction2Schema),
         canRoll: z.boolean(),
@@ -299,7 +315,18 @@ export const ErrorMessageSchema = z
     code: ErrorCodeSchema,
     reason: z.string().max(200).optional(),
     command: z
-      .enum(["auth", "roll", "action1", "action2", "setAway", "rematch", "ping", "chat", "react"])
+      .enum([
+        "auth",
+        "roll",
+        "action1",
+        "action2",
+        "turn",
+        "setAway",
+        "rematch",
+        "ping",
+        "chat",
+        "react",
+      ] as const satisfies readonly ClientMessageType[])
       .nullable(),
   })
   .strict();

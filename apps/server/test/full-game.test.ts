@@ -11,12 +11,19 @@ import {
   startGame,
   type TestRoom,
 } from "./helpers/client";
-import { doubleLockPlan, type PlannedTurn, pid, planFaces, simulate } from "./helpers/plan";
+import {
+  doubleLockPlan,
+  type PlannedTurn,
+  pid,
+  planFaces,
+  seat0RollOff,
+  simulate,
+} from "./helpers/plan";
 
-/** Seat 0 rolls a 6 in the first-player roll-off (which stops at the first 6), so seat 0 takes turn 1. */
+/** Only seat 0 rolls a 6 in the first simultaneous roll-off round (K1.1), so seat 0 takes turn 1. */
 async function begin(n: number, extra: number[]): Promise<{ room: TestRoom; conns: Conn[] }> {
   const room = await createRoom(n);
-  await queueDice(room.code, [6, ...extra]);
+  await queueDice(room.code, [...seat0RollOff(n), ...extra]);
   await startGame(room);
   return { room, conns: await connectAll(room) };
 }

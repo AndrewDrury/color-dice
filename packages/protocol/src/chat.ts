@@ -1,7 +1,19 @@
 import { cleanName } from "./names";
 
-/** Allow-listed reactions; order = picker order. Never free text. */
-export const REACTIONS = ["👍", "😂", "😮", "😬", "🔥", "🎉", "😭", "👏"] as const;
+/**
+ * Allow-listed cat reaction ids (K5.1); order = picker order. Ids, never emoji
+ * or free text, go on the wire (the field is still named `emoji`).
+ */
+export const REACTIONS = [
+  "cat_thumbs",
+  "cat_lol",
+  "cat_shock",
+  "cat_cringe",
+  "cat_fire",
+  "cat_party",
+  "cat_cry",
+  "cat_clap",
+] as const;
 export type Reaction = (typeof REACTIONS)[number];
 
 export function isReaction(value: unknown): value is Reaction {

@@ -3,9 +3,9 @@
  * hashes, token hashes and other seats' hidden Action 1 decisions never reach
  * a socket. The game part comes only from the engine's `viewFor(state, seat)`.
  */
-import { type GameState, viewFor } from "@cd/engine";
+import { type GameState, legalEarlyAction2Options, viewFor } from "@cd/engine";
 import type { ViewGame, ViewMessage, ViewSeat, ViewYou } from "@cd/protocol";
-import { byJoinOrder, isOnline, seatIdOf } from "./room-lobby-ops";
+import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
 import type { RoomMeta, SeatRecord } from "./room-store";
 
 function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
@@ -29,10 +29,25 @@ function lobbyYou(seat: SeatRecord): ViewYou {
     host: seat.host,
     seat: null,
     action1Decision: null,
+    pendingAction2: null,
     legalAction1: [],
     legalAction2: [],
     canRoll: false,
   };
+}
+
+/** ACTION_1: early Action 2 options (own seat only, K1.2); otherwise the engine's list. */
+function legalAction2For(
+  state: GameState,
+  seatIndex: number,
+  engineList: ViewYou["legalAction2"],
+): ViewYou["legalAction2"] {
+  if (state.phase !== "ACTION_1") return engineList;
+  return legalEarlyAction2Options(state, playerId(seatIndex)).map((o) =>
+    o.kind === "PASS"
+      ? { kind: "PASS" }
+      : { kind: "MARK", whiteDie: o.whiteDie, color: o.color, number: o.number },
+  );
 }
 
 /** The view for one seat. `state` is null before the game starts. */
@@ -70,8 +85,10 @@ export function buildView(
       host: seat.host,
       seat: v.you.seat,
       action1Decision: v.you.action1Decision,
+      // Own seat only (the engine view already hides it from everyone else).
+      pendingAction2: v.you.pendingAction2,
       legalAction1: v.you.legalAction1,
-      legalAction2: v.you.legalAction2,
+      legalAction2: legalAction2For(state, seat.seatIndex, v.you.legalAction2),
       canRoll: v.you.canRoll,
     };
   }

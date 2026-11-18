@@ -49,7 +49,7 @@ const reaction = (seat: number, id = nextId++): ServerMessage => ({
   id,
   seatId: seatIdOf(seat),
   kind: "reaction",
-  emoji: "🔥",
+  emoji: "cat_fire",
   at: 1,
 });
 
@@ -118,8 +118,8 @@ describe("chat client", () => {
 
   it("picker sends the tapped emoji and closes", () => {
     fireEvent.click(screen.getByLabelText("Send reaction"));
-    fireEvent.click(screen.getByLabelText("React 🎉"));
-    expect(sent).toEqual([{ type: "react", emoji: "🎉" }]);
+    fireEvent.click(screen.getByLabelText("React cat_party"));
+    expect(sent).toEqual([{ type: "react", emoji: "cat_party" }]);
     expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull();
   });
 

@@ -23,6 +23,10 @@ export const Action1MsgSchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
+/**
+ * Action 2 in phase ACTION_2, or (active player only) an early Action 2 during
+ * ACTION_1 after their own Action 1 (K1.2). Early ones stay hidden until resolved.
+ */
 export const Action2MsgSchema = z.discriminatedUnion("kind", [
   z.object({ type: z.literal("action2"), turn: TurnSchema, kind: z.literal("PASS") }).strict(),
   z
@@ -35,6 +39,25 @@ export const Action2MsgSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
 ]);
+
+const Action1DecisionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("PASS") }).strict(),
+  z.object({ kind: z.literal("MARK"), color: ColorSchema }).strict(),
+]);
+const Action2DecisionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("PASS") }).strict(),
+  z.object({ kind: z.literal("MARK"), whiteDie: WhiteDieSchema, color: ColorSchema }).strict(),
+]);
+
+/** Active player's Action 1 + early Action 2 in one atomic confirm (K1.2). */
+export const TurnMsgSchema = z
+  .object({
+    type: z.literal("turn"),
+    turn: TurnSchema,
+    action1: Action1DecisionSchema,
+    action2: Action2DecisionSchema,
+  })
+  .strict();
 
 export const SetAwayMsgSchema = z
   .object({ type: z.literal("setAway"), seatId: SeatIdSchema, away: z.boolean() })
@@ -59,6 +82,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   RollMsgSchema,
   Action1MsgSchema,
   Action2MsgSchema,
+  TurnMsgSchema,
   SetAwayMsgSchema,
   RematchMsgSchema,
   PingMsgSchema,
@@ -70,6 +94,7 @@ export type ClientMessageType = ClientMessage["type"];
 export type AuthMsg = z.infer<typeof AuthMsgSchema>;
 export type Action1Msg = z.infer<typeof Action1MsgSchema>;
 export type Action2Msg = z.infer<typeof Action2MsgSchema>;
+export type TurnMsg = z.infer<typeof TurnMsgSchema>;
 
 /** Upper bound on a raw client frame; anything larger is rejected before JSON.parse. */
 export const MAX_CLIENT_MESSAGE_CHARS = 1024;

@@ -96,7 +96,7 @@ function endSession(ws: WebSocket): void {
   closeWith(ws, CLOSE.SESSION_ENDED, "sessionEnded");
 }
 
-type PlayMsg = Extract<ClientMessage, { type: "roll" | "action1" | "action2" }>;
+type PlayMsg = Extract<ClientMessage, { type: "roll" | "action1" | "action2" | "turn" }>;
 
 function toCommand(msg: PlayMsg, id: string): Command {
   switch (msg.type) {
@@ -109,6 +109,7 @@ function toCommand(msg: PlayMsg, id: string): Command {
         decision: msg.kind === "PASS" ? { kind: "PASS" } : { kind: "MARK", color: msg.color },
       };
     case "action2":
+      // In ACTION_1 the engine treats this as an early Action 2 (K1.2).
       return {
         type: "ACTION2",
         playerId: id,
@@ -117,6 +118,19 @@ function toCommand(msg: PlayMsg, id: string): Command {
             ? { kind: "PASS" }
             : { kind: "MARK", whiteDie: msg.whiteDie, color: msg.color },
       };
+    case "turn": {
+      const a1 = msg.action1;
+      const a2 = msg.action2;
+      return {
+        type: "TURN",
+        playerId: id,
+        action1: a1.kind === "PASS" ? { kind: "PASS" } : { kind: "MARK", color: a1.color },
+        action2:
+          a2.kind === "PASS"
+            ? { kind: "PASS" }
+            : { kind: "MARK", whiteDie: a2.whiteDie, color: a2.color },
+      };
+    }
   }
 }
 
@@ -236,6 +250,7 @@ export class RoomPlay {
       case "roll":
       case "action1":
       case "action2":
+      case "turn":
         return this.command(ws, att.seatId, msg);
       case "setAway":
         return this.setAway(ws, att.seatId, msg.seatId, msg.away);

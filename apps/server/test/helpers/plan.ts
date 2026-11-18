@@ -11,6 +11,9 @@ import type { Decision, TurnScript } from "./client";
 
 export const pid = (seat: number): PlayerId => `seat-${seat}`;
 
+/** One simultaneous roll-off round (K1.1) where only seat 0 rolls a 6. */
+export const seat0RollOff = (n: number): Face[] => [6, ...(Array(n - 1).fill(1) as Face[])];
+
 /** Two white dice summing to `sum` (2..12). */
 export function whitePair(sum: number): [Face, Face] {
   const a = Math.min(6, sum - 1);
@@ -51,7 +54,7 @@ export const planFaces = (plan: PlannedTurn[]): Face[] =>
 /** Replays `plan` straight through the engine (roll-off gives seat 0 the first turn). */
 export function simulate(n: number, plan: PlannedTurn[]): GameState {
   const players = Array.from({ length: n }, (_, i) => ({ id: pid(i), displayName: `P${i}` }));
-  const dice = new ScriptedDice([6, ...planFaces(plan)]);
+  const dice = new ScriptedDice([...seat0RollOff(n), ...planFaces(plan)]);
   const created = createGame(players, { dice });
   if (!created.ok) throw new Error(created.error.code);
   let state = created.state;

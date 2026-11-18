@@ -69,6 +69,7 @@ const fixture: ViewMessage = {
     host: true,
     seat: 0,
     action1Decision: { kind: "MARK", color: "RED" },
+    pendingAction2: { kind: "MARK", whiteDie: 1, color: "GREEN" },
     legalAction1: [{ kind: "PASS" }, { kind: "MARK", color: "RED" }],
     legalAction2: [{ kind: "PASS" }, { kind: "MARK", whiteDie: 0, color: "GREEN", number: 9 }],
     canRoll: false,
@@ -86,6 +87,7 @@ describe("ViewMessageSchema", () => {
         ...fixture.you,
         seat: null,
         action1Decision: null,
+        pendingAction2: null,
         legalAction1: [],
         legalAction2: [],
       },
@@ -122,6 +124,27 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(badRow).success).toBe(false);
     const badEvent = { ...fixture, game: { ...g, events: [{ type: "NOPE" }] } };
     expect(ViewMessageSchema.safeParse(badEvent).success).toBe(false);
+    const badPending = { ...fixture, you: { ...fixture.you, pendingAction2: { kind: "MARK" } } };
+    expect(ViewMessageSchema.safeParse(badPending).success).toBe(false);
+  });
+
+  it("accepts the K1 events (ACTION2_VOIDED, roll-off rounds)", () => {
+    const g = fixture.game;
+    if (!g) throw new Error("fixture");
+    const k1: GameEvent[] = [
+      {
+        type: "FIRST_PLAYER_CHOSEN",
+        seat: 1,
+        method: "ROLL_OFF",
+        rounds: [
+          [6, 6],
+          [2, 6],
+        ],
+      },
+      { type: "ACTION2_VOIDED", playerId: "seat-0", reason: "ROW_LOCKED" },
+    ];
+    const msg: ViewMessage = { ...fixture, game: { ...g, events: k1 } };
+    expect(ViewMessageSchema.safeParse(msg).success).toBe(true);
   });
 });
 
