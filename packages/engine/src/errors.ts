@@ -14,8 +14,13 @@ export const ERROR_CODES = [
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
-/** Sub-reasons of E_ILLEGAL_MARK, in the order they are checked (spec §8). */
+/**
+ * Sub-reasons of E_ILLEGAL_MARK, in the order they are checked (spec §8).
+ * OUT_OF_RANGE is an engine addition [I]: §4.1 rejects non-integers and numbers
+ * outside 2..12 first, but §8 lists no reason for it.
+ */
 export const ILLEGAL_REASONS = [
+  "OUT_OF_RANGE",
   "ROW_LOCKED",
   "ALREADY_MARKED",
   "LEFT_OF_RIGHTMOST",
