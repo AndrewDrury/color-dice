@@ -11,7 +11,7 @@ const baseURL = raw.endsWith("/") ? raw : `${raw}/`;
 export default defineConfig({
   testDir: ".",
   testMatch: "**/prod-smoke.spec.ts",
-  outputDir: "test-results-prod",
+  outputDir: "test-results/prod",
   reporter: "list",
   workers: 1,
   retries: 0,
