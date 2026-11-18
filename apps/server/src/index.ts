@@ -1,7 +1,7 @@
 import type { Env } from "./env";
 import { error } from "./http";
 import { checkOrigin, parseAllowedOrigins, withCors } from "./origin";
-import { matchRoute } from "./router";
+import { createGameHandler, gameApiHandler, matchRoute } from "./router";
 
 export { GameRoom } from "./game-room";
 export { Lobby } from "./lobby";
@@ -20,10 +20,10 @@ async function route(req: Request, env: Env): Promise<Response> {
     case "lobbySocket":
       return env.LOBBY.get(env.LOBBY.idFromName(LOBBY_NAME)).fetch(req);
     case "createGame":
-      // Code generation and room creation arrive in a later task.
-      return error("E_NOT_IMPLEMENTED", 501);
-    case "gameSocket":
+      return createGameHandler(req, env);
     case "game":
+      return gameApiHandler(req, env, match);
+    case "gameSocket":
       return env.GAME_ROOM.get(env.GAME_ROOM.idFromName(match.code)).fetch(req);
   }
 }

@@ -1,6 +1,22 @@
+import {
+  CODE_ALPHABET,
+  CODE_LENGTH,
+  CreateGameReqSchema,
+  JoinReqSchema,
+  KickReqSchema,
+  PatchRoomReqSchema,
+  ReclaimReqSchema,
+} from "@cd/protocol";
+import { newGameCode } from "./codes";
+import type { Env } from "./env";
+import { bearer, error, json, readJson } from "./http";
+import type { OpResult } from "./room-lobby-ops";
+import { rateLimit } from "./router-lobby";
+
+// Re-exported (not redefined) so codes.ts can import them without a cycle hazard.
 /** Game code alphabet (defaults.md): 5 chars, no 0/O/1/I/L. */
-export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-export const CODE_LENGTH = 5;
+export { CODE_ALPHABET, CODE_LENGTH };
+
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`);
 
 export type Route =
@@ -69,4 +85,73 @@ export function matchRoute(method: string, pathname: string): Route | null {
   const entry = d !== undefined && Object.hasOwn(GAME_ACTIONS, d) ? GAME_ACTIONS[d] : undefined;
   if (!entry || entry.method !== method) return null;
   return { kind: "game", code, action: entry.action };
+}
+
+/* ---------------- /api/games* handlers (Worker → GameRoom RPC) ---------------- */
+
+const CREATE_ATTEMPTS = 5;
+
+function respond<T>(r: OpResult<T>, status: number): Response {
+  if (!r.ok) return error(r.code, r.status, r.reason);
+  return r.value === null ? new Response(null, { status: 204 }) : json(r.value, status);
+}
+
+function room(env: Env, code: string) {
+  return env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code));
+}
+
+/** `POST /api/games`: rate limit, validate, then claim a free code (≤ 5 tries). */
+export async function createGameHandler(req: Request, env: Env): Promise<Response> {
+  const limited = await rateLimit(env, req, "create");
+  if (limited) return limited;
+  const body = await readJson(req, CreateGameReqSchema);
+  if (!body.ok) return body.response;
+  for (let i = 0; i < CREATE_ATTEMPTS; i++) {
+    const code = newGameCode();
+    const stub = room(env, code);
+    if (!(await stub.isFree())) continue;
+    const r = await stub.init({ code, ...body.value });
+    if (r.ok) return json(r.value, 201);
+  }
+  return error("E_RATE_LIMITED", 503, "no free game code, try again");
+}
+
+/** `/api/games/:code/*` and `PATCH /api/games/:code`. */
+export async function gameApiHandler(
+  req: Request,
+  env: Env,
+  route: Extract<Route, { kind: "game" }>,
+): Promise<Response> {
+  const stub = room(env, route.code);
+  if (route.action === "join" || route.action === "reclaim") {
+    const limited = await rateLimit(env, req, route.action);
+    if (limited) return limited;
+    const body = await readJson(req, route.action === "join" ? JoinReqSchema : ReclaimReqSchema);
+    if (!body.ok) return body.response;
+    const { name, password } = body.value;
+    return route.action === "join"
+      ? respond(await stub.join(name, password), 201)
+      : respond(await stub.reclaim(name, password), 200);
+  }
+  const token = bearer(req);
+  if (!token) return error("E_NOT_AUTHED", 401);
+  switch (route.action) {
+    case "me":
+      return respond(await stub.me(token), 200);
+    case "start":
+      return respond(await stub.start(token), 204);
+    case "leave":
+      return respond(await stub.leave(token), 204);
+    case "kick": {
+      const body = await readJson(req, KickReqSchema);
+      if (!body.ok) return body.response;
+      return respond(await stub.kick(token, body.value.seatId), 204);
+    }
+    case "update": {
+      const body = await readJson(req, PatchRoomReqSchema);
+      if (!body.ok) return body.response;
+      const { roomName, listed, password } = body.value;
+      return respond(await stub.patch(token, { roomName, listed, password }), 204);
+    }
+  }
 }

@@ -26,10 +26,10 @@ describe("health and routing", () => {
     expect((await call("/ws/game/abc", { headers: { origin: GOOD } })).status).toBe(404);
   });
 
-  it("routes a lower-case game code to the stub GameRoom (501)", async () => {
+  it("routes a lower-case game code to the game API (401 without a token)", async () => {
     const res = await call("/api/games/abcde/me");
-    expect(res.status).toBe(501);
-    expect(await res.json()).toEqual({ code: "E_NOT_IMPLEMENTED" });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ code: "E_NOT_AUTHED" });
   });
 
   it("routes GET /api/games to the Lobby (200, empty list) with CORS for allowed origin", async () => {
