@@ -2,13 +2,94 @@
 
 ## Overview
 
+Color Dice is a thin browser client talking to an authoritative server. The server rolls the dice, holds every hidden choice and decides legality; the client only draws the view it receives and sends commands.
+
+```
+ Browsers (2-5 players + anonymous visitors)
+        |  HTTPS: static files
+        v
+ +--------------------------------------------------------------+
+ | GitHub Pages: Vite + Preact build of apps/client             |
+ +--------------------------------------------------------------+
+        |  HTTPS /api/*      WSS /ws/lobby      WSS /ws/game/:code
+        v
+ +--------------------------------------------------------------+
+ | Cloudflare Worker (apps/server/src/index.ts)                 |
+ |  router, Origin allow-list, CORS, per-IP rate-limit check    |
+ |  forwards to a Durable Object; no game logic                 |
+ +--------------------------------------------------------------+
+        |                    |                      |
+        v                    v                      v
+ +-------------+     +----------------+     +---------------------------+
+ | RateLimiter |     | Lobby          |<----| GameRoom (one per code)   |
+ | (per IP)    |     | (single "main")|upsert| meta, password hash,     |
+ | fixed window|     | public list,   |remove| seats + token hashes,    |
+ | counters    |     | anon sockets   |     | engine state, sockets,    |
+ +-------------+     +----------------+     | alarms (cleanup)          |
+                                            +---------------------------+
+```
+
+Why the server is authoritative: simultaneous Action-1 choices must stay hidden until everyone has decided, dice must come from a source players cannot influence (`crypto.getRandomValues`), a Durable Object handles one event at a time so there are no races, and passwords and sessions can only be checked by something players cannot read.
+
 ## Packages
+
+npm workspaces; TypeScript throughout.
+
+| Path                                 | Role                                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/engine` (`@cd/engine`)     | Pure game rules: state, legal moves, scoring, dice, per-player `view`, JSON (de)serialization. No runtime dependencies, no I/O, fully deterministic given a dice source. |
+| `packages/protocol` (`@cd/protocol`) | Shared message types, zod schemas, error codes and every fixed limit (name lengths, rate limits, TTLs). Imported by server and client.                                   |
+| `apps/server`                        | Worker plus the `GameRoom`, `Lobby` and `RateLimiter` Durable Objects (`wrangler.jsonc`).                                                                                |
+| `apps/client`                        | Vite + Preact single-page app: screens, 3D dice, sound, i18n, local storage. Thin: it never decides legality.                                                            |
+| `e2e`                                | Playwright specs that drive several browser contexts against the real dev servers.                                                                                       |
+| `scripts`                            | Repo checks: no `innerHTML`, i18n key parity, wrangler config, secret scan, bundle size.                                                                                 |
 
 ## Server (Durable Objects)
 
+The Worker only routes: it checks the `Origin` allow-list, applies CORS, asks the `RateLimiter` for the caller's IP, and forwards to the right object. Routes: `GET /health`, `GET|POST /api/games`, `PATCH /api/games/:code`, `POST /api/games/:code/{join,reclaim,start,leave,kick}`, `GET /api/games/:code/me`, `WS /ws/lobby`, `WS /ws/game/:code`.
+
+All three classes use SQLite-backed storage (required on the Free plan).
+
+- **GameRoom** (one per 5-character code, `idFromName(code)`): room settings, the PBKDF2 password hash, seats with SHA-256 session-token hashes, per-room record, the serialized engine state, chat, and the player WebSockets (hibernating). It rolls dice, validates every command against the engine, auto-passes players who are away, applies join lockout (10 wrong passwords lock the room for 15 minutes), and increments `version` on every accepted change before broadcasting a fresh per-seat view. Alarms delete idle rooms (7 days) and finished rooms (24 hours) and keep the lobby in sync.
+- **Lobby** (single instance named `main`): the public list of open rooms, fed by GameRoom upsert/remove calls. Anonymous read-only sockets receive `games` messages; stale entries are pruned. It holds no game state.
+- **RateLimiter** (one per IP): fixed-window counters for create (5 per 10 min), join and reclaim (5 per minute), list (60 per minute) and WebSocket connects (30 per minute); an alarm drops expired windows.
+
 ## Protocol
 
+Defined and validated in `packages/protocol` (strict zod schemas; unknown fields are rejected). The socket's first message must be `auth`; the token never appears in a URL.
+
+| Direction        | Message                  | Purpose                                                           |
+| ---------------- | ------------------------ | ----------------------------------------------------------------- |
+| client to server | `auth`                   | session token, first message                                      |
+|                  | `roll`                   | active player rolls (carries the turn number)                     |
+|                  | `action1`                | PASS, or MARK with the sum of the two white dice in a color       |
+|                  | `action2`                | PASS, or MARK with one white die and one colored die              |
+|                  | `setAway`                | mark a seat away or back                                          |
+|                  | `rematch`                | ask for another game in the same room                             |
+|                  | `chat`, `react`          | text message (max length, cleaned) or one of a fixed set of emoji |
+|                  | `ping`                   | keep-alive (every 25 s)                                           |
+| server to client | `view`                   | the full per-seat view, with a `version`                          |
+|                  | `error`                  | error code, reason, and the command that failed                   |
+|                  | `kicked`, `sessionEnded` | this seat was removed / the room is gone                          |
+|                  | `chat`, `chatHistory`    | live message / last messages after auth                           |
+|                  | `pong`                   | reply to `ping`                                                   |
+| lobby socket     | `games`                  | the whole public list (the only message it sends)                 |
+
+Join, reclaim, start, leave and kick go over HTTP (above) and answer with a seat id and token. Every failed join returns the same `E_BAD_CREDENTIALS` body.
+
+**View privacy rule.** The server builds a separate view per seat. Opponents' sheets and score rows are `null` until `GAME_OVER`, and `you.action1Decision` holds only your own choice; other seats' Action-1 decisions are not sent at all until the reveal. Public information is limited to what a table would show: names, locked rows, penalty counts, dice, the event log and the room record.
+
+**Record.** Each room keeps a wins-ties-losses (W-T-L) record per seat, updated when a game ends (a sole winner gets a win and everyone else a loss; shared top score is a tie). It is public by design. Rematch reuses the room, so the record accumulates.
+
 ## Client
+
+Preact + Vite, state in a small store (`store.ts`) fed by `ws.ts` (auth first, reconnect with backoff) and `api.ts` (bearer-token HTTP). Screens: Home, Create, Join, Reclaim, Waiting room, Game, Game over. Game components render the `view` and highlight only the options the server lists in `you.legalAction1/2`.
+
+- **Sessions and device storage**: per-room session tokens, remembered room passwords (opt-out), preferences and history live in `localStorage` under `colorDice:*` keys, always read defensively. A record transfer code moves the record between devices.
+- **History**: `history.ts` keeps this device's own results (W, T or L per game, capped at 200, de-duplicated by room code and game number) and never sends them anywhere.
+- **i18n**: English, French and Spanish. With the default "auto" setting the language is the first of `navigator.languages` whose primary subtag is en, fr or es (else English); Settings can force one. Catalogs load lazily; `npm run lint:i18n` enforces identical keys in all three.
+- **Feel**: CSS 3D dice, WebAudio sound, vibration where supported, wake lock, reduced-motion respected, keyboard shortcuts on desktop. No `innerHTML` is used anywhere (`npm run lint:nohtml`).
+- **Config**: `VITE_SERVER_URL` is the Worker origin baked in at build time (default `http://localhost:8787`); `VITE_BASE` is the Pages sub-path.
 
 ## Security
 
@@ -47,5 +128,15 @@ Paths: server tests `apps/server/test/`, client tests `apps/client/test/`, e2e `
 - **CI runs `lint:secrets`; the built bundle has no secrets; no secrets in logs or artifacts** → `lint:secrets` is the last step of `npm run check`; `npm run lint:secrets:dist` scans the client build; workflows never echo secrets and upload no artifacts containing them. Evidence: the scripts above (no unit tests; the scanner is the test).
 
 ## Testing
+
+Pyramid, cheapest at the bottom. `npm run check` runs everything except e2e.
+
+1. **Engine** (`packages/engine/test`): unit tests for rules, scoring, dice and edge cases, determinism, serialization, plus property-based fuzzing (fast-check) that plays random games and asserts invariants after every step.
+2. **Protocol** (`packages/protocol/test`): schema accept/reject tests, view fixtures, repo-hygiene checks.
+3. **Server** (`apps/server/test`): vitest with the Cloudflare vitest plugin, running inside the real Workers runtime with real Durable Objects: lobby, rooms, lockout, rate limits, TTLs, full games over sockets, privacy and security tests.
+4. **Client** (`apps/client/test`): vitest with happy-dom and Testing Library: components, store, i18n, session, record and history logic.
+5. **End to end** (`e2e`): Playwright against the real worker and Vite dev servers, with several browser contexts standing in for several computers (two- and five-player games, hidden information, passwords, reconnects, mobile viewport, three languages, XSS). Run with `npm run e2e`.
+
+Static checks in `npm run check`: `tsc -b`, Biome, `lint:nohtml`, `lint:i18n`, `lint:wrangler` and `lint:secrets`.
 
 ## Deploy
