@@ -6,5 +6,7 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     include: ["test/**/*.test.{ts,tsx}"],
+    // Process CSS so `tokens.css?raw` returns the real text for the contrast test.
+    css: true,
   },
 });

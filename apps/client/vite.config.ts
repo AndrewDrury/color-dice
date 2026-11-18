@@ -7,6 +7,7 @@ declare const process: { env: Record<string, string | undefined> };
 export default defineConfig({
   base: process.env.VITE_BASE ?? "/",
   plugins: [preact()],
-  server: { port: 5173 },
-  preview: { port: 4173 },
+  build: { outDir: "dist" },
+  server: { port: 5173, strictPort: true },
+  preview: { port: 4173, strictPort: true },
 });

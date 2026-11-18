@@ -1,0 +1,143 @@
+/*
+ * Design tokens (H2). Colour values are mirrored in contrast.ts and checked by a test:
+ * change both together. Light is the default; dark comes from prefers-color-scheme,
+ * and [data-theme="light"|"dark"] on <html> overrides it.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Font */
+  --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-large: 20px;
+  --fs-title: 28px;
+  --fw-regular: 500;
+  --fw-bold: 700;
+  --fw-heavy: 800;
+
+  /* Spacing: 4 px scale */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 28px;
+  --s8: 32px;
+
+  /* Radius */
+  --r-box: 8px;
+  --r-card: 16px;
+  --r-button: 14px;
+  --r-pill: 999px;
+  --r-die: 22%;
+
+  /* Sizes */
+  --tap: 44px;
+  --gutter: 16px;
+  --gutter-sheet: 8px;
+  --max-width: 1200px;
+
+  /* Colours (light) */
+  --table: #efe9df;
+  --paper: #fffdf8;
+  --ink: #1c2230;
+  --ink-muted: #72757c;
+  --accent: #5b5bf0;
+  --on-accent: #ffffff;
+  --danger: #d6453d;
+  --row-red: #d9363e;
+  --row-red-tint: #fce3e2;
+  --row-red-ink: #7a1015;
+  --row-red-on: #ffffff;
+  --row-yellow: #f2b705;
+  --row-yellow-tint: #fff4cc;
+  --row-yellow-ink: #6b4e00;
+  --row-yellow-on: #1c2230;
+  --row-green: #1e9e57;
+  --row-green-tint: #ddf5e6;
+  --row-green-ink: #0b5a2e;
+  --row-green-on: #1c2230;
+  --row-blue: #2468d9;
+  --row-blue-tint: #e0eafc;
+  --row-blue-ink: #0f3778;
+  --row-blue-on: #ffffff;
+
+  /* Colour-blind patterns (8 % opacity), layered over each row tint */
+  --pattern-ink: rgb(0 0 0 / 0.08);
+  --pattern-red: repeating-linear-gradient(45deg, var(--pattern-ink) 0 2px, transparent 2px 7px);
+  --pattern-yellow: radial-gradient(var(--pattern-ink) 1.2px, transparent 1.6px) 0 0 / 7px 7px;
+  --pattern-green: repeating-linear-gradient(
+    0deg,
+    var(--pattern-ink) 0 1.5px,
+    transparent 1.5px 6px
+  );
+  --pattern-blue:
+    repeating-linear-gradient(45deg, var(--pattern-ink) 0 1.5px, transparent 1.5px 7px),
+    repeating-linear-gradient(-45deg, var(--pattern-ink) 0 1.5px, transparent 1.5px 7px);
+
+  /* Elevation */
+  --e1: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.06);
+  --e2: 0 6px 18px rgb(0 0 0 / 0.18);
+
+  /* Focus */
+  --focus-ring: 3px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t-med: 220ms;
+  --t-slow: 400ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --table: #0e131c;
+  --paper: #1a2130;
+  --ink: #eef1f6;
+  --ink-muted: #9da2ab;
+  --accent: #8c8cff;
+  --on-accent: #0e131c;
+  --danger: #ff7a70;
+  --row-red-tint: #442633;
+  --row-red-ink: #f4f6fa;
+  --row-yellow-tint: #4a4227;
+  --row-yellow-ink: #f4f6fa;
+  --row-green-tint: #1b3d39;
+  --row-green-ink: #f4f6fa;
+  --row-blue-tint: #1c3155;
+  --row-blue-ink: #f4f6fa;
+  --pattern-ink: rgb(255 255 255 / 0.08);
+  --e1: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+  --e2: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 6px 18px rgb(0 0 0 / 0.5);
+}
+
+/* Same values as [data-theme="dark"]; keep the two blocks in sync. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --table: #0e131c;
+    --paper: #1a2130;
+    --ink: #eef1f6;
+    --ink-muted: #9da2ab;
+    --accent: #8c8cff;
+    --on-accent: #0e131c;
+    --danger: #ff7a70;
+    --row-red-tint: #442633;
+    --row-red-ink: #f4f6fa;
+    --row-yellow-tint: #4a4227;
+    --row-yellow-ink: #f4f6fa;
+    --row-green-tint: #1b3d39;
+    --row-green-ink: #f4f6fa;
+    --row-blue-tint: #1c3155;
+    --row-blue-ink: #f4f6fa;
+    --pattern-ink: rgb(255 255 255 / 0.08);
+    --e1: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+    --e2: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 6px 18px rgb(0 0 0 / 0.5);
+  }
+}
