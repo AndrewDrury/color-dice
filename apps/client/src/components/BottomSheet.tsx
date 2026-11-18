@@ -1,22 +1,30 @@
 /** Bottom sheet on phones, anchored popover from 1024 px (H12). Esc / backdrop close, focus trap. */
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
+import { useDismiss } from "../fx/motion";
 import { t } from "../i18n";
+import "../styles/motion.css";
 
 export interface BottomSheetProps {
   title: string;
   onClose: () => void;
   children: ComponentChildren;
+  /** Set by a parent that animates the exit itself (it removes the sheet after the animation). */
+  closing?: boolean;
 }
 
 const FOCUSABLE = "input, button, a[href], select, textarea, [tabindex]:not([tabindex='-1'])";
 
-export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
+export function BottomSheet({ title, onClose, children, closing }: BottomSheetProps) {
   const ref = useRef<HTMLDivElement>(null);
   const backdrop = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const [selfClosing, dismiss] = useDismiss(onClose);
+  const external = closing !== undefined;
+  const request = external ? onClose : dismiss;
+  const out = external ? closing : selfClosing;
+  const closeRef = useRef(request);
+  closeRef.current = request;
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -56,11 +64,17 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
   }, []);
 
   return (
-    <div ref={backdrop} class="bs-backdrop">
-      <div ref={ref} class="bs-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+    <div ref={backdrop} class={`bs-backdrop mo-fade${out ? " mo-exit" : ""}`}>
+      <div
+        ref={ref}
+        class={`bs-sheet${out ? " is-leaving" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         <div class="bs-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" class="btn" aria-label={t("common.close")} onClick={onClose}>
+          <button type="button" class="btn" aria-label={t("common.close")} onClick={request}>
             ✕
           </button>
         </div>

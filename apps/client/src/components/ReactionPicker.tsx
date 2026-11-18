@@ -1,14 +1,18 @@
-/** Small horizontal popover with the 8 allow-listed reactions (I3). One tap sends and closes. */
+/** Small popover with the 8 allow-listed cat reactions (I3). One tap sends and closes. */
 import { REACTIONS, type Reaction } from "@cd/protocol";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { t } from "../i18n";
+import { CatReaction, catCaption } from "./CatReaction";
+import "../styles/motion.css";
 
 export function ReactionPicker({
   onPick,
   onClose,
+  closing = false,
 }: {
-  onPick: (emoji: Reaction) => void;
+  onPick: (id: Reaction) => void;
   onClose: () => void;
+  closing?: boolean;
 }) {
   const ref = useRef<HTMLFieldSetElement>(null);
   const close = useRef(onClose);
@@ -42,16 +46,20 @@ export function ReactionPicker({
     };
   }, []);
   return (
-    <fieldset ref={ref} class="rx-picker" aria-label={t("chat.reactions")}>
-      {REACTIONS.map((emoji) => (
+    <fieldset
+      ref={ref}
+      class={`rx-picker mo-pop${closing ? " mo-exit" : ""}`}
+      aria-label={t("chat.reactions")}
+    >
+      {REACTIONS.map((id) => (
         <button
-          key={emoji}
+          key={id}
           type="button"
           class="rx-pick"
-          aria-label={t("chat.react", { emoji })}
-          onClick={() => onPick(emoji)}
+          aria-label={t("cat.react", { caption: catCaption(id) })}
+          onClick={() => onPick(id)}
         >
-          {emoji}
+          <CatReaction id={id} size={32} />
         </button>
       ))}
     </fieldset>

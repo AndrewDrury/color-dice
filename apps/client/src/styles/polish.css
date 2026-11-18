@@ -21,7 +21,6 @@
   border-radius: var(--r-card) var(--r-card) 0 0;
   box-shadow: var(--e2);
   padding: var(--s4) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom));
-  animation: bs-up var(--t-slow) var(--ease-out);
 }
 .bs-head {
   display: flex;

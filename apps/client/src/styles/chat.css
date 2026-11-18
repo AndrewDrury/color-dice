@@ -40,9 +40,9 @@
   top: calc(100% + 4px);
   right: 0;
   z-index: 25;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 56px);
   gap: 2px;
-  flex-wrap: wrap;
   max-width: calc(100vw - 8px);
   padding: var(--s1);
   border-radius: var(--r-button);
@@ -50,17 +50,38 @@
   box-shadow: var(--e2);
 }
 .rx-pick {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  min-height: 62px;
+  padding: 2px 0;
   border: 0;
   background: transparent;
-  font-size: 22px;
   border-radius: var(--r-button);
+  color: var(--ink);
   cursor: pointer;
 }
 .rx-pick:hover,
 .rx-pick:focus-visible {
   background: rgb(0 0 0 / 0.08);
+}
+
+/* Cat reactions (K5.1): SVG with the meme caption underneath. */
+.cat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cat-svg {
+  display: block;
+}
+.cat-cap {
+  max-width: 100%;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Floats: a fixed layer, positioned from the anchor's rect; never takes a tap. */
@@ -73,24 +94,46 @@
 }
 .rx-float {
   position: fixed;
-  font-size: 26px;
   line-height: 1;
   transform: translate(-50%, 0);
   pointer-events: none;
-  animation: rx-rise 1.2s var(--ease-out) forwards;
+  /* Gentle rise, long hold, fade: 3.5 s in total (K5.2). */
+  animation: rx-rise 3.5s ease-out forwards;
+}
+.rx-float .cat-cap {
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--paper);
 }
 .rx-float.is-static {
-  animation: none;
+  animation: rx-fade 3.5s linear forwards;
   transform: translate(-50%, 0);
 }
 @keyframes rx-rise {
-  from {
-    opacity: 1;
+  0% {
+    opacity: 0;
     transform: translate(-50%, 0);
   }
-  to {
+  8% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, 26px);
+  }
+  100% {
     opacity: 0;
-    transform: translate(-50%, 28px);
+    transform: translate(-50%, 36px);
+  }
+}
+@keyframes rx-fade {
+  0%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 
@@ -107,6 +150,8 @@
   width: 70%;
   transform: translateX(-50%);
   pointer-events: none;
+  /* Older toasts toward the top fade out; the newest stays fully opaque (K5.3). */
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.35), #000 70%);
 }
 .chat-toast {
   max-width: 100%;
@@ -143,7 +188,17 @@
   gap: var(--s2);
   min-height: 0;
 }
+@property --chat-fade {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.1;
+}
 .chat-log {
+  --chat-fade: 0.1;
+  transition: --chat-fade 200ms ease;
+  /* Top lines are transparent, the newest at the bottom is fully opaque (K5.3). */
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / var(--chat-fade)), #000 60%);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / var(--chat-fade)), #000 60%);
   display: flex;
   flex-direction: column;
   gap: var(--s1);
@@ -151,6 +206,15 @@
   min-height: 80px;
   overflow-y: auto;
   user-select: text;
+}
+.chat-log > :first-child {
+  margin-top: auto;
+}
+/* Hover, focus or an active touch reveals everything. */
+.chat-panel:hover .chat-log,
+.chat-panel:focus-within .chat-log,
+.chat-log.is-touch {
+  --chat-fade: 1;
 }
 .chat-line {
   overflow-wrap: anywhere;

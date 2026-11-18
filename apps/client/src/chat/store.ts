@@ -1,6 +1,7 @@
 /** Chat state (I3): log, unread, draft, transient toasts and reaction floats. Reset on leaving a room. */
 import type { ChatEntry, ServerMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
+import { catCaption } from "../components/CatReaction";
 import { play } from "../fx/sound";
 import { t } from "../i18n";
 import { getPrefs } from "../prefs";
@@ -103,7 +104,7 @@ function ingestReaction(e: ReactionEntry, mine: boolean): void {
   if (!mine && !getPrefs().showChat) return;
   if (state.floats.filter((f) => f.seatId === e.seatId).length >= MAX_FLOATS_PER_SEAT) return;
   set({ floats: [...state.floats, e] });
-  if (!mine) announce(t("chat.reacted", { name: seatName(e.seatId), emoji: e.emoji }));
+  if (!mine) announce(t("chat.reacted", { name: seatName(e.seatId), emoji: catCaption(e.emoji) }));
 }
 
 /** Route one server message into the chat store. Returns true when it was a chat message. */

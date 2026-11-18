@@ -2,6 +2,12 @@ import type { Page } from "@playwright/test";
 import { createGame, expect, joinGame, pass, queueDice, startGame, test } from "./fixtures";
 import { closeAll, expectGameOver, newPlayer, roll, waitForRoller } from "./helpers";
 
+/** The winner reveal covers the results until it ends; tap Skip like a player would. */
+async function skipCelebration(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByTestId("celebration")).toHaveCount(0);
+}
+
 async function expectRecord(page: Page, name: string, tally: string): Promise<void> {
   const row = page.getByRole("dialog", { name: "Results" }).locator("tbody tr", { hasText: name });
   await expect(row.locator("td[data-record]")).toHaveText(tally);
@@ -31,6 +37,7 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
     }
     await expectGameOver(a.page);
     await expectGameOver(b.page);
+    for (const p of [a, b]) await skipCelebration(p.page);
     // Record (J5): Alma lost game 1, Boris won it. Same table on both screens.
     for (const p of [a, b]) {
       await expectRecord(p.page, "Alma", "0–0–1");
@@ -68,6 +75,7 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
     }
     for (const p of [a, b]) {
       await expectGameOver(p.page);
+      await skipCelebration(p.page);
       await expectRecord(p.page, "Alma", "0–0–2");
       await expectRecord(p.page, "Boris", "2–0–0");
     }

@@ -1,12 +1,14 @@
-/** 😊 button (44×44) that toggles the reaction picker. Sends `{type:"react", emoji}`. */
+/** Cat button (44×44) that toggles the reaction picker. Sends `{type:"react", emoji}`. */
 import type { ClientMessage } from "@cd/protocol";
 import { useState } from "preact/hooks";
+import { useExitAnimation } from "../fx/motion";
 import { t, useT } from "../i18n";
 import { ReactionPicker } from "./ReactionPicker";
 
 export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }) {
   useT();
   const [open, setOpen] = useState(false);
+  const { mounted, closing } = useExitAnimation(open);
   return (
     <span class="rx-wrap">
       <button
@@ -20,8 +22,9 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
       >
         <span aria-hidden="true">😊</span>
       </button>
-      {open ? (
+      {mounted ? (
         <ReactionPicker
+          closing={closing}
           onClose={() => setOpen(false)}
           onPick={(emoji) => {
             send({ type: "react", emoji });

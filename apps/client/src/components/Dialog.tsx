@@ -1,6 +1,8 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
+import { useDismiss } from "../fx/motion";
 import { t } from "../i18n";
+import "../styles/motion.css";
 
 export interface DialogProps {
   title: string;
@@ -18,8 +20,9 @@ export function Dialog({ title, onClose, children }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const backdrop = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const [closing, dismiss] = useDismiss(onClose);
+  const closeRef = useRef(dismiss);
+  closeRef.current = dismiss;
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -65,6 +68,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
   return (
     <div
       ref={backdrop}
+      class={`mo-fade${closing ? " mo-exit" : ""}`}
       style={{
         position: "fixed",
         inset: 0,
@@ -81,14 +85,14 @@ export function Dialog({ title, onClose, children }: DialogProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        class="card stack"
+        class={`card stack mo-pop${closing ? " mo-exit" : ""}`}
         style={{ width: "100%", maxWidth: "420px", maxHeight: "100%", overflowY: "auto" }}
       >
         <div class="row" style={{ justifyContent: "space-between" }}>
           <h2 id={titleId} style={{ fontSize: "var(--fs-large)", overflowWrap: "anywhere" }}>
             {title}
           </h2>
-          <button type="button" class="btn" aria-label={t("common.close")} onClick={onClose}>
+          <button type="button" class="btn" aria-label={t("common.close")} onClick={dismiss}>
             ✕
           </button>
         </div>

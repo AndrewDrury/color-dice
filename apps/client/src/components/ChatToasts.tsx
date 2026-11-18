@@ -1,16 +1,23 @@
 /** Transient `Name: message` toasts at the top (never intercept taps) + the polite live region. */
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { dropToast, seatName, type TextEntry, useChat } from "../chat/store";
+import { EXIT_MS } from "../fx/motion";
+import "../styles/motion.css";
 
-const TOAST_MS = 4000;
+export const TOAST_MS = 4000;
 
 function ToastItem({ entry }: { entry: TextEntry }) {
+  const [leaving, setLeaving] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => dropToast(entry.id), TOAST_MS);
-    return () => clearTimeout(t);
+    const out = setTimeout(() => setLeaving(true), TOAST_MS - EXIT_MS);
+    const drop = setTimeout(() => dropToast(entry.id), TOAST_MS);
+    return () => {
+      clearTimeout(out);
+      clearTimeout(drop);
+    };
   }, [entry.id]);
   return (
-    <p class="chat-toast" aria-hidden="true">
+    <p class={`chat-toast mo-enter${leaving ? " mo-exit" : ""}`} aria-hidden="true">
       <b>{seatName(entry.seatId)}:</b> {entry.text}
     </p>
   );

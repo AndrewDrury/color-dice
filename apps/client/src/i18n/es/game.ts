@@ -148,4 +148,21 @@ export const game: Record<keyof typeof en, string> = {
   "sheet.totalCaption": "total",
   "sheet.lockColumn":
     "Columna del candado — marca 5 y luego la última casilla para bloquear una fila",
+  "cat.thumbs": "bien",
+  "cat.lol": "jaja",
+  "cat.shock": "¿qué?",
+  "cat.cringe": "uf",
+  "cat.fire": "en llamas",
+  "cat.party": "fiesta",
+  "cat.cry": "noooo",
+  "cat.clap": "gg",
+  "cat.react": "Reaccionar: {caption}",
+  "celebrate.label": "Anuncio del ganador",
+  "celebrate.title": "Y el ganador es…",
+  "celebrate.skip": "Saltar",
+  "celebrate.youWin": "¡Ganaste!",
+  "celebrate.points": "{n} puntos",
+  "celebrate.cat": "Un gato que se ríe hasta llorar. Toca para oírlo otra vez.",
+  "over.equationAria":
+    "{name}: rojo {r}, amarillo {y}, verde {g}, azul {b}, penalizaciones {p}, total {total}",
 };

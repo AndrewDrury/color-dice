@@ -3,6 +3,7 @@ import type { ClientMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import "../styles/chat.css";
 import { closePanel, getChat, openPanel, useChat } from "../chat/store";
+import { useExitAnimation } from "../fx/motion";
 import { t, useT } from "../i18n";
 import { getState } from "../store";
 import { ChatPanel } from "./ChatPanel";
@@ -74,6 +75,7 @@ export function ChatLayer({
   phone?: boolean;
 }) {
   const { panelOpen, floats } = useChat();
+  const panel = useExitAnimation(panelOpen);
   const openedOnMyMove = useRef(false);
   const was = useRef(false);
   if (panelOpen && !was.current) openedOnMyMove.current = myMove;
@@ -90,7 +92,7 @@ export function ChatLayer({
           <ReactionFloat key={f.id} entry={f} mine={f.seatId === mySeat} />
         ))}
       </div>
-      {panelOpen ? <ChatPanel send={send} /> : null}
+      {panel.mounted ? <ChatPanel send={send} closing={panel.closing} /> : null}
     </>
   );
 }

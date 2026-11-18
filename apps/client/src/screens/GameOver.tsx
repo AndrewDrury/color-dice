@@ -1,8 +1,8 @@
 /** Results card (H7) over the dimmed board: winners, reason, ranked table, Rematch / Back home. */
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
-import type { ComponentType } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Button } from "../components/Button";
+import { Celebration, celebrationKey, claimCelebration } from "../components/Celebration";
 import { ChatControls } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
 import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
@@ -58,22 +58,6 @@ function useFlipReorder(view: ViewMessage) {
   return ref;
 }
 
-/** Lazy winner confetti: its chunk loads only for winners, and not under reduced motion. */
-function useConfetti(winner: boolean): ComponentType | null {
-  const [C, setC] = useState<ComponentType | null>(null);
-  useEffect(() => {
-    if (!winner || reducedMotion()) return;
-    let alive = true;
-    import("../components/Confetti").then((m) => {
-      if (alive) setC(() => m.Confetti);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [winner]);
-  return C;
-}
-
 /** Appends this finished game to the device history once (dedupe by room code + game number). */
 function useDeviceHistory(view: ViewMessage, result: GameResult) {
   useEffect(() => {
@@ -100,7 +84,7 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
   const tableRef = useFlipReorder(view);
   useDeviceHistory(view, !iWon ? "L" : tie ? "T" : "W");
-  const Confetti = useConfetti(iWon);
+  const [celebrating, setCelebrating] = useState(() => claimCelebration(celebrationKey(view)));
   const ranked = rankPlayers(view);
   const ranks = new Map(
     rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
@@ -113,7 +97,6 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         aria-modal="true"
         aria-label={t("over.results")}
       >
-        {Confetti ? <Confetti /> : null}
         <h2 class="g-winner" data-tie={tie ? (allTied ? "all" : "some") : undefined}>
           {tie ? <TieIcon size={22} /> : <CrownIcon size={22} />}{" "}
           {allTied ? (
@@ -178,6 +161,7 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
           <Button onClick={onHome}>{t("over.home")}</Button>
         </div>
       </section>
+      {celebrating ? <Celebration view={view} onDone={() => setCelebrating(false)} /> : null}
     </div>
   );
 }

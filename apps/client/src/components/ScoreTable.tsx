@@ -1,5 +1,6 @@
 /** Ranked results (H7): names, row scores, penalties, total; a sole winner gets a crown, tied top players a Tie badge; equal totals share a rank. */
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
+import { Fragment } from "preact";
 import { COLORS, cssColor, recordLabel, recordText, seatInfo, tieInfo } from "../game/model";
 import { useTween } from "../game/useTween";
 import { colorLetter, t, useT } from "../i18n";
@@ -20,11 +21,73 @@ export function rankNumbers(ranked: readonly ViewPlayer[]): number[] {
 
 const COUNT_MS = 900;
 
-function Count({ value }: { value: number }) {
-  const v = useTween(value, COUNT_MS, 0);
+function Count({
+  value,
+  cls = "num",
+  ms = COUNT_MS,
+}: {
+  value: number;
+  cls?: string;
+  ms?: number;
+}) {
+  const v = useTween(value, ms, 0);
   return (
-    <span class="num" data-value={value}>
+    <span class={cls} data-value={value}>
       {v}
+    </span>
+  );
+}
+
+/**
+ * `R + Y + G + B − penalties = total` (K5.6), each term in its row colour with the same classes and
+ * tokens as the in-game footer equation. Only the total carries `.num[data-value]`.
+ */
+export function ResultEquation({
+  player,
+  name,
+  ms = COUNT_MS,
+}: {
+  player: ViewPlayer;
+  name: string;
+  ms?: number;
+}) {
+  useT();
+  const { rows, penalties, total } = player.score;
+  const pen = Math.abs(penalties);
+  return (
+    <span
+      class="g-eq g-res-eq"
+      role="img"
+      aria-label={t("over.equationAria", {
+        name,
+        r: rows?.RED ?? 0,
+        y: rows?.YELLOW ?? 0,
+        g: rows?.GREEN ?? 0,
+        b: rows?.BLUE ?? 0,
+        p: pen,
+        total,
+      })}
+    >
+      {COLORS.map((c, i) => (
+        <Fragment key={c}>
+          {i > 0 ? <span class="g-op">+</span> : null}
+          <span class={`g-score c-${cssColor(c)}`} data-term={c}>
+            <abbr>{colorLetter(c)}</abbr> <Count value={rows?.[c] ?? 0} cls="eqn" ms={ms} />
+          </span>
+        </Fragment>
+      ))}
+      <span class="g-op">−</span>
+      <span class="g-score g-penscore" data-term="PEN">
+        <Count value={pen} cls="eqn" ms={ms} />
+        <span class="g-pencap">{t("sheet.penaltiesCaption")}</span>
+      </span>
+      <span class="g-op">=</span>
+      <span class="g-total g-total--xl">
+        <span class="g-total-main">
+          <Count value={total} ms={ms} />
+        </span>
+        <span class="g-total-cap">{t("sheet.totalCaption")}</span>
+      </span>
     </span>
   );
 }
@@ -40,12 +103,6 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
       <thead>
         <tr>
           <th scope="col">{t("table.player")}</th>
-          {COLORS.map((c) => (
-            <th key={c} scope="col" class={`c-${cssColor(c)}`}>
-              {colorLetter(c)}
-            </th>
-          ))}
-          <th scope="col">{t("table.pen")}</th>
           <th scope="col">{t("table.total")}</th>
           <th scope="col">{t("table.record")}</th>
         </tr>
@@ -69,16 +126,8 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
                   {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
                 </span>
               </th>
-              {COLORS.map((c) => (
-                <td key={c}>
-                  <Count value={p.score.rows?.[c] ?? 0} />
-                </td>
-              ))}
-              <td>
-                <Count value={p.score.penalties} />
-              </td>
-              <td class="g-total-cell">
-                <Count value={p.score.total} />
+              <td class="g-total-cell g-eq-cell">
+                <ResultEquation player={p} name={seatInfo(view, p)?.name ?? ""} />
               </td>
               <td class="num" data-record>
                 {rec ? (

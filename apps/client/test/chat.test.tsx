@@ -1,5 +1,5 @@
 import type { ServerMessage, ViewMessage } from "@cd/protocol";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseChatFrame } from "../src/chat/parse";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
@@ -116,17 +116,57 @@ describe("chat client", () => {
     expect(screen.getByRole("log").textContent).toContain("<img src=x onerror=alert(1)>");
   });
 
-  it("picker sends the tapped emoji and closes", () => {
+  it("picker sends the tapped cat id and closes after its exit animation", async () => {
     fireEvent.click(screen.getByLabelText("Send reaction"));
-    fireEvent.click(screen.getByLabelText("React cat_party"));
+    // Accessible name is the translated caption, never the raw id.
+    expect(screen.queryByLabelText(/cat_/)).toBeNull();
+    fireEvent.click(screen.getByLabelText("React: party"));
     expect(sent).toEqual([{ type: "react", emoji: "cat_party" }]);
-    expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull();
+    // The node stays mounted while it animates out, then goes away.
+    expect(document.querySelector(".rx-picker.mo-exit")).not.toBeNull();
+    await waitFor(() => expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull());
   });
 
-  it("Esc closes the picker", () => {
+  it("every picker button sends its own id", () => {
+    fireEvent.click(screen.getByLabelText("Send reaction"));
+    const ids = ["thumbs", "lol", "shock", "cringe", "fire", "party", "cry", "clap"];
+    expect(document.querySelectorAll(".rx-pick")).toHaveLength(ids.length);
+    for (const b of document.querySelectorAll(".rx-pick")) fireEvent.click(b);
+    expect(sent.map((m) => (m as { emoji: string }).emoji)).toEqual(ids.map((i) => `cat_${i}`));
+  });
+
+  it("Esc closes the picker", async () => {
     fireEvent.click(screen.getByLabelText("Send reaction"));
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull());
+  });
+
+  it("a reaction float lives 3.5 s with its caption, then is removed", () => {
+    vi.useFakeTimers();
+    emit(reaction(1));
+    expect(document.querySelector(".rx-float .cat-cap")?.textContent).toBe("on fire");
+    act(() => {
+      vi.advanceTimersByTime(3400);
+    });
+    expect(document.querySelectorAll(".rx-float")).toHaveLength(1);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(document.querySelectorAll(".rx-float")).toHaveLength(0);
+  });
+
+  it("the chat panel stays mounted while it animates out", async () => {
+    openChat();
+    expect(screen.getByRole("log")).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.querySelector(".bs-sheet.is-leaving")).not.toBeNull();
+    await waitFor(() => expect(screen.queryByRole("log")).toBeNull());
+  });
+
+  it("chat.css fades the log and releases the mask on hover and focus", async () => {
+    const css = (await import("../src/styles/chat.css?raw")).default;
+    expect(css).toMatch(/\.chat-log \{[^}]*mask-image: linear-gradient/);
+    expect(css).toMatch(/\.chat-panel:hover \.chat-log,[^{]*\.chat-panel:focus-within \.chat-log/);
   });
 
   it("Enter sends chat and the text is shown only after the echo", () => {

@@ -1,16 +1,25 @@
 /** Chat log + input (I3). Own lines appear only after the server echo. Text nodes only. */
 import { CHAT_TEXT_MAX, type ClientMessage } from "@cd/protocol";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { closePanel, seatName, setDraft, setSending, useChat } from "../chat/store";
 import { chatErrorText, t, useT } from "../i18n";
 import { getState } from "../store";
 import { BottomSheet } from "./BottomSheet";
 
-export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
+export function ChatPanel({
+  send,
+  closing = false,
+}: {
+  send: (m: ClientMessage) => boolean;
+  closing?: boolean;
+}) {
   useT();
   const { messages, draft, sending, error } = useChat();
   const log = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
+  const [touching, setTouching] = useState(false);
+  const touchEnd = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(touchEnd.current), []);
   const me = getState().view?.you.seatId;
 
   useEffect(() => {
@@ -25,11 +34,18 @@ export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
   };
 
   return (
-    <BottomSheet title={t("chat.title")} onClose={closePanel}>
+    <BottomSheet title={t("chat.title")} onClose={closePanel} closing={closing}>
       <div class="chat-panel">
         <div
           ref={log}
-          class="chat-log"
+          class={`chat-log${touching ? " is-touch" : ""}`}
+          onTouchStart={() => {
+            clearTimeout(touchEnd.current);
+            setTouching(true);
+          }}
+          onTouchEnd={() => {
+            touchEnd.current = setTimeout(() => setTouching(false), 1200);
+          }}
           role="log"
           aria-label={t("chat.messages")}
           onScroll={(e) => {

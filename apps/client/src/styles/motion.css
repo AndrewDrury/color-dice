@@ -1,0 +1,350 @@
+/* Shared enter/exit motion (K5.3): enter 210 ms, exit 170 ms, transform + opacity.
+   Uses the individual `translate`/`scale` properties so it never fights an element's own transform.
+   Reduced motion: opacity only. Components keep the node mounted until the exit is done. */
+.mo-enter {
+  animation: mo-in 210ms var(--ease-out) backwards;
+}
+.mo-exit {
+  animation: mo-out 170ms ease-in forwards;
+  pointer-events: none;
+}
+.mo-pop {
+  animation: mo-pop-in 210ms var(--ease-out) backwards;
+}
+.mo-pop.mo-exit {
+  animation: mo-pop-out 170ms ease-in forwards;
+}
+.mo-fade {
+  animation: mo-fade-in 210ms ease-out backwards;
+}
+.mo-fade.mo-exit {
+  animation: mo-fade-out 170ms ease-in forwards;
+}
+.mo-toast.mo-enter {
+  animation-name: mo-scale-in;
+}
+.mo-toast.mo-exit {
+  animation-name: mo-scale-out;
+}
+.bs-sheet {
+  animation: mo-sheet-in 220ms var(--ease-out) backwards;
+}
+.bs-sheet.is-leaving {
+  animation: mo-sheet-out 180ms ease-in forwards;
+}
+@keyframes mo-in {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+@keyframes mo-out {
+  to {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+@keyframes mo-pop-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+    scale: 0.96;
+  }
+}
+@keyframes mo-pop-out {
+  to {
+    opacity: 0;
+    translate: 0 -4px;
+    scale: 0.97;
+  }
+}
+@keyframes mo-scale-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+@keyframes mo-scale-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes mo-sheet-in {
+  from {
+    opacity: 0;
+    translate: 0 32px;
+  }
+}
+@keyframes mo-sheet-out {
+  to {
+    opacity: 0;
+    translate: 0 24px;
+  }
+}
+@keyframes mo-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mo-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mo-enter {
+    animation-name: mo-fade-in;
+  }
+  .mo-exit {
+    animation-name: mo-fade-out;
+  }
+  .mo-pop,
+  .mo-toast.mo-enter {
+    animation-name: mo-fade-in;
+  }
+  .mo-pop.mo-exit,
+  .mo-toast.mo-exit {
+    animation-name: mo-fade-out;
+  }
+  .bs-sheet {
+    animation-name: mo-fade-in;
+  }
+  .bs-sheet.is-leaving {
+    animation-name: mo-fade-out;
+  }
+}
+:root[data-motion="reduced"] .mo-enter,
+:root[data-motion="reduced"] .mo-pop,
+:root[data-motion="reduced"] .mo-toast.mo-enter,
+:root[data-motion="reduced"] .bs-sheet {
+  animation-name: mo-fade-in;
+}
+:root[data-motion="reduced"] .mo-exit,
+:root[data-motion="reduced"] .mo-pop.mo-exit,
+:root[data-motion="reduced"] .mo-toast.mo-exit,
+:root[data-motion="reduced"] .bs-sheet.is-leaving {
+  animation-name: mo-fade-out;
+}
+
+/* ---------- Winner reveal (K5.4) ---------- */
+.cel {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+  background: rgb(10 10 20 / 0.82);
+  color: #fff;
+  overflow-y: auto;
+}
+.cel-skip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: 8px;
+  min-height: 44px;
+}
+.cel-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+}
+.cel-title {
+  font-size: var(--fs-large);
+  text-align: center;
+  min-height: 2.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cel-hush {
+  opacity: 0.5;
+}
+.cel-win {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: cel-pop 600ms cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+.cel-name {
+  font-size: 1.6rem;
+  font-weight: var(--fw-heavy);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.cel-catname {
+  margin: 0;
+}
+.cel-score {
+  font-size: var(--fs-body);
+}
+.cel-rows {
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.cel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s2) var(--s3) calc(var(--s2) + 10px);
+  border-radius: var(--r-button);
+  background: var(--paper);
+  color: var(--ink);
+  opacity: 0;
+  translate: 0 -24px;
+  transition:
+    opacity 300ms ease,
+    translate 300ms cubic-bezier(0.2, 1.4, 0.4, 1),
+    scale 400ms var(--ease-out);
+}
+.cel-row.is-in {
+  opacity: 1;
+  translate: 0 0;
+}
+.cel-row.is-lead {
+  animation: cel-pulse 500ms ease-in-out 2;
+}
+.cel-row.is-dim {
+  opacity: 0.35;
+}
+.cel-row.is-winner {
+  scale: 1.06;
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.cel-pname {
+  max-width: 100%;
+  font-weight: var(--fw-heavy);
+}
+.cel-row .g-res-eq,
+.g-eq-cell .g-res-eq {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  padding-bottom: 12px;
+  font-size: clamp(12px, 3.6vw, 15px);
+}
+.cel.is-reduced .cel-row {
+  translate: none;
+  transition: opacity 250ms linear;
+}
+.cel.is-reduced .cel-row.is-winner {
+  scale: none;
+}
+.cel.is-reduced .cel-win,
+.cel.is-reduced .cel-row.is-lead {
+  animation: none;
+}
+@keyframes cel-pop {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+  60% {
+    scale: 1.15;
+  }
+}
+@keyframes cel-pulse {
+  50% {
+    scale: 1.04;
+  }
+}
+
+/* ---------- Laughing cat (K5.7): original SVG, CSS-only motion ---------- */
+.cel-catcard {
+  gap: var(--s2);
+}
+.cel-cat {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.lcat {
+  width: min(70vw, 260px);
+  height: auto;
+  overflow: visible;
+}
+.lcat-head {
+  transform-box: fill-box;
+  transform-origin: 50% 80%;
+  animation: lcat-bob 0.46s ease-in-out infinite;
+}
+.lcat-mouth {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: lcat-mouth 0.23s ease-in-out infinite alternate;
+}
+.lcat-tear {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: lcat-tear 0.7s ease-in infinite;
+}
+.lcat-tear--r {
+  animation-delay: 0.25s;
+}
+.lcat.is-still .lcat-head,
+.lcat.is-still .lcat-mouth,
+.lcat.is-still .lcat-tear {
+  animation: none;
+}
+@keyframes lcat-bob {
+  0%,
+  100% {
+    transform: translate(-1px, 0) rotate(-4deg);
+  }
+  25% {
+    transform: translate(1px, 4px) rotate(0deg);
+  }
+  50% {
+    transform: translate(1px, 0) rotate(4deg);
+  }
+  75% {
+    transform: translate(-1px, 4px) rotate(0deg);
+  }
+}
+@keyframes lcat-mouth {
+  from {
+    transform: scaleY(0.45);
+  }
+  to {
+    transform: scaleY(1.05);
+  }
+}
+@keyframes lcat-tear {
+  0% {
+    transform: translateY(-4px) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(26px) scale(1);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lcat-head,
+  .lcat-mouth,
+  .lcat-tear {
+    animation: none;
+  }
+}
+:root[data-motion="reduced"] .lcat-head,
+:root[data-motion="reduced"] .lcat-mouth,
+:root[data-motion="reduced"] .lcat-tear {
+  animation: none;
+}
