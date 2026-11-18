@@ -6,6 +6,7 @@ import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { useHistoryTotals } from "../history";
+import { type MessageKey, t, useT } from "../i18n";
 import { removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
@@ -15,10 +16,10 @@ import { cleanCode } from "./Reclaim";
 
 type MySession = { code: string } & Session;
 
-const STATUS_TEXT: Record<RoomStatus, string> = {
-  lobby: "waiting to start",
-  playing: "in progress",
-  finished: "finished",
+const STATUS_KEY: Record<RoomStatus, MessageKey> = {
+  lobby: "home.status.lobby",
+  playing: "home.status.playing",
+  finished: "home.status.finished",
 };
 
 function resume(code: string, status: RoomStatus | undefined): void {
@@ -27,6 +28,7 @@ function resume(code: string, status: RoomStatus | undefined): void {
 
 /** "Your games": saved seats, each checked with `GET /me`; dropped on 401. */
 function YourGames() {
+  useT();
   const [sessions, setSessions] = useState<MySession[]>(() => listSessions());
   const [status, setStatus] = useState<Record<string, RoomStatus>>({});
 
@@ -55,7 +57,7 @@ function YourGames() {
   if (sessions.length === 0) return null;
   return (
     <section class="card stack" aria-labelledby="your-games">
-      <h2 id="your-games">Your games</h2>
+      <h2 id="your-games">{t("home.yourGames")}</h2>
       <ul class="stack" style={{ listStyle: "none", margin: 0, padding: 0, gap: "var(--s2)" }}>
         {sessions.map((s) => {
           const st = status[s.code];
@@ -65,21 +67,20 @@ function YourGames() {
                 <strong style={{ overflowWrap: "anywhere" }}>{s.roomName || s.code}</strong>
                 <span class="muted" style={{ fontSize: "var(--fs-small)" }}>
                   <span class="num">{s.code}</span>
-                  {" · as "}
-                  {s.name}
-                  {st ? ` · ${STATUS_TEXT[st]}` : ""}
+                  {` · ${t("home.asName", { name: s.name })}`}
+                  {st ? ` · ${t(STATUS_KEY[st])}` : ""}
                 </span>
               </span>
-              <Button onClick={() => resume(s.code, st)}>Resume</Button>
+              <Button onClick={() => resume(s.code, st)}>{t("home.resume")}</Button>
               <Button
-                aria-label={`Forget ${s.roomName || s.code}`}
+                aria-label={t("home.forgetAria", { room: s.roomName || s.code })}
                 onClick={() => {
                   forgetSession(s.code);
                   removeRoomPassword(s.code);
                   setSessions((cur) => cur.filter((x) => x.code !== s.code));
                 }}
               >
-                Forget
+                {t("home.forget")}
               </Button>
             </li>
           );
@@ -91,12 +92,12 @@ function YourGames() {
 
 /** "Your record: 12 W – 2 T – 7 L" from this device's history; hidden while empty. */
 function YourRecord() {
+  useT();
   const { wins, ties, losses } = useHistoryTotals();
   if (wins + ties + losses === 0) return null;
   return (
     <p class="muted" data-testid="your-record" style={{ margin: 0 }}>
-      Your record: <span class="num">{wins}</span> W – <span class="num">{ties}</span> T –{" "}
-      <span class="num">{losses}</span> L
+      {t("home.record", { wins, ties, losses })}
     </p>
   );
 }
@@ -108,6 +109,7 @@ export function openCode(code: string): void {
 }
 
 function InviteCode() {
+  useT();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   return (
@@ -117,7 +119,7 @@ function InviteCode() {
       onSubmit={(e) => {
         e.preventDefault();
         if (!GameCodeSchema.safeParse(code).success) {
-          setError("Game codes are 5 letters or digits.");
+          setError(t("field.gameCode"));
           return;
         }
         setError(undefined);
@@ -125,7 +127,7 @@ function InviteCode() {
       }}
     >
       <Field
-        label="Have an invite code?"
+        label={t("home.inviteLabel")}
         name="code"
         value={code}
         onValue={setCode}
@@ -138,15 +140,15 @@ function InviteCode() {
         spellcheck={false}
         inputmode="text"
         enterkeyhint="go"
-        addon={<Button type="submit">Join</Button>}
+        addon={<Button type="submit">{t("common.join")}</Button>}
       />
     </form>
   );
 }
 
-const LOBBY_STATUS_TEXT: Partial<Record<SocketStatus, string>> = {
-  connecting: "Connecting…",
-  reconnecting: "Reconnecting…",
+const LOBBY_STATUS_KEY: Partial<Record<SocketStatus, MessageKey>> = {
+  connecting: "conn.connecting",
+  reconnecting: "conn.reconnecting",
 };
 
 export interface HomeProps {
@@ -154,6 +156,7 @@ export interface HomeProps {
 }
 
 export function Home({ route }: HomeProps) {
+  useT();
   const [games, setGames] = useState<PublicGame[] | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
@@ -171,7 +174,8 @@ export function Home({ route }: HomeProps) {
   }, []);
 
   const joinCode = route.screen === "join" ? route.code : null;
-  const statusText = LOBBY_STATUS_TEXT[lobbyStatus];
+  const statusKey = LOBBY_STATUS_KEY[lobbyStatus];
+  const statusText = statusKey ? t(statusKey) : undefined;
 
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
@@ -180,7 +184,7 @@ export function Home({ route }: HomeProps) {
         <div class="row">
           <GearButton onClick={() => setPanel("settings")} />
           <Button variant="primary" onClick={() => navigate("create")}>
-            Create game
+            {t("home.createGame")}
           </Button>
         </div>
       </header>
@@ -193,7 +197,7 @@ export function Home({ route }: HomeProps) {
         </div>
         <section class="card stack" aria-labelledby="open-games">
           <div class="row" style={{ justifyContent: "space-between" }}>
-            <h2 id="open-games">Open games (live)</h2>
+            <h2 id="open-games">{t("home.openGames")}</h2>
             {statusText ? (
               <span class="muted" role="status" style={{ fontSize: "var(--fs-small)" }}>
                 {statusText}

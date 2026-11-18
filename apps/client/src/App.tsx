@@ -1,6 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
+import { useLocale } from "./i18n";
 import { getPrefs, onPrefs } from "./prefs";
 import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
@@ -22,6 +23,7 @@ export function applyPrefs(root: HTMLElement = document.documentElement): void {
 }
 
 export function App() {
+  useLocale(); // re-render the whole tree when the language changes
   const route = useRoute();
   const { status } = useAppState();
   useEffect(() => {

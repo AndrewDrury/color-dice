@@ -10,6 +10,7 @@ import { feedback } from "../fx/feedback";
 import { useReducedMotion } from "../fx/motion";
 import { startRattle, stopRattle, unlockAudio } from "../fx/sound";
 import { type RollLike, useRollAnimation } from "../fx/useRollAnimation";
+import { t, useT } from "../i18n";
 import "../styles/dice.css";
 import { Die, type DieColor } from "./Die";
 
@@ -76,7 +77,7 @@ export function RollButton(p: {
       onClick={() => c.current?.onClick()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {p.children ?? "Roll"}
+      {p.children ?? t("action.roll")}
     </button>
   );
 }
@@ -103,6 +104,7 @@ const SLOTS: readonly Slot[] = [
 ];
 
 export function DiceTray(props: DiceTrayProps) {
+  useT();
   const { roll, lockedColors, canRoll, turnKey, highlight } = props;
   const reduced = useReducedMotion();
   const onLandedRef = useRef(props.onLanded);
@@ -265,7 +267,7 @@ export function DiceTray(props: DiceTrayProps) {
   const hlColor = highlight?.color ? roll?.colored[highlight.color] : undefined;
 
   return (
-    <section class={`tray${reduced ? " tray--reduced" : ""}`} aria-label="Dice">
+    <section class={`tray${reduced ? " tray--reduced" : ""}`} aria-label={t("dice.aria")}>
       <div class="tray__felt">
         <div class="tray__dice">
           {dice.slice(0, 2)}
@@ -277,12 +279,12 @@ export function DiceTray(props: DiceTrayProps) {
             <output
               key={`sum-${anim.landings}`}
               class={`tray__sum${anim.landings > 0 ? " is-pop" : ""}`}
-              aria-label={`White sum ${sum}`}
+              aria-label={t("dice.sum", { sum })}
             >
               <span aria-hidden="true">=</span> {sum}
             </output>
           ) : null}
-          {anim.slow ? <span class="tray__status">Rolling…</span> : null}
+          {anim.slow ? <span class="tray__status">{t("dice.rolling")}</span> : null}
           {settled && hlWhite !== undefined && hlColor !== undefined ? (
             <span class="tray__combo num">
               {hlWhite} + {hlColor}

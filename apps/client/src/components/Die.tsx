@@ -17,6 +17,7 @@ import {
   tumbleKeyframes,
 } from "../fx/dice-math";
 import { ROLL_TIMING, type RollPhase } from "../fx/useRollAnimation";
+import { dieColor, t } from "../i18n";
 import { LockIcon } from "./icons";
 
 export type DieColor = "WHITE" | Color;
@@ -34,14 +35,6 @@ export interface DieProps {
   highlight?: boolean;
   reduced?: boolean;
 }
-
-const NAMES: Record<DieColor, string> = {
-  WHITE: "White",
-  RED: "Red",
-  YELLOW: "Yellow",
-  GREEN: "Green",
-  BLUE: "Blue",
-};
 
 /** Pip cells (0–8, row-major in a 3×3 grid) per face. */
 const PIPS: Record<Face, number[]> = {
@@ -78,11 +71,11 @@ function animate(
 const translate = (x: number, y: number) => `translate(${x}px, ${y}px)`;
 
 export function dieLabel(color: DieColor, face: Face, phase: RollPhase, removed: boolean): string {
-  const name = `${NAMES[color]} die`;
-  if (removed) return `${name}, removed`;
-  if (phase === "settled") return `${name}: ${face}`;
-  if (phase === "idle") return name;
-  return `${name}, rolling`;
+  const v = { color: dieColor(color), face };
+  if (removed) return t("die.removed", v);
+  if (phase === "settled") return t("die.value", v);
+  if (phase === "idle") return t("die.label", v);
+  return t("die.rolling", v);
 }
 
 export function Die(props: DieProps) {

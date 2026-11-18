@@ -2,7 +2,16 @@
 import { useEffect, useState } from "preact/hooks";
 import { hapticsSupported } from "../fx/haptics";
 import { clearHistory, exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
-import { getPrefs, type MotionPref, onPrefs, type Prefs, setPrefs, type ThemePref } from "../prefs";
+import { LANGUAGE_NAMES, LOCALES, type MessageKey, setLanguage, t, tn, useT } from "../i18n";
+import {
+  getPrefs,
+  type LanguagePref,
+  type MotionPref,
+  onPrefs,
+  type Prefs,
+  setPrefs,
+  type ThemePref,
+} from "../prefs";
 import { clearRemembered, getRemembered } from "../remembered";
 import { BottomSheet } from "./BottomSheet";
 import { HowToPlay } from "./HowToPlay";
@@ -51,9 +60,11 @@ function Segmented<T extends string>(p: {
   value: T;
   options: readonly { value: T; text: string }[];
   onChange: (v: T) => void;
+  /** Label above the control instead of beside it (the Theme + Language pair). */
+  stacked?: boolean;
 }) {
   return (
-    <div class="st-row">
+    <div class={p.stacked ? "st-col" : "st-row"}>
       <span aria-hidden="true">{p.label}</span>
       <fieldset class="st-seg" aria-label={p.label}>
         {p.options.map((o) => (
@@ -72,38 +83,45 @@ function Segmented<T extends string>(p: {
   );
 }
 
-const MOTIONS = [
-  { value: "system", text: "System" },
-  { value: "reduced", text: "Reduced" },
-  { value: "full", text: "Full" },
-] as const satisfies readonly { value: MotionPref; text: string }[];
-const THEMES = [
-  { value: "system", text: "System" },
-  { value: "light", text: "Light" },
-  { value: "dark", text: "Dark" },
-] as const satisfies readonly { value: ThemePref; text: string }[];
+const MOTIONS: readonly { value: MotionPref; key: MessageKey }[] = [
+  { value: "system", key: "settings.system" },
+  { value: "reduced", key: "settings.reduced" },
+  { value: "full", key: "settings.full" },
+];
+const THEMES: readonly { value: ThemePref; key: MessageKey }[] = [
+  { value: "system", key: "settings.system" },
+  { value: "light", key: "settings.light" },
+  { value: "dark", key: "settings.dark" },
+];
+const options = <V extends string>(list: readonly { value: V; key: MessageKey }[]) =>
+  list.map((o) => ({ value: o.value, text: t(o.key) }));
+
+/** Auto + each language in its own name (never translated). */
+const languageOptions = (): { value: LanguagePref; text: string }[] => [
+  { value: "auto", text: t("settings.auto") },
+  ...LOCALES.map((l) => ({ value: l, text: LANGUAGE_NAMES[l] })),
+];
 
 function RecordSection() {
+  useT();
   const record = useHistoryTotals();
   const [note, setNote] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const total = record.wins + record.ties + record.losses;
   return (
-    <section class="stack" aria-label="Your record">
+    <section class="stack" aria-label={t("settings.recordAria")}>
       <div class="st-row">
-        <span>
-          Your record: {record.wins} W – {record.ties} T – {record.losses} L
-        </span>
+        <span>{t("home.record", record)}</span>
         {total > 0 ? (
           <button
             type="button"
             class="btn"
             onClick={() => {
               clearHistory();
-              setNote("Record reset.");
+              setNote(t("settings.recordCleared"));
             }}
           >
-            Reset record
+            {t("settings.recordReset")}
           </button>
         ) : null}
       </div>
@@ -114,18 +132,18 @@ function RecordSection() {
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(exportTransferCode());
-              setNote("Transfer code copied.");
+              setNote(t("settings.copied"));
             } catch {
-              setNote("Could not copy. Select and copy the code below instead.");
+              setNote(t("settings.copyFailed"));
               setCode(exportTransferCode());
             }
           }}
         >
-          Copy transfer code
+          {t("settings.copyCode")}
         </button>
       ) : null}
       <label class="stack">
-        <span>Import transfer code</span>
+        <span>{t("settings.importLabel")}</span>
         <input
           class="input"
           value={code}
@@ -140,12 +158,12 @@ function RecordSection() {
         onClick={() => {
           const r = importTransferCode(code);
           if (r.ok) {
-            setNote(`Imported ${r.added} new game${r.added === 1 ? "" : "s"}.`);
+            setNote(tn("settings.imported", r.added));
             setCode("");
-          } else setNote(r.reason);
+          } else setNote(t(r.reason === "empty" ? "settings.importEmpty" : "settings.importBad"));
         }}
       >
-        Import
+        {t("settings.import")}
       </button>
       {note ? <p role="status">{note}</p> : null}
     </section>
@@ -153,20 +171,21 @@ function RecordSection() {
 }
 
 function SavedInfoSection() {
+  useT();
   const [saved, setSaved] = useState(getRemembered);
   const [note, setNote] = useState<string | null>(null);
   const hasAny = !!(saved.name || saved.roomName || saved.password || saved.rooms.length);
   return (
-    <section class="stack" aria-label="Saved info">
-      <h3>Saved info</h3>
+    <section class="stack" aria-label={t("settings.saved")}>
+      <h3>{t("settings.saved")}</h3>
       {hasAny ? (
         <ul class="stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-          {saved.name ? <li>Name: {saved.name}</li> : null}
-          {saved.roomName ? <li>Room name: {saved.roomName}</li> : null}
-          {saved.password || saved.rooms.length ? <li>Room password: saved</li> : null}
+          {saved.name ? <li>{t("settings.savedName", { value: saved.name })}</li> : null}
+          {saved.roomName ? <li>{t("settings.savedRoom", { value: saved.roomName })}</li> : null}
+          {saved.password || saved.rooms.length ? <li>{t("settings.savedPassword")}</li> : null}
         </ul>
       ) : (
-        <p class="muted">Nothing saved on this device.</p>
+        <p class="muted">{t("settings.savedNone")}</p>
       )}
       {hasAny ? (
         <button
@@ -175,10 +194,10 @@ function SavedInfoSection() {
           onClick={() => {
             clearRemembered();
             setSaved(getRemembered());
-            setNote("Saved info cleared.");
+            setNote(t("settings.savedCleared"));
           }}
         >
-          Clear saved info
+          {t("settings.savedClear")}
         </button>
       ) : null}
       {note ? <p role="status">{note}</p> : null}
@@ -194,44 +213,64 @@ export function Settings({
   onPanel: (p: Panel) => void;
 }) {
   const prefs = usePrefs();
+  useT();
   return (
-    <BottomSheet title="Settings" onClose={onClose}>
-      <Toggle label="Sound" on={prefs.sound} onChange={(v) => setPrefs({ sound: v })} />
+    <BottomSheet title={t("settings.title")} onClose={onClose}>
       <Toggle
-        label="Show chat messages"
+        label={t("settings.sound")}
+        on={prefs.sound}
+        onChange={(v) => setPrefs({ sound: v })}
+      />
+      <Toggle
+        label={t("settings.showChat")}
         on={prefs.showChat}
         onChange={(v) => setPrefs({ showChat: v })}
       />
       {hapticsSupported() ? (
-        <Toggle label="Haptics" on={prefs.haptics} onChange={(v) => setPrefs({ haptics: v })} />
+        <Toggle
+          label={t("settings.haptics")}
+          on={prefs.haptics}
+          onChange={(v) => setPrefs({ haptics: v })}
+        />
       ) : null}
       <Segmented
-        label="Motion"
+        label={t("settings.motion")}
         value={prefs.motion}
-        options={MOTIONS}
+        options={options(MOTIONS)}
         onChange={(v) => setPrefs({ motion: v })}
       />
-      <Segmented
-        label="Theme"
-        value={prefs.theme}
-        options={THEMES}
-        onChange={(v) => setPrefs({ theme: v })}
-      />
+      <div class="st-pair">
+        <Segmented
+          stacked
+          label={t("settings.theme")}
+          value={prefs.theme}
+          options={options(THEMES)}
+          onChange={(v) => setPrefs({ theme: v })}
+        />
+        <Segmented
+          stacked
+          label={t("settings.language")}
+          value={prefs.language}
+          options={languageOptions()}
+          onChange={(v) => void setLanguage(v)}
+        />
+      </div>
       <RecordSection />
       <SavedInfoSection />
       <button type="button" class="btn" onClick={() => onPanel("help")}>
-        How to play
+        {t("settings.help")}
       </button>
       <button type="button" class="btn only-desktop" onClick={() => onPanel("keys")}>
-        Keyboard shortcuts
+        {t("settings.keys")}
       </button>
     </BottomSheet>
   );
 }
 
 export function GearButton({ onClick }: { onClick: () => void }) {
+  useT();
   return (
-    <button type="button" class="btn st-gear" aria-label="Settings" onClick={onClick}>
+    <button type="button" class="btn st-gear" aria-label={t("settings.gear")} onClick={onClick}>
       <GearIcon />
     </button>
   );

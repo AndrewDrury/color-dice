@@ -3,6 +3,7 @@ import type { Color } from "@cd/engine";
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { feedback } from "../fx/feedback";
+import { t } from "../i18n";
 import { showToast } from "../store";
 import { boxKey } from "./model";
 import {
@@ -55,7 +56,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
       setSent(s);
       setStaged(null);
     } else {
-      showToast("Not connected. Trying to reconnect…", "error");
+      showToast(t("conn.notConnected"), "error");
     }
   };
 

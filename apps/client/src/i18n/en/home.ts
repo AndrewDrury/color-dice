@@ -1,0 +1,36 @@
+export const home = {
+  "home.yourGames": "Your games",
+  "home.status.lobby": "waiting to start",
+  "home.status.playing": "in progress",
+  "home.status.finished": "finished",
+  "home.asName": "as {name}",
+  "home.resume": "Resume",
+  "home.forget": "Forget",
+  "home.forgetAria": "Forget {room}",
+  "home.record": "Your record: {wins} W – {ties} T – {losses} L",
+  "home.inviteLabel": "Have an invite code?",
+  "home.createGame": "Create game",
+  "home.openGames": "Open games (live)",
+  "home.looking": "Looking for open games…",
+  "home.noGames": "No open games right now. Create one!",
+  "home.openGamesAria": "Open games",
+  "home.host": "host {name}",
+  "home.playersSr": "players",
+  "home.joinAria": "Join {room}",
+  "home.passwordProtected": "Password protected",
+
+  "create.title": "Create game",
+  "create.passwordHint": "Share it privately with your friends.",
+  "create.maxPlayers": "Max players",
+  "create.listed": "Show in public list",
+
+  "join.title": "Join game",
+  "join.titleNamed": "Join {room}",
+  "join.gone": "This game has started or is full.",
+  "join.reclaimLink": "Reclaim my seat",
+
+  "reclaim.title": "Reclaim my seat",
+  "reclaim.intro":
+    "Lost your connection or switched devices? Enter the same name and the room password.",
+  "reclaim.submit": "Reclaim seat",
+} as const;

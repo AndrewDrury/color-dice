@@ -11,6 +11,7 @@ import {
   requestErrorText,
 } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
@@ -18,12 +19,10 @@ import { saveSession } from "../session";
 /** After a wrong password the Join button stays disabled this long. */
 export const WRONG_PASSWORD_LOCK_MS = 2000;
 
-export const GONE_TEXT = "This game has started or is full.";
-
-const FIELD_TEXT: Record<string, string> = {
-  name: `Enter a name (1–${PLAYER_NAME_MAX} characters).`,
-  password: "Passwords are 4–64 characters.",
-};
+const fieldText = (): Record<string, string> => ({
+  name: t("field.name", { max: PLAYER_NAME_MAX }),
+  password: t("field.password"),
+});
 
 export interface JoinDialogProps {
   code: string;
@@ -33,6 +32,7 @@ export interface JoinDialogProps {
 }
 
 export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
+  useT();
   const [name, setName] = useState(rememberedName);
   // Only for a room this device already holds a seat in; never for an unknown room.
   const [password, setPassword] = useState(() => getRoomPassword(code));
@@ -82,7 +82,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
     setFormError(null);
     const parsed = JoinReqSchema.safeParse({ name, password });
     if (!parsed.success) {
-      setErrors(issuesByField(parsed.error.issues, FIELD_TEXT));
+      setErrors(issuesByField(parsed.error.issues, fieldText()));
       return;
     }
     setErrors({});
@@ -115,18 +115,21 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
   };
 
   return (
-    <Dialog title={roomName ? `Join ${roomName}` : "Join game"} onClose={onClose}>
+    <Dialog
+      title={roomName ? t("join.titleNamed", { room: roomName }) : t("join.title")}
+      onClose={onClose}
+    >
       <p class="muted">
-        Game code <span class="num">{code}</span>
+        {t("field.gameCode.label")} <span class="num">{code}</span>
       </p>
       {gone ? (
         <p role="status" style={{ fontWeight: "var(--fw-bold)" }}>
-          {GONE_TEXT}
+          {t("join.gone")}
         </p>
       ) : null}
       <form class="stack" onSubmit={submit} noValidate>
         <Field
-          label="Your name"
+          label={t("field.yourName")}
           name="name"
           value={name}
           onValue={setName}
@@ -144,11 +147,11 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
-          Join
+          {t("common.join")}
         </Button>
       </form>
       <Button variant="link" onClick={() => navigate("reclaim", code)}>
-        Reclaim my seat
+        {t("join.reclaimLink")}
       </Button>
     </Dialog>
   );

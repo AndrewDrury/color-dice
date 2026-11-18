@@ -1,6 +1,7 @@
 /** H5 two-step staging: what is legal, what a staged choice sends, pass wording. */
 import type { Color } from "@cd/engine";
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
+import { t } from "../i18n";
 import { boxKey, playerIdOf } from "./model";
 
 export type Staged = { kind: "MARK"; color: Color; number: number } | { kind: "PASS" };
@@ -95,6 +96,6 @@ export function highlightFor(
 
 export function passLabel(view: ViewMessage, staged: boolean): string {
   const penalty = passTakesPenalty(view);
-  if (staged) return penalty ? "Pass and take −5?" : "Tap again to pass";
-  return penalty ? "Pass (take −5 penalty)" : "Pass";
+  if (staged) return penalty ? t("action.passConfirm") : t("action.passAgain");
+  return penalty ? t("action.passPenalty") : t("action.pass");
 }

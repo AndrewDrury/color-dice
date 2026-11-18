@@ -1,7 +1,9 @@
 import { ILLEGAL_REASONS } from "@cd/engine";
 import { ERROR_CODES } from "@cd/protocol";
 import { describe, expect, it } from "vitest";
-import { errorText, GENERIC_ERROR } from "../src/i18n";
+import { errorText, t } from "../src/i18n";
+
+const GENERIC_ERROR = t("err.generic");
 
 describe("errorText", () => {
   it.each(ERROR_CODES)("has friendly text for %s", (code) => {

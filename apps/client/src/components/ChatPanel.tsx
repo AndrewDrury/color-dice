@@ -2,11 +2,12 @@
 import { CHAT_TEXT_MAX, type ClientMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { closePanel, seatName, setDraft, setSending, useChat } from "../chat/store";
-import { chatErrorText } from "../i18n";
+import { chatErrorText, t, useT } from "../i18n";
 import { getState } from "../store";
 import { BottomSheet } from "./BottomSheet";
 
 export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
+  useT();
   const { messages, draft, sending, error } = useChat();
   const log = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -24,19 +25,19 @@ export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
   };
 
   return (
-    <BottomSheet title="Chat" onClose={closePanel}>
+    <BottomSheet title={t("chat.title")} onClose={closePanel}>
       <div class="chat-panel">
         <div
           ref={log}
           class="chat-log"
           role="log"
-          aria-label="Chat messages"
+          aria-label={t("chat.messages")}
           onScroll={(e) => {
             const el = e.currentTarget;
             pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
           }}
         >
-          {messages.length === 0 ? <p class="muted">No messages yet.</p> : null}
+          {messages.length === 0 ? <p class="muted">{t("chat.empty")}</p> : null}
           {messages.map((m) => (
             <p key={m.id} class={`chat-line${m.seatId === me ? " is-mine" : ""}`}>
               <span class="chat-who">{seatName(m.seatId)}</span> · <span>{m.text}</span>
@@ -53,8 +54,8 @@ export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
           <input
             class="chat-input"
             type="text"
-            aria-label="Message"
-            placeholder="Say something"
+            aria-label={t("chat.message")}
+            placeholder={t("chat.placeholder")}
             enterkeyhint="send"
             autocomplete="off"
             maxLength={CHAT_TEXT_MAX}
@@ -62,11 +63,11 @@ export function ChatPanel({ send }: { send: (m: ClientMessage) => boolean }) {
             onInput={(e) => setDraft(e.currentTarget.value)}
           />
           <button type="submit" class="btn" disabled={sending || draft.trim() === ""}>
-            Send
+            {t("chat.send")}
           </button>
         </form>
         <p class="chat-status muted" role="status" aria-live="polite">
-          {error ? chatErrorText(error) : sending ? "sending…" : ""}
+          {error ? chatErrorText(error) : sending ? t("chat.sending") : ""}
         </p>
       </div>
     </BottomSheet>

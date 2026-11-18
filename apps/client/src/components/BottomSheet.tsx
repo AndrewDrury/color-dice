@@ -1,6 +1,7 @@
 /** Bottom sheet on phones, anchored popover from 1024 px (H12). Esc / backdrop close, focus trap. */
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
+import { t } from "../i18n";
 
 export interface BottomSheetProps {
   title: string;
@@ -59,7 +60,7 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
       <div ref={ref} class="bs-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div class="bs-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" class="btn" aria-label="Close" onClick={onClose}>
+          <button type="button" class="btn" aria-label={t("common.close")} onClick={onClose}>
             ✕
           </button>
         </div>

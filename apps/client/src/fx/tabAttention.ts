@@ -1,7 +1,6 @@
 /** Tab title + favicon dot while the tab is hidden and it is your move (H11). */
 import { useEffect } from "preact/hooks";
-
-export const ATTENTION_TITLE = "● Your turn — Color Dice";
+import { t } from "../i18n";
 
 /** A constant string: no user input ever reaches this data URL. */
 const DOT_ICON =
@@ -23,7 +22,7 @@ export function trackTabAttention(isMyMove: () => boolean): {
   const baseIcon = iconLink()?.getAttribute("href") ?? null;
   const refresh = () => {
     const on = document.hidden && isMyMove();
-    document.title = on ? ATTENTION_TITLE : baseTitle;
+    document.title = on ? t("attention.title") : baseTitle;
     const link = iconLink();
     if (link) {
       if (on) link.setAttribute("href", DOT_ICON);

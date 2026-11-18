@@ -2,8 +2,9 @@ import type { ViewMessage } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
+import { t } from "../src/i18n";
 import { getRoute, navigate } from "../src/router";
-import { inviteUrl, KICKED_TEXT, startLabel } from "../src/screens/WaitingRoom";
+import { inviteUrl, startLabel } from "../src/screens/WaitingRoom";
 import { _resetMemoryForTests, getSession, saveSession } from "../src/session";
 import { _resetStoreForTests, applyView, getState } from "../src/store";
 import { CODE, makeView, SEAT, TOKEN } from "./fixtures";
@@ -197,7 +198,7 @@ describe("WaitingRoom", () => {
     act(() => socket().emit({ type: "kicked" }));
     expect(getRoute().screen).toBe("home");
     expect(getSession(CODE)).toBeNull();
-    expect(getState().toast?.text).toBe(KICKED_TEXT);
+    expect(getState().toast?.text).toBe(t("toast.kicked"));
     expect(socket().closed).toBe(true);
   });
 

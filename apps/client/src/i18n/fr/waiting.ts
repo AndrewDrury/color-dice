@@ -1,0 +1,46 @@
+import type { waiting as en } from "../en/waiting";
+
+export const waiting: Record<keyof typeof en, string> = {
+  "waiting.title": "Salle d'attente",
+  "waiting.leave": "Quitter",
+  "waiting.inviteAria": "Invitation",
+  "waiting.gameCode": "Code de partie",
+  "waiting.shareTitle": "Rejoins ma partie de Color Dice",
+  "waiting.invite": "Inviter",
+  "waiting.linkCopied": "Lien copié",
+  "waiting.copyThis": "Copie ce lien : {url}",
+  "waiting.passwordNote": "Transmets le mot de passe en privé : il n'est pas dans le lien.",
+  "waiting.locked":
+    "Quelqu'un a essayé 10 mauvais mots de passe. Les arrivées sont suspendues jusqu'à {time}.",
+  "waiting.players": "Joueurs",
+  "waiting.start.tooMany": "Trop de joueurs",
+  "waiting.start.need_one": "Il manque {count} joueur",
+  "waiting.start.need_other": "Il manque {count} joueurs",
+  "waiting.start.go": "Lancer la partie",
+  "waiting.waitingHost": "En attente du lancement par l'hôte…",
+  "waiting.leaveTitle": "Quitter cette partie ?",
+  "waiting.leaveBody": "Ta place sera libérée pour quelqu'un d'autre.",
+  "waiting.stay": "Rester",
+  "waiting.leaveGame": "Quitter la partie",
+  "waiting.removeTitle": "Retirer {name} ?",
+  "waiting.removeBody": "Cette personne sera retirée de la salle d'attente.",
+  "waiting.remove": "Retirer",
+  "waiting.removeAria": "Retirer {name}",
+  "waiting.host": "Hôte",
+  "waiting.you": "(toi)",
+  "waiting.online": "En ligne",
+  "waiting.offline": "Hors ligne",
+
+  "room.title": "Réglages de la salle",
+  "room.listed": "Afficher dans la liste publique",
+  "room.newPassword": "Nouveau mot de passe",
+  "room.passwordHint": "Laisse vide pour garder le mot de passe actuel.",
+  "room.saved": "Enregistré.",
+  "room.save": "Enregistrer",
+  "room.nothing": "Rien à modifier.",
+
+  "toast.kicked": "Tu as été retiré de la partie",
+  "toast.ended": "Ta session est terminée",
+  "toast.sessionEnded":
+    "Ta session est terminée (tu as peut-être rejoint depuis un autre appareil).",
+};

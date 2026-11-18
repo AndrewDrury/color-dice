@@ -1,15 +1,14 @@
 /** "✕ → points" guide under your card: 12 columns, one dot per colour at its current cross count. */
 import { type Color, crossCount, triangular } from "@cd/engine";
 import type { ViewRow } from "@cd/protocol";
-import { COLOR_NAME, COLORS, cssColor } from "../game/model";
+import { COLORS, cssColor } from "../game/model";
+import { colorName, t, useT } from "../i18n";
 
 export interface ScoreGuideProps {
   rows: Readonly<Record<Color, ViewRow>>;
   /** Phone: a collapsed `<details>`; otherwise always open. */
   collapsible?: boolean;
 }
-
-const CAPTION = "Lock: 5 ✕ in a row first · the lock counts as an extra ✕";
 
 function Guide({ rows }: Pick<ScoreGuideProps, "rows">) {
   const counts = COLORS.map((c) => ({
@@ -22,13 +21,13 @@ function Guide({ rows }: Pick<ScoreGuideProps, "rows">) {
       <table class="g-guide-table">
         <tbody>
           <tr>
-            <th scope="row">✕</th>
+            <th scope="row">{t("guide.crosses")}</th>
             {cols.map((k) => (
               <td key={k}>{k}</td>
             ))}
           </tr>
           <tr class="g-guide-pts">
-            <th scope="row">pts</th>
+            <th scope="row">{t("guide.pts")}</th>
             {cols.map((k) => (
               <td key={k} data-pts={triangular(k)}>
                 {triangular(k)}
@@ -36,7 +35,7 @@ function Guide({ rows }: Pick<ScoreGuideProps, "rows">) {
             ))}
           </tr>
           <tr class="g-guide-dots">
-            <th scope="row">You</th>
+            <th scope="row">{t("guide.you")}</th>
             {cols.map((k) => (
               <td key={k}>
                 {counts
@@ -46,7 +45,7 @@ function Guide({ rows }: Pick<ScoreGuideProps, "rows">) {
                       key={x.color}
                       class={`g-guide-dot c-${cssColor(x.color)}`}
                       role="img"
-                      aria-label={`${COLOR_NAME[x.color]}: ${k} ✕`}
+                      aria-label={t("guide.dot", { color: colorName(x.color), k })}
                     />
                   ))}
               </td>
@@ -54,22 +53,23 @@ function Guide({ rows }: Pick<ScoreGuideProps, "rows">) {
           </tr>
         </tbody>
       </table>
-      <p class="g-guide-cap">{CAPTION}</p>
+      <p class="g-guide-cap">{t("guide.caption")}</p>
     </div>
   );
 }
 
 export function ScoreGuide(p: ScoreGuideProps) {
+  useT();
   if (p.collapsible) {
     return (
       <details class="g-guide card">
-        <summary>How scoring works</summary>
+        <summary>{t("guide.title")}</summary>
         <Guide rows={p.rows} />
       </details>
     );
   }
   return (
-    <section class="g-guide card" aria-label="How scoring works">
+    <section class="g-guide card" aria-label={t("guide.title")}>
       <Guide rows={p.rows} />
     </section>
   );

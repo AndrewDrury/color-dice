@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 
@@ -14,7 +15,7 @@ export function ConfirmDialog(props: {
     <Dialog title={props.title} onClose={props.onCancel}>
       {props.body ? <p>{props.body}</p> : null}
       <div class="row" style={{ justifyContent: "flex-end" }}>
-        <Button onClick={props.onCancel}>Cancel</Button>
+        <Button onClick={props.onCancel}>{t("common.cancel")}</Button>
         <Button variant="primary" onClick={props.onConfirm}>
           {props.confirmLabel}
         </Button>

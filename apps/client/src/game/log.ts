@@ -1,30 +1,31 @@
 /** Human-readable move log lines from engine events (names from view.seats). */
 import type { GameEvent } from "@cd/engine";
 import type { ViewMessage } from "@cd/protocol";
-import { COLOR_NAME, seatName, seatOfPlayer } from "./model";
+import { colorName, t } from "../i18n";
+import { seatName, seatOfPlayer } from "./model";
 
 export function describeEvent(view: ViewMessage, e: GameEvent): string[] {
   const g = view.game;
   const name = (id: string) => seatName(view, seatOfPlayer(id, g));
   switch (e.type) {
     case "TURN_STARTED":
-      return [`Turn ${e.turnNumber} — ${seatName(view, e.activeSeat)} rolls`];
+      return [t("log.turn", { n: e.turnNumber, name: seatName(view, e.activeSeat) })];
     case "DICE_ROLLED":
-      return [`Dice: white ${e.white[0]} + ${e.white[1]} = ${e.whiteSum}`];
+      return [t("log.dice", { a: e.white[0], b: e.white[1], sum: e.whiteSum })];
     case "ACTION1_REVEALED":
       return e.decisions
         .filter((d) => d.decision.kind === "PASS")
-        .map((d) => `${name(d.playerId)} passed`);
+        .map((d) => t("log.passed", { name: name(d.playerId) }));
     case "MARKED":
-      return [`${name(e.playerId)} marked ${COLOR_NAME[e.color]} ${e.number}`];
+      return [t("log.marked", { name: name(e.playerId), color: colorName(e.color), n: e.number })];
     case "ACTION2_PASSED":
-      return [`${name(e.playerId)} passed`];
+      return [t("log.passed", { name: name(e.playerId) })];
     case "PENALTY":
-      return [`${name(e.playerId)} took a penalty (−5)`];
+      return [t("log.penalty", { name: name(e.playerId) })];
     case "ROW_LOCKED":
-      return [`${COLOR_NAME[e.color]} row locked`];
+      return [t("log.locked", { color: colorName(e.color) })];
     case "GAME_ENDED":
-      return ["Game over"];
+      return [t("log.gameOver")];
     default:
       return [];
   }

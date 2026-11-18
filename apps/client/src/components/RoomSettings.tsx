@@ -1,14 +1,15 @@
-import { type PatchRoomReq, PatchRoomReqSchema, ROOM_NAME_MAX } from "@cd/protocol";
+import { type PatchRoomReq, PatchRoomReqSchema, ROOM_NAME_MAX, ROOM_NAME_MIN } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { patchRoom } from "../api";
+import { t, useT } from "../i18n";
 import { Button } from "./Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "./Field";
 import { PasswordField } from "./PasswordField";
 
-const FIELD_TEXT: Record<string, string> = {
-  roomName: `Room names are 3–${ROOM_NAME_MAX} characters.`,
-  password: "Passwords are 4–64 characters.",
-};
+const fieldText = (): Record<string, string> => ({
+  roomName: t("field.roomName", { min: ROOM_NAME_MIN, max: ROOM_NAME_MAX }),
+  password: t("field.password"),
+});
 
 export interface RoomSettingsProps {
   code: string;
@@ -19,6 +20,7 @@ export interface RoomSettingsProps {
 
 /** Host-only, collapsible: rename, toggle "listed", change password → `PATCH`. */
 export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProps) {
+  useT();
   const [name, setName] = useState(roomName);
   const [isListed, setListed] = useState(listed);
   const [password, setPassword] = useState("");
@@ -49,12 +51,12 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
     if (password !== "") patch.password = password;
     if (Object.keys(patch).length === 0) {
       setErrors({});
-      setFormError("Nothing to change.");
+      setFormError(t("room.nothing"));
       return;
     }
     const parsed = PatchRoomReqSchema.safeParse(patch);
     if (!parsed.success) {
-      setErrors(issuesByField(parsed.error.issues, FIELD_TEXT));
+      setErrors(issuesByField(parsed.error.issues, fieldText()));
       return;
     }
     setErrors({});
@@ -74,11 +76,11 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
   return (
     <details class="card">
       <summary style={{ minHeight: "var(--tap)", cursor: "pointer", fontWeight: "var(--fw-bold)" }}>
-        Room settings
+        {t("room.title")}
       </summary>
       <form class="stack" onSubmit={submit} noValidate style={{ marginTop: "var(--s3)" }}>
         <Field
-          label="Room name"
+          label={t("field.roomName.label")}
           name="roomName"
           value={name}
           onValue={setName}
@@ -95,25 +97,25 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
             onChange={(e) => setListed(e.currentTarget.checked)}
             style={{ width: "22px", height: "22px" }}
           />
-          <span>Show in public list</span>
+          <span>{t("room.listed")}</span>
         </label>
         <PasswordField
-          label="New password"
+          label={t("room.newPassword")}
           value={password}
           onValue={setPassword}
           error={errors.password}
-          hint="Leave empty to keep the current password."
+          hint={t("room.passwordHint")}
           autocomplete="new-password"
           enterkeyhint="done"
         />
         <FieldError text={formError} />
         {saved ? (
           <p role="status" class="muted">
-            Saved.
+            {t("room.saved")}
           </p>
         ) : null}
         <Button type="submit" busy={busy}>
-          Save settings
+          {t("room.save")}
         </Button>
       </form>
     </details>

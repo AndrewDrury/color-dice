@@ -1,6 +1,7 @@
 /** Status line (D2 + H15) and the H13 roll / reveal announcements. */
 import type { ViewMessage } from "@cd/protocol";
-import { COLOR_NAME, COLORS, joinNames, seatName, seatOfPlayer } from "./model";
+import { colorName, joinNames, t } from "../i18n";
+import { COLORS, seatName, seatOfPlayer } from "./model";
 
 export function statusText(view: ViewMessage): string {
   const g = view.game;
@@ -10,23 +11,23 @@ export function statusText(view: ViewMessage): string {
   const activeName = active >= 0 ? seatName(view, active) : "";
   switch (g.phase) {
     case "AWAIT_ROLL":
-      return active === you ? "Your turn — roll the dice" : `Waiting for ${activeName} to roll…`;
+      return active === you ? t("status.yourRoll") : t("status.waitingRoll", { name: activeName });
     case "ACTION_1": {
       const mine = g.players.find((p) => p.seat === you);
       if (mine?.action1Submitted || view.you.action1Decision) {
         const waiting = g.players
           .filter((p) => !p.action1Submitted && p.seat !== you)
           .map((p) => seatName(view, p.seat));
-        return waiting.length > 0 ? `Waiting for ${joinNames(waiting)}` : "Revealing…";
+        return waiting.length > 0
+          ? t("status.waitingFor", { names: joinNames(waiting) })
+          : t("status.revealing");
       }
-      return `Everyone: use white ${g.roll?.whiteSum ?? ""} in one row, or pass`;
+      return t("status.action1", { sum: g.roll?.whiteSum ?? "" });
     }
     case "ACTION_2":
-      return active === you
-        ? "Your turn — combine a white and a coloured die, or pass"
-        : `${activeName} is choosing…`;
+      return active === you ? t("status.yourAction2") : t("status.choosing", { name: activeName });
     case "GAME_OVER":
-      return "Game over";
+      return t("status.gameOver");
     default:
       return "";
   }
@@ -37,10 +38,16 @@ export function rollAnnouncement(view: ViewMessage): string {
   const g = view.game;
   if (!g?.roll || !g.turn) return "";
   const colored = COLORS.filter((c) => g.roll?.colored[c] !== undefined).map(
-    (c) => `${COLOR_NAME[c]} ${g.roll?.colored[c]}`,
+    (c) => `${colorName(c)} ${g.roll?.colored[c]}`,
   );
   const [w1, w2] = g.roll.white;
-  return `${seatName(view, g.turn.activeSeat)} rolled. White ${w1} and ${w2}, sum ${g.roll.whiteSum}. ${colored.join(", ")}.`;
+  return t("announce.roll", {
+    name: seatName(view, g.turn.activeSeat),
+    a: w1,
+    b: w2,
+    sum: g.roll.whiteSum,
+    colored: colored.join(", "),
+  });
 }
 
 /** "Dev marked Red 8. Ria passed." from the latest ACTION1_REVEALED event. */
@@ -55,8 +62,8 @@ export function revealAnnouncement(view: ViewMessage): string {
     .map((d) => {
       const name = seatName(view, seatOfPlayer(d.playerId, g));
       return d.decision.kind === "PASS"
-        ? `${name} passed.`
-        : `${name} marked ${COLOR_NAME[d.decision.color]} ${sum ?? ""}.`.replace(" .", ".");
+        ? t("announce.passed", { name })
+        : t("announce.marked", { name, color: colorName(d.decision.color), sum: sum ?? "" });
     })
     .join(" ");
 }
@@ -65,7 +72,7 @@ export function revealAnnouncement(view: ViewMessage): string {
 export function endReasonText(view: ViewMessage): string {
   const r = view.game?.endReason;
   if (!r) return "";
-  if (r.kind === "TWO_ROWS_LOCKED") return "Two rows locked";
+  if (r.kind === "TWO_ROWS_LOCKED") return t("end.twoRows");
   const names = r.playerIds.map((id) => seatName(view, seatOfPlayer(id, view.game)));
-  return `${joinNames(names)} took a 4th penalty`;
+  return t("end.penalty", { names: joinNames(names) });
 }

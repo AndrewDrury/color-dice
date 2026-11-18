@@ -1,6 +1,7 @@
 /** One number box of your sheet (H2 styles; a real `<button>` for H13). */
 import type { BoxStatus, Color } from "@cd/engine";
-import { COLOR_NAME, cssColor } from "../game/model";
+import { cssColor } from "../game/model";
+import { colorName, t } from "../i18n";
 import { LockIcon } from "./icons";
 
 export interface BoxProps {
@@ -29,18 +30,18 @@ export function Cross() {
 }
 
 export function boxLabel(color: Color, number: number, status: BoxStatus, legal: boolean): string {
-  const base = `${COLOR_NAME[color]} ${number}`;
+  const v = { color: colorName(color), n: number };
   switch (status) {
     case "MARKED":
-      return `${base}, marked`;
+      return t("box.marked", v);
     case "SKIPPED":
-      return `${base}, skipped`;
+      return t("box.skipped", v);
     case "CLOSED":
-      return `${base}, closed`;
+      return t("box.closed", v);
     case "OPEN_LOCK_GATED":
-      return `${base}, needs 5 marks`;
+      return t("box.gated", v);
     default:
-      return `${base}, ${legal ? "can mark" : "open"}`;
+      return legal ? t("box.canMark", v) : t("box.open", v);
   }
 }
 

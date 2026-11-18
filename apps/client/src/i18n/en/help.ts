@@ -1,0 +1,20 @@
+export const help = {
+  "help.title": "How to play",
+  "help.b1": "Each turn one player rolls two white dice and one die per open colour.",
+  "help.b2": "Everyone may cross one number in any row using the white sum. Or pass.",
+  "help.b3":
+    "Then only the roller may add one white die to one coloured die and cross that number.",
+  "help.b4": "Cross numbers left to right. Anything you jump over is gone for good.",
+  "help.b5": "After 5 crosses in a row you may cross its last number, which also locks the row.",
+  "help.b6": "When a row is locked for someone, the whole table loses that colour's die.",
+  "help.b7": "If the roller crosses nothing at all on their turn, they take a −5 penalty.",
+  "help.b8": "The game ends at 4 penalties or when 2 rows are locked. Most points wins.",
+  "help.example": "Example",
+  "help.exampleCap": "The white sum is 5: cross the 5. The 3 and 4 are skipped for good.",
+  "help.exampleAria": "Red row: 2 crossed, 3 and 4 skipped, 5 crossed next",
+  "help.scoring": "Scoring",
+  "help.scoringCap": "Crosses in a row are worth more each time. Each penalty is −5.",
+  "help.crosses": "Crosses",
+  "help.points": "Points",
+  "help.lockCap": "The lock counts as one extra cross.",
+} as const;

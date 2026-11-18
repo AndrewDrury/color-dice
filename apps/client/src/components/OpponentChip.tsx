@@ -2,6 +2,7 @@
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { seatInfo } from "../game/model";
 import { useTween } from "../game/useTween";
+import { t, tn, useT } from "../i18n";
 import { CheckIcon, DotsIcon, WarningIcon } from "./icons";
 
 export interface OpponentState {
@@ -32,22 +33,23 @@ export function opponentState(view: ViewMessage, p: ViewPlayer): OpponentState {
 export function StatusGlyph({ state }: { state: OpponentState }) {
   if (state.away) {
     return (
-      <span class="g-glyph is-away" role="img" aria-label="away">
+      <span class="g-glyph is-away" role="img" aria-label={t("opp.away")}>
         <WarningIcon size={14} />
       </span>
     );
   }
-  if (state.offline) return <span class="g-glyph is-offline" role="img" aria-label="offline" />;
+  if (state.offline)
+    return <span class="g-glyph is-offline" role="img" aria-label={t("opp.offline")} />;
   if (state.decided) {
     return (
-      <span class="g-glyph is-decided" role="img" aria-label="decided">
+      <span class="g-glyph is-decided" role="img" aria-label={t("opp.decided")}>
         <CheckIcon size={14} />
       </span>
     );
   }
   if (state.thinking) {
     return (
-      <span class="g-glyph is-thinking" role="img" aria-label="choosing">
+      <span class="g-glyph is-thinking" role="img" aria-label={t("opp.choosing")}>
         <DotsIcon size={14} />
       </span>
     );
@@ -63,8 +65,9 @@ export interface ChipProps {
 
 /** Opponent chip: name, status glyph, total and penalty count. Their card stays hidden until game over. */
 export function OpponentChip({ view, player, flash }: ChipProps) {
+  useT();
   const seat = seatInfo(view, player);
-  const name = seat?.name ?? `Player ${player.seat + 1}`;
+  const name = seat?.name ?? t("player.fallback", { n: player.seat + 1 });
   const st = opponentState(view, player);
   const total = useTween(player.score.total);
   const strikes = Math.round(-player.score.penalties / 5);
@@ -74,7 +77,11 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
       title={name}
       data-seat-id={seat?.seatId}
       role="img"
-      aria-label={`${name}, ${player.score.total} points, ${strikes} ${strikes === 1 ? "penalty" : "penalties"}`}
+      aria-label={t("opp.chip", {
+        name,
+        points: player.score.total,
+        strikes: tn("opp.penalties", strikes),
+      })}
     >
       <span class="g-chip-top">
         <span class="g-name">{name}</span>
@@ -84,7 +91,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
         </span>
       </span>
       <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
-        {strikes > 0 ? `✕ ${strikes}` : "No penalties"}
+        {strikes > 0 ? `✕ ${strikes}` : t("opp.none")}
       </span>
     </div>
   );

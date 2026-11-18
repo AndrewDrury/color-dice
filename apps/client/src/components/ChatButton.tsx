@@ -3,6 +3,7 @@ import type { ClientMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import "../styles/chat.css";
 import { closePanel, getChat, openPanel, useChat } from "../chat/store";
+import { t, useT } from "../i18n";
 import { getState } from "../store";
 import { ChatPanel } from "./ChatPanel";
 import { ChatToasts } from "./ChatToasts";
@@ -13,6 +14,7 @@ import { usePrefs } from "./Settings";
 type Send = (m: ClientMessage) => boolean;
 
 export function ChatButton() {
+  useT();
   const { unread, panelOpen } = useChat();
   const { showChat } = usePrefs();
   const n = showChat ? unread : 0;
@@ -20,7 +22,7 @@ export function ChatButton() {
     <button
       type="button"
       class="btn chat-btn"
-      aria-label={n > 0 ? `Open chat, ${n} unread` : "Open chat"}
+      aria-label={n > 0 ? t("chat.openUnread", { n }) : t("chat.open")}
       aria-haspopup="dialog"
       aria-expanded={panelOpen ? "true" : "false"}
       onClick={() => (getChat().panelOpen ? closePanel() : openPanel())}

@@ -8,20 +8,9 @@ import type {
   ViewRow,
   ViewSeat,
 } from "@cd/protocol";
+import { t, tn } from "../i18n";
 
 export const COLORS: readonly Color[] = ["RED", "YELLOW", "GREEN", "BLUE"];
-export const COLOR_NAME: Readonly<Record<Color, string>> = {
-  RED: "Red",
-  YELLOW: "Yellow",
-  GREEN: "Green",
-  BLUE: "Blue",
-};
-export const COLOR_LETTER: Readonly<Record<Color, string>> = {
-  RED: "R",
-  YELLOW: "Y",
-  GREEN: "G",
-  BLUE: "B",
-};
 export const cssColor = (c: Color): string => c.toLowerCase();
 
 /** The server names engine players `seat-<index>`. */
@@ -38,7 +27,7 @@ export function seatOfPlayer(id: string, game?: ViewGame | null): number {
 export function seatName(view: ViewMessage, seat: number): string {
   const player = view.game?.players.find((p) => p.seat === seat);
   const s = player ? view.seats.find((x) => x.seatId === player.seatId) : undefined;
-  return s?.name ?? `Player ${seat + 1}`;
+  return s?.name ?? t("player.fallback", { n: seat + 1 });
 }
 
 export function seatInfo(view: ViewMessage, p: ViewPlayer): ViewSeat | undefined {
@@ -67,21 +56,16 @@ export function markCount(row: ViewRow): number {
 
 export const boxKey = (color: Color, number: number): string => `${color}:${number}`;
 
-export function joinNames(names: readonly string[]): string {
-  if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-}
-
 /** "2–1–0" (wins–ties–losses). */
 export function recordText(r: { wins: number; ties: number; losses: number }): string {
   return `${r.wins}–${r.ties}–${r.losses}`;
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 /** Screen-reader spelling of a record: "2 wins, 1 tie, 0 losses". */
 export function recordLabel(r: { wins: number; ties: number; losses: number }): string {
-  return `${plural(r.wins, "win", "wins")}, ${plural(r.ties, "tie", "ties")}, ${plural(r.losses, "loss", "losses")}`;
+  return [tn("record.wins", r.wins), tn("record.ties", r.ties), tn("record.losses", r.losses)].join(
+    ", ",
+  );
 }
 
 /** Seats sharing the highest total (the engine's `winners`), as a tie/win summary. */

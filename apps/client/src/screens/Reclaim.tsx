@@ -16,15 +16,16 @@ import {
   requestErrorText,
 } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { getSession, saveSession } from "../session";
 
-const FIELD_TEXT: Record<string, string> = {
-  code: "Game codes are 5 letters or digits.",
-  name: "Enter the name you played under.",
-  password: "Passwords are 4–64 characters.",
-};
+const fieldText = (): Record<string, string> => ({
+  code: t("field.gameCode"),
+  name: t("field.nameReclaim"),
+  password: t("field.password"),
+});
 
 /** Upper-case and keep only game-code characters (max 5). */
 export function cleanCode(raw: string): string {
@@ -42,6 +43,7 @@ export interface ReclaimProps {
 
 /** Take back an offline seat (new device, cleared storage) with code + name + password. */
 export function Reclaim({ code: initialCode }: ReclaimProps) {
+  useT();
   const [code, setCode] = useState(initialCode ?? "");
   const [name, setName] = useState(rememberedName);
   const [password, setPassword] = useState(() => (initialCode ? getRoomPassword(initialCode) : ""));
@@ -64,9 +66,9 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
     if (busy) return;
     setFormError(null);
     const errs: Record<string, string> = {};
-    if (!GameCodeSchema.safeParse(code).success) errs.code = FIELD_TEXT.code ?? "";
+    if (!GameCodeSchema.safeParse(code).success) errs.code = fieldText().code ?? "";
     const parsed = ReclaimReqSchema.safeParse({ name, password });
-    if (!parsed.success) Object.assign(errs, issuesByField(parsed.error.issues, FIELD_TEXT));
+    if (!parsed.success) Object.assign(errs, issuesByField(parsed.error.issues, fieldText()));
     setErrors(errs);
     if (!parsed.success || errs.code) return;
     setBusy(true);
@@ -106,15 +108,13 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
       <div class="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: "var(--fs-title)" }}>Reclaim my seat</h1>
-        <Button onClick={() => navigate("home")}>Back</Button>
+        <h1 style={{ fontSize: "var(--fs-title)" }}>{t("reclaim.title")}</h1>
+        <Button onClick={() => navigate("home")}>{t("common.back")}</Button>
       </div>
       <form class="card stack" onSubmit={submit} noValidate style={{ maxWidth: "560px" }}>
-        <p class="muted">
-          Lost your connection or switched devices? Enter the same name and the room password.
-        </p>
+        <p class="muted">{t("reclaim.intro")}</p>
         <Field
-          label="Game code"
+          label={t("field.gameCode.label")}
           name="code"
           value={code}
           onValue={(v) => {
@@ -134,7 +134,7 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
           enterkeyhint="next"
         />
         <Field
-          label="Your name"
+          label={t("field.yourName")}
           name="name"
           value={name}
           onValue={setName}
@@ -155,7 +155,7 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
         <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
-          Reclaim seat
+          {t("reclaim.submit")}
         </Button>
       </form>
     </main>

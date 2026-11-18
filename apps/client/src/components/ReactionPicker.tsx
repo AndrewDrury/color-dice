@@ -1,6 +1,7 @@
 /** Small horizontal popover with the 8 allow-listed reactions (I3). One tap sends and closes. */
 import { REACTIONS, type Reaction } from "@cd/protocol";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import { t } from "../i18n";
 
 export function ReactionPicker({
   onPick,
@@ -41,13 +42,13 @@ export function ReactionPicker({
     };
   }, []);
   return (
-    <fieldset ref={ref} class="rx-picker" aria-label="Reactions">
+    <fieldset ref={ref} class="rx-picker" aria-label={t("chat.reactions")}>
       {REACTIONS.map((emoji) => (
         <button
           key={emoji}
           type="button"
           class="rx-pick"
-          aria-label={`React ${emoji}`}
+          aria-label={t("chat.react", { emoji })}
           onClick={() => onPick(emoji)}
         >
           {emoji}

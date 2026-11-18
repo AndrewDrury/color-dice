@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t, useT } from "../i18n";
 import { useAppState } from "../store";
 
 const SHOW_AFTER_MS = 1000;
@@ -6,27 +7,34 @@ const ONLINE_FOR_MS = 2000;
 
 /** Slim pill under the top bar: "Reconnecting…" after 1 s offline, "Back online" for 2 s. */
 export function ConnectionBanner() {
+  useT();
   const { status } = useAppState();
-  const [text, setText] = useState("");
+  const [kind, setKind] = useState<"" | "reconnecting" | "online">("");
   const shown = useRef(false);
 
   useEffect(() => {
     if (status === "reconnecting") {
-      const t = setTimeout(() => {
+      const timer = setTimeout(() => {
         shown.current = true;
-        setText("Reconnecting…");
+        setKind("reconnecting");
       }, SHOW_AFTER_MS);
-      return () => clearTimeout(t);
+      return () => clearTimeout(timer);
     }
     if (status === "online" && shown.current) {
       shown.current = false;
-      setText("Back online");
-      const t = setTimeout(() => setText(""), ONLINE_FOR_MS);
-      return () => clearTimeout(t);
+      setKind("online");
+      const timer = setTimeout(() => setKind(""), ONLINE_FOR_MS);
+      return () => clearTimeout(timer);
     }
     shown.current = false;
-    setText("");
+    setKind("");
   }, [status]);
+  const text =
+    kind === "reconnecting"
+      ? t("conn.reconnecting")
+      : kind === "online"
+        ? t("conn.backOnline")
+        : "";
 
   return (
     <div

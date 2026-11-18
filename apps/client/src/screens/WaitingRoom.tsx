@@ -11,31 +11,23 @@ import { FieldError, requestErrorText } from "../components/Field";
 import { RoomSettings } from "../components/RoomSettings";
 import { type Seat, SeatList } from "../components/SeatList";
 import { feedback } from "../fx/feedback";
+import { clockTime, t, tn, useT } from "../i18n";
 import { navigate } from "../router";
 import { forgetSession, getSession } from "../session";
 import { applyView, clearView, getState, setStatus, showToast, useAppState } from "../store";
 import { type EndReason, GameSocket } from "../ws";
-
-export const KICKED_TEXT = "You were removed from the game";
-export const ENDED_TEXT = "Your session ended";
 
 /** `…/<base>/?game=CODE` — the code only, never the password. */
 export function inviteUrl(code: string): string {
   return `${globalThis.location.origin}${import.meta.env.BASE_URL}?game=${encodeURIComponent(code)}`;
 }
 
-/** "HH:MM" in local time. */
-export function clockTime(ms: number): string {
-  const d = new Date(ms);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 /** Label for the host's Start button. */
 export function startLabel(players: number, maxPlayers: number): string {
-  if (players > maxPlayers) return "Too many players";
+  if (players > maxPlayers) return t("waiting.start.tooMany");
   const need = MIN_PLAYERS - players;
-  if (need > 0) return `Need ${need} more player${need === 1 ? "" : "s"}`;
-  return "Start game";
+  if (need > 0) return tn("waiting.start.need", need);
+  return t("waiting.start.go");
 }
 
 export interface WaitingRoomProps {
@@ -46,6 +38,7 @@ type Confirm = { kind: "leave" } | { kind: "kick"; seat: Seat } | null;
 
 /** Lobby of one game: invite, live seats, host controls, leave. */
 export function WaitingRoom({ code }: WaitingRoomProps) {
+  useT();
   const session = getSession(code);
   const token = session?.token ?? "";
   const { view: storeView } = useAppState();
@@ -81,14 +74,14 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     const offMsg = socket.onMessage((msg) => {
       if (msg.type === "view") applyView(msg);
       else if (routeChat(msg) || routeChatError(msg)) return;
-      else if (msg.type === "kicked") exitHome(KICKED_TEXT);
-      else if (msg.type === "sessionEnded") exitHome(ENDED_TEXT);
+      else if (msg.type === "kicked") exitHome(t("toast.kicked"));
+      else if (msg.type === "sessionEnded") exitHome(t("toast.ended"));
     });
     const offStatus = socket.onStatus((status, reason?: EndReason) => {
       if (done.current) return;
       setStatus(status);
-      if (reason === "kicked") exitHome(KICKED_TEXT);
-      else if (reason === "sessionEnded" || reason === "notAuthed") exitHome(ENDED_TEXT);
+      if (reason === "kicked") exitHome(t("toast.kicked"));
+      else if (reason === "sessionEnded" || reason === "notAuthed") exitHome(t("toast.ended"));
     });
     socket.connect(code, session.token);
     return () => {
@@ -127,7 +120,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
       await fn();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        exitHome(ENDED_TEXT);
+        exitHome(t("toast.ended"));
         return;
       }
       (inDialog ? setDialogError : setError)(requestErrorText(err));
@@ -180,17 +173,17 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     <main class="stack" style={{ paddingBlock: "var(--s6)", maxWidth: "560px" }}>
       <div class="row" style={{ justifyContent: "space-between" }}>
         <h1 style={{ fontSize: "var(--fs-title)", overflowWrap: "anywhere" }}>
-          {view?.room.name || session.roomName || "Waiting room"}
+          {view?.room.name || session.roomName || t("waiting.title")}
         </h1>
         <span class="row">
           {view ? <ChatControls send={send} /> : null}
-          <Button onClick={() => setConfirm({ kind: "leave" })}>Leave</Button>
+          <Button onClick={() => setConfirm({ kind: "leave" })}>{t("waiting.leave")}</Button>
         </span>
       </div>
       {view ? <ChatLayer send={send} /> : null}
 
-      <section class="card stack" aria-label="Invite">
-        <p class="muted">Game code</p>
+      <section class="card stack" aria-label={t("waiting.inviteAria")}>
+        <p class="muted">{t("waiting.gameCode")}</p>
         <p
           class="num"
           style={{
@@ -206,22 +199,21 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         >
           {code}
         </p>
-        <CopyButton url={inviteUrl(code)} title="Join my Color Dice game" />
+        <CopyButton url={inviteUrl(code)} title={t("waiting.shareTitle")} />
         <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
-          Share the password privately — it isn't in the link.
+          {t("waiting.passwordNote")}
         </p>
       </section>
 
       {showLock && lockedUntil !== null ? (
         <p role="alert" class="card" style={{ color: "var(--danger)" }}>
-          Someone tried wrong passwords 10 times. Joining is paused until{" "}
-          <time class="num">{clockTime(lockedUntil)}</time>.
+          {t("waiting.locked", { time: clockTime(lockedUntil) })}
         </p>
       ) : null}
 
-      <section class="card stack" aria-label="Players">
+      <section class="card stack" aria-label={t("waiting.players")}>
         <h2 style={{ fontSize: "var(--fs-large)" }}>
-          Players{" "}
+          {t("waiting.players")}{" "}
           {view ? (
             <span class="num muted">
               {players} / {maxPlayers}
@@ -239,7 +231,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
             }}
           />
         ) : (
-          <p class="muted">Connecting…</p>
+          <p class="muted">{t("conn.connecting")}</p>
         )}
       </section>
 
@@ -256,7 +248,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
           </Button>
         ) : (
           <p class="muted" role="status">
-            Waiting for the host to start…
+            {t("waiting.waitingHost")}
           </p>
         )
       ) : null}
@@ -272,25 +264,25 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
       ) : null}
 
       {confirm?.kind === "leave" ? (
-        <Dialog title="Leave this game?" onClose={closeDialog}>
-          <p>Your seat will be freed for someone else.</p>
+        <Dialog title={t("waiting.leaveTitle")} onClose={closeDialog}>
+          <p>{t("waiting.leaveBody")}</p>
           <FieldError text={dialogError} />
           <div class="row" style={{ justifyContent: "flex-end" }}>
-            <Button onClick={closeDialog}>Stay</Button>
+            <Button onClick={closeDialog}>{t("waiting.stay")}</Button>
             <Button variant="primary" busy={busy} onClick={onLeave}>
-              Leave game
+              {t("waiting.leaveGame")}
             </Button>
           </div>
         </Dialog>
       ) : null}
       {confirm?.kind === "kick" ? (
-        <Dialog title={`Remove ${confirm.seat.name}?`} onClose={closeDialog}>
-          <p>They'll be removed from the waiting room.</p>
+        <Dialog title={t("waiting.removeTitle", { name: confirm.seat.name })} onClose={closeDialog}>
+          <p>{t("waiting.removeBody")}</p>
           <FieldError text={dialogError} />
           <div class="row" style={{ justifyContent: "flex-end" }}>
-            <Button onClick={closeDialog}>Cancel</Button>
+            <Button onClick={closeDialog}>{t("common.cancel")}</Button>
             <Button variant="primary" busy={busy} onClick={() => onKick(confirm.seat)}>
-              Remove
+              {t("waiting.remove")}
             </Button>
           </div>
         </Dialog>

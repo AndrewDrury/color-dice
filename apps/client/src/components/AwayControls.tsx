@@ -1,5 +1,6 @@
 import { AWAY_AFTER_OFFLINE_MS, type ClientMessage, type ViewMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
+import { t, useT } from "../i18n";
 import { Button } from "./Button";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -10,6 +11,7 @@ export function AwayControls(props: {
   send: (m: ClientMessage) => boolean;
 }) {
   const { view, offlineSince, send } = props;
+  useT();
   const [now, setNow] = useState(Date.now());
   const [confirming, setConfirming] = useState<string | null>(null);
   useEffect(() => {
@@ -34,10 +36,14 @@ export function AwayControls(props: {
   const setAway = (seatId: string, away: boolean) => send({ type: "setAway", seatId, away });
 
   return (
-    <section class="row" aria-label="Away players" style={{ flexWrap: "wrap", gap: "var(--s2)" }}>
+    <section
+      class="row"
+      aria-label={t("away.title")}
+      style={{ flexWrap: "wrap", gap: "var(--s2)" }}
+    >
       {me?.away ? (
         <Button variant="primary" onClick={() => setAway(view.you.seatId, false)}>
-          I'm back
+          {t("away.back")}
         </Button>
       ) : null}
       {awayOnes.map((s) => (
@@ -52,23 +58,24 @@ export function AwayControls(props: {
               fontSize: "var(--fs-small)",
             }}
           >
-            away
+            {t("away.badge")}
           </span>
           {view.you.host ? (
-            <Button onClick={() => setAway(s.seatId, false)}>Bring back</Button>
+            <Button onClick={() => setAway(s.seatId, false)}>{t("away.bringBack")}</Button>
           ) : null}
         </span>
       ))}
       {markable.map((s) => (
         <span key={s.seatId} class="muted">
-          {s.name} is offline <Button onClick={() => setConfirming(s.seatId)}>Mark as away</Button>
+          {t("away.offline", { name: s.name })}{" "}
+          <Button onClick={() => setConfirming(s.seatId)}>{t("away.mark")}</Button>
         </span>
       ))}
       {target ? (
         <ConfirmDialog
-          title="Mark as away"
-          body={`${target.name} will auto-pass and take penalties on their turns.`}
-          confirmLabel="Mark as away"
+          title={t("away.mark")}
+          body={t("away.body", { name: target.name })}
+          confirmLabel={t("away.mark")}
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
             setAway(target.seatId, true);

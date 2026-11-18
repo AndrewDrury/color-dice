@@ -2,6 +2,7 @@
 import type { ChatEntry, ServerMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 import { play } from "../fx/sound";
+import { t } from "../i18n";
 import { getPrefs } from "../prefs";
 import { getState } from "../store";
 
@@ -70,7 +71,7 @@ export function useChat(): ChatState {
 
 /** Display name for a seat, or a neutral fallback (renames and kicks resolve through the view). */
 export function seatName(seatId: string): string {
-  return getState().view?.seats.find((s) => s.seatId === seatId)?.name ?? "Someone";
+  return getState().view?.seats.find((s) => s.seatId === seatId)?.name ?? t("chat.someone");
 }
 
 function announce(text: string): void {

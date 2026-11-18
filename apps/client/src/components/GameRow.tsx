@@ -1,5 +1,6 @@
 import type { PublicGame } from "@cd/protocol";
 import { useLayoutEffect, useRef } from "preact/hooks";
+import { t, useT } from "../i18n";
 import { LockIcon } from "./icons";
 
 export const ROW_ANIM_MS = 220;
@@ -7,12 +8,12 @@ export const ROW_ANIM_MS = 220;
 /** "just now" · "3 min ago" · "2 h ago" · "4 d ago". */
 export function relativeTime(then: number, now: number): string {
   const s = Math.max(0, Math.floor((now - then) / 1000));
-  if (s < 60) return "just now";
+  if (s < 60) return t("time.now");
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ago`;
+  if (m < 60) return t("time.min", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h ago`;
-  return `${Math.floor(h / 24)} d ago`;
+  if (h < 24) return t("time.hour", { n: h });
+  return t("time.day", { n: Math.floor(h / 24) });
 }
 
 function reducedMotion(): boolean {
@@ -45,6 +46,7 @@ export interface GameRowProps {
 
 /** One open game. Room and host names are user-supplied: rendered as text nodes only. */
 export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
+  useT();
   const ref = useRef<HTMLLIElement>(null);
 
   useLayoutEffect(() => {
@@ -66,18 +68,18 @@ export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
         flexWrap: "wrap",
       }}
     >
-      <span aria-label="Password protected" role="img">
+      <span aria-label={t("home.passwordProtected")} role="img">
         <LockIcon size={16} />
       </span>
       <span class="stack" style={{ gap: 0, flex: "1 1 10rem", minWidth: 0 }}>
         <strong style={{ overflowWrap: "anywhere" }}>{game.roomName}</strong>
         <span class="muted" style={{ fontSize: "var(--fs-small)", overflowWrap: "anywhere" }}>
-          host {game.hostName}
+          {t("home.host", { name: game.hostName })}
         </span>
       </span>
       <span class="num">
         {game.players} / {game.maxPlayers}
-        <span class="sr-only"> players</span>
+        <span class="sr-only"> {t("home.playersSr")}</span>
       </span>
       <time
         class="muted"
@@ -91,10 +93,10 @@ export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
         class="btn"
         disabled={leaving}
         tabIndex={leaving ? -1 : undefined}
-        aria-label={`Join ${game.roomName}`}
+        aria-label={t("home.joinAria", { room: game.roomName })}
         onClick={() => onJoin(game)}
       >
-        Join
+        {t("common.join")}
       </button>
     </li>
   );

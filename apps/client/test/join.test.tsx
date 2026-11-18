@@ -3,8 +3,9 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { ApiError } from "../src/api";
+import { t } from "../src/i18n";
 import { getRoute, navigate, startRouter } from "../src/router";
-import { GONE_TEXT, JoinDialog, WRONG_PASSWORD_LOCK_MS } from "../src/screens/JoinDialog";
+import { JoinDialog, WRONG_PASSWORD_LOCK_MS } from "../src/screens/JoinDialog";
 import { _resetMemoryForTests, getSession } from "../src/session";
 import { SEAT, TOKEN } from "./fixtures";
 
@@ -112,9 +113,9 @@ describe("JoinDialog", () => {
 
   it("shows a notice when the room disappears from the live list", () => {
     const { rerender } = render(<JoinDialog code={CODE} games={[ROOM]} onClose={() => {}} />);
-    expect(screen.queryByText(GONE_TEXT)).toBeNull();
+    expect(screen.queryByText(t("join.gone"))).toBeNull();
     rerender(<JoinDialog code={CODE} games={[]} onClose={() => {}} />);
-    expect(screen.getByText(GONE_TEXT)).toBeTruthy();
+    expect(screen.getByText(t("join.gone"))).toBeTruthy();
     expect((screen.getByRole("button", { name: "Join" }) as HTMLButtonElement).disabled).toBe(true);
   });
 

@@ -1,6 +1,7 @@
 /** First-game coaching (H12): one hint line with "Got it", tracked in prefs.seenHints. */
 import type { ViewMessage } from "@cd/protocol";
 import { usePrefs } from "../components/Settings";
+import { t, useT } from "../i18n";
 import { setPrefs } from "../prefs";
 
 export interface Hint {
@@ -22,22 +23,22 @@ export function pickHint(view: ViewMessage, seen: readonly string[]): Hint | nul
   const candidates: (Hint & { when: boolean })[] = [
     {
       id: "white-sum",
-      text: "Everyone may use the white sum. Tap a glowing box, or Pass.",
+      text: t("hint.whiteSum"),
       when: g.phase === "ACTION_1" && !me.action1Submitted,
     },
     {
       id: "your-turn",
-      text: "Your turn: combine one white die with one coloured die.",
+      text: t("hint.yourTurn"),
       when: g.phase === "ACTION_2" && mine,
     },
     {
       id: "left-right",
-      text: "Marks must go left → right. Skipped numbers are gone for good.",
+      text: t("hint.leftRight"),
       when: marks > 0 && (g.phase === "ACTION_1" || g.phase === "ACTION_2"),
     },
     {
       id: "lock",
-      text: "Mark 5 in a row to unlock its lock box.",
+      text: t("hint.lock"),
       when: Object.values(me.sheet?.rows ?? {}).some((r) => r.marked.filter(Boolean).length >= 4),
     },
   ];
@@ -46,13 +47,14 @@ export function pickHint(view: ViewMessage, seen: readonly string[]): Hint | nul
 }
 
 export function GameHint({ view }: { view: ViewMessage }) {
+  useT();
   const prefs = usePrefs();
   const hint = pickHint(view, prefs.seenHints);
   if (!hint) {
     // Desktop-only nudge next to the roll action.
     return view.you.canRoll ? (
       <p class="key-hint muted" aria-hidden="true">
-        Space to roll
+        {t("game.keyHint")}
       </p>
     ) : null;
   }
@@ -64,7 +66,7 @@ export function GameHint({ view }: { view: ViewMessage }) {
         class="btn"
         onClick={() => setPrefs({ seenHints: [...prefs.seenHints, hint.id] })}
       >
-        Got it
+        {t("hint.gotIt")}
       </button>
     </div>
   );

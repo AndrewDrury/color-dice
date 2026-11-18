@@ -2,8 +2,9 @@
 import type { Color } from "@cd/engine";
 import type { FullViewPlayer } from "@cd/protocol";
 import { Fragment } from "preact";
-import { COLOR_LETTER, COLORS, cssColor } from "../game/model";
+import { COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
+import { colorLetter, colorLower, colorName, t, useT } from "../i18n";
 import { Row } from "./Row";
 import { ScoreFloat } from "./ScoreFloat";
 
@@ -42,8 +43,11 @@ function RowScore(p: {
   const v = useTween(p.value);
   return (
     <span class={`g-score c-${cssColor(p.color)}`}>
-      <abbr title={p.color} aria-label={`${p.color.toLowerCase()} score`}>
-        {COLOR_LETTER[p.color]}
+      <abbr
+        title={colorName(p.color)}
+        aria-label={t("sheet.scoreAbbr", { color: colorLower(p.color) })}
+      >
+        {colorLetter(p.color)}
       </abbr>{" "}
       <span class="num" data-value={p.value}>
         {v}
@@ -58,6 +62,7 @@ function RowScore(p: {
 }
 
 export function Sheet(p: SheetProps) {
+  useT();
   const total = useTween(p.player.score.total);
   const allLegal = (c: Color) =>
     p.readOnly
@@ -85,10 +90,10 @@ export function Sheet(p: SheetProps) {
         <span
           class="g-pen"
           role="img"
-          aria-label={`${p.player.sheet.penalties} of 4 penalties, minus 5 each`}
-          title="Active player who marks nothing takes one. 4th ends the game."
+          aria-label={t("sheet.penaltyAria", { n: p.player.sheet.penalties })}
+          title={t("sheet.penaltyTip")}
         >
-          <span class="g-pen-label">Penalty −5 each</span>
+          <span class="g-pen-label">{t("sheet.penaltyLabel")}</span>
           {Array.from({ length: 4 }, (_, i) => (
             <span
               key={i}
@@ -111,7 +116,7 @@ export function Sheet(p: SheetProps) {
             </Fragment>
           ))}
           <span class="g-op">−</span>
-          <span class="g-score g-penscore" title="Penalty points">
+          <span class="g-score g-penscore" title={t("sheet.penaltyPoints")}>
             <span class="g-pencount" aria-hidden="true">
               {"✕".repeat(p.player.sheet.penalties)}
             </span>{" "}

@@ -2,6 +2,7 @@
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { opponents } from "../game/model";
 import type { Viewport } from "../game/useViewport";
+import { t } from "../i18n";
 import "../styles/opponents.css";
 import { OpponentChip } from "./OpponentChip";
 
@@ -17,7 +18,7 @@ export function OpponentStrip({ view, viewport, flash }: OpponentStripProps) {
   const flashing = (p: ViewPlayer) => [...flash].some((k) => k.startsWith(`${p.seat}:`));
   if (list.length === 0) return null;
   return (
-    <section class={`g-chips g-opp is-${viewport}`} aria-label="Opponents">
+    <section class={`g-chips g-opp is-${viewport}`} aria-label={t("opp.aria")}>
       {list.map((p) => (
         <OpponentChip key={p.seat} view={view} player={p} flash={flashing(p)} />
       ))}

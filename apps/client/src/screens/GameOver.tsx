@@ -11,6 +11,7 @@ import { reducedMotion } from "../fx/motion";
 import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { endReasonText } from "../game/status";
 import { type GameResult, recordGame } from "../history";
+import { t, useT } from "../i18n";
 import "../styles/opponents.css";
 
 const NO_FX = { flash: {}, glint: null, floats: [], shakeKey: 0 };
@@ -89,6 +90,7 @@ function useDeviceHistory(view: ViewMessage, result: GameResult) {
 }
 
 export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOverProps) {
+  useT();
   const g = view.game;
   const { winnerSeats, tie, allTied } = tieInfo(view);
   const names = winnerSeats.map(
@@ -109,16 +111,16 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         class="g-panel card g-results-card"
         role="dialog"
         aria-modal="true"
-        aria-label="Results"
+        aria-label={t("over.results")}
       >
         {Confetti ? <Confetti /> : null}
         <h2 class="g-winner" data-tie={tie ? (allTied ? "all" : "some") : undefined}>
           {tie ? <TieIcon size={22} /> : <CrownIcon size={22} />}{" "}
           {allTied ? (
-            "It's a tie!"
+            t("over.tieAll")
           ) : (
             <>
-              {tie ? "Tie: " : "Winner: "}
+              {tie ? t("over.tie") : t("over.winner")}
               {names.map((n, i) => (
                 <>
                   {i > 0 ? " & " : null}
@@ -134,17 +136,21 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         <div ref={tableRef}>
           <ScoreTable view={view} />
         </div>
-        <section class="g-final-cards" aria-label="Final score cards">
+        <section class="g-final-cards" aria-label={t("over.finalCards")}>
           {ranked.filter(hasCard).map((p) => (
             <article
               key={p.seat}
               class="g-final-card"
               data-seat-id={seatInfo(view, p)?.seatId}
-              aria-label={`${seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}'s card`}
+              aria-label={t("sheet.rowCard", {
+                name: seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 }),
+              })}
             >
               <h3 class="g-final-head">
                 <span class="num">{ranks.get(p.seat)}.</span>{" "}
-                <span class="g-name">{seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}</span>
+                <span class="g-name">
+                  {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                </span>
               </h3>
               <Sheet
                 player={p}
@@ -166,10 +172,10 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         <div class="g-over-actions">
           {view.you.host ? (
             <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
-              Rematch
+              {t("over.rematch")}
             </Button>
           ) : null}
-          <Button onClick={onHome}>Back to home</Button>
+          <Button onClick={onHome}>{t("over.home")}</Button>
         </div>
       </section>
     </div>

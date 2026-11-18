@@ -2,6 +2,7 @@ import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { recordLabel, recordText } from "../game/model";
+import { t, useT } from "../i18n";
 
 export type Seat = ViewMessage["seats"][number];
 
@@ -40,6 +41,7 @@ function SeatRow({
   showRecord: boolean;
   onKick: ((seat: Seat) => void) | undefined;
 }) {
+  useT();
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => popIn(ref.current), []);
 
@@ -59,7 +61,7 @@ function SeatRow({
       <span class="row" style={{ gap: "var(--s2)", minWidth: 0 }}>
         <span
           role="img"
-          aria-label={seat.online ? "Online" : "Offline"}
+          aria-label={seat.online ? t("waiting.online") : t("waiting.offline")}
           style={{
             flex: "0 0 auto",
             width: "10px",
@@ -70,7 +72,7 @@ function SeatRow({
           }}
         />
         <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{seat.name}</span>
-        {you ? <span class="muted">(you)</span> : null}
+        {you ? <span class="muted">{t("waiting.you")}</span> : null}
         {showRecord ? (
           <span
             role="img"
@@ -90,7 +92,7 @@ function SeatRow({
               border: "1px solid currentColor",
             }}
           >
-            Host
+            {t("waiting.host")}
           </span>
         ) : null}
       </span>
@@ -98,7 +100,7 @@ function SeatRow({
         <button
           type="button"
           class="btn"
-          aria-label={`Remove ${seat.name}`}
+          aria-label={t("waiting.removeAria", { name: seat.name })}
           onClick={() => onKick?.(seat)}
         >
           ✕
@@ -110,10 +112,15 @@ function SeatRow({
 
 /** Live seat list: online dot, name (text only), host badge, "(you)", host kick buttons. */
 export function SeatList({ seats, youSeatId, isHost, onKick }: SeatListProps) {
+  useT();
   // W–T–L is hidden until somebody in the room has played a game.
   const showRecord = seats.some((s) => s.record.wins + s.record.ties + s.record.losses > 0);
   return (
-    <ul class="stack" aria-label="Players" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+    <ul
+      class="stack"
+      aria-label={t("waiting.players")}
+      style={{ listStyle: "none", margin: 0, padding: 0 }}
+    >
       {seats.map((seat) => (
         <SeatRow
           key={seat.seatId}

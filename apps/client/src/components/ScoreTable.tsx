@@ -1,15 +1,8 @@
 /** Ranked results (H7): names, row scores, penalties, total; a sole winner gets a crown, tied top players a Tie badge; equal totals share a rank. */
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
-import {
-  COLOR_LETTER,
-  COLORS,
-  cssColor,
-  recordLabel,
-  recordText,
-  seatInfo,
-  tieInfo,
-} from "../game/model";
+import { COLORS, cssColor, recordLabel, recordText, seatInfo, tieInfo } from "../game/model";
 import { useTween } from "../game/useTween";
+import { colorLetter, t, useT } from "../i18n";
 import { CrownIcon, TieIcon } from "./icons";
 
 export function rankPlayers(view: ViewMessage): ViewPlayer[] {
@@ -37,6 +30,7 @@ function Count({ value }: { value: number }) {
 }
 
 export function ScoreTable({ view }: { view: ViewMessage }) {
+  useT();
   const { winnerSeats, tie } = tieInfo(view);
   const winners = new Set(winnerSeats);
   const ranked = rankPlayers(view);
@@ -45,15 +39,15 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
     <table class="g-results">
       <thead>
         <tr>
-          <th scope="col">Player</th>
+          <th scope="col">{t("table.player")}</th>
           {COLORS.map((c) => (
             <th key={c} scope="col" class={`c-${cssColor(c)}`}>
-              {COLOR_LETTER[c]}
+              {colorLetter(c)}
             </th>
           ))}
-          <th scope="col">Pen.</th>
-          <th scope="col">Total</th>
-          <th scope="col">Record</th>
+          <th scope="col">{t("table.pen")}</th>
+          <th scope="col">{t("table.total")}</th>
+          <th scope="col">{t("table.record")}</th>
         </tr>
       </thead>
       <tbody>
@@ -66,12 +60,14 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
                 <span class="num g-rank">{ranks[i]}.</span>{" "}
                 {win && tie ? (
                   <span class="g-tie-badge">
-                    <TieIcon size={14} /> Tie
+                    <TieIcon size={14} /> {t("table.tie")}
                   </span>
                 ) : win ? (
-                  <CrownIcon size={16} title="Winner" />
+                  <CrownIcon size={16} title={t("table.winner")} />
                 ) : null}{" "}
-                <span class="g-name">{seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}</span>
+                <span class="g-name">
+                  {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                </span>
               </th>
               {COLORS.map((c) => (
                 <td key={c}>

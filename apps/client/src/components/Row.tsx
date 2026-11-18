@@ -2,7 +2,8 @@
 import { boxStatus, type Color, LOCK_MIN_MARKS, numberAt } from "@cd/engine";
 import type { ViewRow } from "@cd/protocol";
 import { memo } from "preact/compat";
-import { COLOR_LETTER, COLOR_NAME, COLORS, cssColor, markCount } from "../game/model";
+import { COLORS, cssColor, markCount } from "../game/model";
+import { colorLetter, colorName, t, useT } from "../i18n";
 import { Box } from "./Box";
 import { LockIcon } from "./icons";
 
@@ -22,6 +23,9 @@ export interface RowProps {
 }
 
 function RowImpl(p: RowProps) {
+  useT();
+  const cn = colorName(p.color);
+  const letter = colorLetter(p.color);
   const engineRow = { color: p.color, marked: p.row.marked, lockCrossed: p.row.lockCrossed };
   const closed = p.lockedColors.includes(p.color);
   const marks = markCount(p.row);
@@ -31,8 +35,8 @@ function RowImpl(p: RowProps) {
     <div
       class={`g-row c-${cssColor(p.color)}${closed ? " is-closed" : ""}${p.glint ? " has-glint" : ""}`}
     >
-      <span class="g-rail" title={COLOR_NAME[p.color]} aria-hidden="true">
-        {COLOR_LETTER[p.color]}
+      <span class={`g-rail${letter.length > 1 ? " is-two" : ""}`} title={cn} aria-hidden="true">
+        {letter}
       </span>
       {Array.from({ length: 11 }, (_, i) => {
         const n = numberAt(p.color, i);
@@ -57,10 +61,12 @@ function RowImpl(p: RowProps) {
         role="img"
         aria-label={
           p.row.lockCrossed
-            ? `${COLOR_NAME[p.color]} lock, crossed`
+            ? t("row.lockCrossed", { color: cn })
             : gated && !closed
-              ? `${COLOR_NAME[p.color]} lock, needs ${LOCK_MIN_MARKS} marks, has ${marks}`
-              : `${COLOR_NAME[p.color]} lock${pips ? ", available" : ""}`
+              ? t("row.lockNeeds", { color: cn, need: LOCK_MIN_MARKS, have: marks })
+              : pips
+                ? t("row.lockAvailable", { color: cn })
+                : t("row.lock", { color: cn })
         }
       >
         <LockIcon size={14} />

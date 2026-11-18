@@ -8,8 +8,6 @@ export interface Toast {
   kind: "info" | "error";
 }
 
-export const SESSION_ENDED_TEXT = "Your session ended (maybe you joined from another device).";
-
 export interface AppState {
   view: ViewMessage | null;
   status: SocketStatus;

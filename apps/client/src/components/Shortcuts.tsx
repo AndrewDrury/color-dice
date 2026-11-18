@@ -1,26 +1,29 @@
 /** The `?` overlay: desktop keyboard shortcuts (H11). */
+import { type MessageKey, t, useT } from "../i18n";
 import { BottomSheet } from "./BottomSheet";
 
-export const SHORTCUTS: readonly (readonly [string, string])[] = [
-  ["Space / R", "Roll the dice"],
-  ["P", "Pass (press again to confirm)"],
-  ["← → ↑ ↓", "Move between boxes you can mark"],
-  ["Enter", "Pick a box, then confirm"],
-  ["Esc", "Cancel your pick, close panels"],
-  ["M", "Mute or unmute sound"],
-  ["?", "Show this list"],
+/** Key caps (some are named keys, so they come from the catalog too) and what each does. */
+export const SHORTCUTS: readonly (readonly [MessageKey, MessageKey])[] = [
+  ["keys.cap.roll", "keys.roll"],
+  ["keys.cap.pass", "keys.pass"],
+  ["keys.cap.move", "keys.move"],
+  ["keys.cap.enter", "keys.enter"],
+  ["keys.cap.esc", "keys.esc"],
+  ["keys.cap.mute", "keys.mute"],
+  ["keys.cap.help", "keys.help"],
 ];
 
 export function Shortcuts({ onClose }: { onClose: () => void }) {
+  useT();
   return (
-    <BottomSheet title="Keyboard shortcuts" onClose={onClose}>
+    <BottomSheet title={t("keys.title")} onClose={onClose}>
       <dl class="kb-list">
         {SHORTCUTS.map(([keys, what]) => (
           <div key={keys} class="kb-item">
             <dt>
-              <kbd>{keys}</kbd>
+              <kbd>{t(keys)}</kbd>
             </dt>
-            <dd>{what}</dd>
+            <dd>{t(what)}</dd>
           </div>
         ))}
       </dl>

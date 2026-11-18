@@ -21,6 +21,7 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:5173",
     reducedMotion: "reduce",
+    locale: "en-US",
     trace: "on-first-retry",
   },
   webServer: [

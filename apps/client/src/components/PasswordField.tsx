@@ -1,5 +1,6 @@
 import { PASSWORD_MAX } from "@cd/protocol";
 import { useState } from "preact/hooks";
+import { t, useT } from "../i18n";
 import { Field } from "./Field";
 
 export interface PasswordFieldProps {
@@ -15,10 +16,11 @@ export interface PasswordFieldProps {
 
 /** Password input with a Show/Hide toggle. The value is never trimmed or cleaned. */
 export function PasswordField(props: PasswordFieldProps) {
+  useT();
   const [shown, setShown] = useState(false);
   return (
     <Field
-      label={props.label ?? "Password"}
+      label={props.label ?? t("field.password.label")}
       type={shown ? "text" : "password"}
       value={props.value}
       onValue={props.onValue}
@@ -35,10 +37,10 @@ export function PasswordField(props: PasswordFieldProps) {
           type="button"
           class="btn"
           aria-pressed={shown ? "true" : "false"}
-          aria-label={shown ? "Hide password" : "Show password"}
+          aria-label={shown ? t("field.password.hide") : t("field.password.show")}
           onClick={() => setShown((s) => !s)}
         >
-          {shown ? "Hide" : "Show"}
+          {shown ? t("common.hide") : t("common.show")}
         </button>
       }
     />

@@ -1,7 +1,7 @@
 import type { ComponentChildren } from "preact";
 import { useId } from "preact/hooks";
 import { ApiError } from "../api";
-import { errorText } from "../i18n";
+import { errorText, t, useT } from "../i18n";
 
 export interface FieldProps {
   label: string;
@@ -105,10 +105,10 @@ export function requestErrorText(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 429 || err.code === "E_RATE_LIMITED") {
       return err.retryAfter !== undefined
-        ? `Too many attempts, try again in ${Math.max(1, Math.ceil(err.retryAfter))} s.`
+        ? t("err.tooManyAttempts", { n: Math.max(1, Math.ceil(err.retryAfter)) })
         : errorText("E_RATE_LIMITED");
     }
-    if (err.code === "E_BAD_CREDENTIALS") return "Wrong password.";
+    if (err.code === "E_BAD_CREDENTIALS") return t("err.wrongPassword");
     return errorText(err.code, err.reason);
   }
   return errorText("E_NETWORK");
@@ -135,6 +135,7 @@ export function RememberToggle({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
+  useT();
   return (
     <label class="row" style={{ minHeight: "var(--tap)", cursor: "pointer" }}>
       <input
@@ -144,7 +145,7 @@ export function RememberToggle({
         onChange={(e) => onChange(e.currentTarget.checked)}
         style={{ width: "22px", height: "22px" }}
       />
-      <span>Remember on this device</span>
+      <span>{t("field.remember")}</span>
     </label>
   );
 }

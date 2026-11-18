@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
+import { t, useT } from "../i18n";
 
 /** How long the "Link copied" confirmation stays up. */
 export const COPIED_MS = 2000;
@@ -24,7 +25,8 @@ function isAbort(err: unknown): boolean {
  * Invite button: the native share sheet when available (iPhone), otherwise copy the link
  * to the clipboard and show a "Link copied" check. If both fail, the link is shown as text.
  */
-export function CopyButton({ url, title, label = "Invite" }: CopyButtonProps) {
+export function CopyButton({ url, title, label }: CopyButtonProps) {
+  useT();
   const [outcome, setOutcome] = useState<Outcome>("idle");
   const checkRef = useRef<HTMLSpanElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,18 +92,18 @@ export function CopyButton({ url, title, label = "Invite" }: CopyButtonProps) {
             <span ref={checkRef} aria-hidden="true" style={{ display: "inline-block" }}>
               ✓
             </span>{" "}
-            Link copied
+            {t("waiting.linkCopied")}
           </span>
         ) : (
-          <span>{label}</span>
+          <span>{label ?? t("waiting.invite")}</span>
         )}
       </button>
       <span class="sr-only" role="status" aria-live="polite">
-        {outcome === "copied" ? "Link copied" : ""}
+        {outcome === "copied" ? t("waiting.linkCopied") : ""}
       </span>
       {outcome === "failed" ? (
         <p class="muted" style={{ fontSize: "var(--fs-small)", overflowWrap: "anywhere" }}>
-          Copy this link: <span class="num">{url}</span>
+          {t("waiting.copyThis", { url })}
         </p>
       ) : null}
     </div>

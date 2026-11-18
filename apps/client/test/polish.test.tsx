@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Confetti } from "../src/components/Confetti";
 import { Settings } from "../src/components/Settings";
 import { handleKey, type KeyActions } from "../src/fx/keyboard";
-import { ATTENTION_TITLE, trackTabAttention } from "../src/fx/tabAttention";
+import { trackTabAttention } from "../src/fx/tabAttention";
 import { holdWakeLock } from "../src/fx/wakeLock";
+import { t as tr } from "../src/i18n";
 import { _resetPrefsForTests, getPrefs, setPrefs } from "../src/prefs";
 
 beforeEach(() => {
@@ -61,8 +62,8 @@ describe("tabAttention", () => {
     document.title = "Color Dice";
     const t = trackTabAttention(() => true);
     setHidden(true);
-    expect(document.title).toBe(ATTENTION_TITLE);
-    expect(ATTENTION_TITLE).toBe("● Your turn — Color Dice");
+    expect(document.title).toBe(tr("attention.title"));
+    expect(tr("attention.title")).toBe("● Your turn — Color Dice");
     setHidden(false);
     expect(document.title).toBe("Color Dice");
     t.stop();

@@ -1,5 +1,6 @@
 import type { PublicGame } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t, useT } from "../i18n";
 import { GameRow, ROW_ANIM_MS } from "./GameRow";
 
 export interface GameListProps {
@@ -21,6 +22,7 @@ const TICK_MS = 30_000;
  * disabled) so the list doesn't jump; new rows fade in.
  */
 export function GameList({ games, onJoin }: GameListProps) {
+  useT();
   const [items, setItems] = useState<Item[]>(() =>
     (games ?? []).map((game) => ({ game, leaving: false })),
   );
@@ -68,13 +70,13 @@ export function GameList({ games, onJoin }: GameListProps) {
   }, [games]);
 
   if (games === null) {
-    return <p class="muted">Looking for open games…</p>;
+    return <p class="muted">{t("home.looking")}</p>;
   }
   if (games.length === 0 && items.every((it) => it.leaving)) {
-    return <p class="muted">No open games right now. Create one!</p>;
+    return <p class="muted">{t("home.noGames")}</p>;
   }
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label="Open games">
+    <ul style={{ listStyle: "none", margin: 0, padding: 0 }} aria-label={t("home.openGamesAria")}>
       {items.map((it) => (
         <GameRow key={it.game.code} game={it.game} now={now} leaving={it.leaving} onJoin={onJoin} />
       ))}

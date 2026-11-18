@@ -20,6 +20,12 @@
 .g-code {
   font-weight: var(--fw-bold);
   letter-spacing: 0.04em;
+  min-width: 0;
+}
+.g-home {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding-inline: var(--s2);
 }
 .g-conn {
   width: 10px;
@@ -79,6 +85,11 @@
   font-weight: var(--fw-heavy);
   background: var(--row-color);
   color: var(--row-on);
+}
+/* Two-letter rails (ES: Am, Az) stay inside the rail at every width. */
+.g-rail.is-two {
+  font-size: 10px;
+  letter-spacing: -0.03em;
 }
 .c-red {
   --row-color: var(--row-red);
@@ -635,6 +646,12 @@
   }
   .g-rail {
     font-size: 11px;
+  }
+  .g-rail.is-two {
+    font-size: 9.5px;
+  }
+  .g-sheet .g-row:has(.g-rail.is-two) {
+    grid-template-columns: 16px repeat(12, minmax(0, 1fr));
   }
 }
 

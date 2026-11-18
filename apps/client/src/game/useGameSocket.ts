@@ -2,17 +2,10 @@
 import type { ClientMessage, ErrorMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { resetChat, routeChat, routeChatError } from "../chat/store";
+import { t } from "../i18n";
 import { navigate } from "../router";
-import { KICKED_TEXT } from "../screens/WaitingRoom";
 import { forgetSession, getSession } from "../session";
-import {
-  applyView,
-  clearView,
-  SESSION_ENDED_TEXT as ENDED_TEXT,
-  getState,
-  setStatus,
-  showToast,
-} from "../store";
+import { applyView, clearView, getState, setStatus, showToast } from "../store";
 import { type EndReason, GameSocket } from "../ws";
 
 export interface GameConnection {
@@ -53,15 +46,16 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
       if (msg.type === "view") applyView(msg);
       else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "error") errRef.current(msg);
-      else if (msg.type === "kicked") exitHome(KICKED_TEXT);
-      else if (msg.type === "sessionEnded") exitHome(ENDED_TEXT);
+      else if (msg.type === "kicked") exitHome(t("toast.kicked"));
+      else if (msg.type === "sessionEnded") exitHome(t("toast.sessionEnded"));
     });
     const offStatus = s.onStatus((status, reason?: EndReason) => {
       if (done) return;
       setStatus(status);
       if (status === "reconnecting" || status === "connecting") resyncNext.current = true;
-      if (reason === "kicked") exitHome(KICKED_TEXT);
-      else if (reason === "sessionEnded" || reason === "notAuthed") exitHome(ENDED_TEXT);
+      if (reason === "kicked") exitHome(t("toast.kicked"));
+      else if (reason === "sessionEnded" || reason === "notAuthed")
+        exitHome(t("toast.sessionEnded"));
     });
     s.connect(code, session.token);
     return () => {

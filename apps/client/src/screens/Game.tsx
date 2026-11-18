@@ -24,7 +24,7 @@ import { useFx } from "../game/useFx";
 import { useGameSocket } from "../game/useGameSocket";
 import { useStaging } from "../game/useStaging";
 import { useViewport } from "../game/useViewport";
-import { errorText } from "../i18n";
+import { errorText, t } from "../i18n";
 import { getPrefs, setPrefs } from "../prefs";
 import { navigate, resyncUrl } from "../router";
 import { clearView, dismissToast, showToast, useAppState } from "../store";
@@ -74,7 +74,7 @@ export function Game({ code }: { code: string }) {
     return (
       <main class="stack" style={{ paddingTop: "var(--s8)" }}>
         <p class="muted" role="status">
-          {status === "reconnecting" ? "Reconnecting…" : "Joining the table…"}
+          {status === "reconnecting" ? t("conn.reconnecting") : t("conn.joining")}
         </p>
       </main>
     );
@@ -231,7 +231,7 @@ function Board({
   const [localFail, setLocalFail] = useState(0);
   const onRoll = () => {
     if (!g.turn || conn.send({ type: "roll", turn: g.turn.number })) return;
-    showToast("Not connected. Trying to reconnect…", "error");
+    showToast(t("conn.notConnected"), "error");
     setLocalFail((n) => n + 1);
   };
   const rollControls = useRef<RollControls | null>(null);
@@ -277,17 +277,17 @@ function Board({
     <div class="g-game" data-viewport={viewport}>
       <header class="g-top">
         <button type="button" class="btn g-home" onClick={() => setLeaving(true)}>
-          ‹ Home
+          {t("game.home")}
         </button>
         <span class="g-code">
           <span class="num">{view.code}</span>
-          {g.turn ? <> · Turn {g.turn.number}</> : null}
+          {g.turn ? ` · ${t("game.turn", { n: g.turn.number })}` : null}
         </span>
         <span class="row">
           <span
             class={`g-conn is-${status}`}
             role="img"
-            aria-label={status === "online" ? "online" : "reconnecting"}
+            aria-label={status === "online" ? t("game.online") : t("game.reconnecting")}
           />
           {gameOver ? null : <ChatControls send={conn.send} />}
           <GearButton onClick={() => setPanel("settings")} />
@@ -357,9 +357,9 @@ function Board({
       <Panels panel={panel} onPanel={setPanel} />
       {leaving ? (
         <ConfirmDialog
-          title="Leave the table?"
-          body="You can resume from Home."
-          confirmLabel="Leave"
+          title={t("game.leaveTitle")}
+          body={t("game.leaveBody")}
+          confirmLabel={t("game.leave")}
           onCancel={() => setLeaving(false)}
           onConfirm={() => {
             clearView();
@@ -369,9 +369,9 @@ function Board({
       ) : null}
       {rematching ? (
         <ConfirmDialog
-          title="Start a rematch?"
-          body="Everyone stays at the table."
-          confirmLabel="Rematch"
+          title={t("game.rematchTitle")}
+          body={t("game.rematchBody")}
+          confirmLabel={t("game.rematch")}
           onCancel={() => setRematching(false)}
           onConfirm={() => {
             setRematching(false);

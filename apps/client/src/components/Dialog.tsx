@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useId, useRef } from "preact/hooks";
+import { t } from "../i18n";
 
 export interface DialogProps {
   title: string;
@@ -87,7 +88,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
           <h2 id={titleId} style={{ fontSize: "var(--fs-large)", overflowWrap: "anywhere" }}>
             {title}
           </h2>
-          <button type="button" class="btn" aria-label="Close" onClick={onClose}>
+          <button type="button" class="btn" aria-label={t("common.close")} onClick={onClose}>
             ✕
           </button>
         </div>

@@ -2,6 +2,7 @@
 
 export type MotionPref = "system" | "reduced" | "full";
 export type ThemePref = "system" | "light" | "dark";
+export type LanguagePref = "auto" | "en" | "fr" | "es";
 
 export interface Prefs {
   sound: boolean;
@@ -10,6 +11,8 @@ export interface Prefs {
   showChat: boolean;
   motion: MotionPref;
   theme: ThemePref;
+  /** UI language; "auto" follows the browser (navigator.languages). */
+  language: LanguagePref;
   lastName: string;
   seenHints: string[];
 }
@@ -25,6 +28,7 @@ export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   showChat: true,
   motion: "system",
   theme: "system",
+  language: "auto",
   lastName: "",
   seenHints: [],
 });
@@ -44,6 +48,7 @@ function storage(): Storage | null {
 
 const MOTIONS: readonly MotionPref[] = ["system", "reduced", "full"];
 const THEMES: readonly ThemePref[] = ["system", "light", "dark"];
+const LANGUAGES: readonly LanguagePref[] = ["auto", "en", "fr", "es"];
 
 /** Storage content is not trusted: keep only well-formed fields, defaults for the rest. */
 function sanitize(data: unknown): Prefs {
@@ -55,6 +60,7 @@ function sanitize(data: unknown): Prefs {
   if (typeof d.showChat === "boolean") out.showChat = d.showChat;
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
   if (THEMES.includes(d.theme as ThemePref)) out.theme = d.theme as ThemePref;
+  if (LANGUAGES.includes(d.language as LanguagePref)) out.language = d.language as LanguagePref;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);
   if (Array.isArray(d.seenHints)) {
     out.seenHints = d.seenHints

@@ -1,8 +1,9 @@
 /** Sticky bottom bar (inline on desktop): status text, Pass and the one primary action. */
 import type { Color } from "@cd/engine";
 import type { ViewMessage } from "@cd/protocol";
-import { COLOR_NAME, cssColor } from "../game/model";
+import { cssColor } from "../game/model";
 import { canPass, passLabel, passTakesPenalty, type Staged } from "../game/staging";
+import { colorName, t, useT } from "../i18n";
 import { RollButton, type RollControls } from "./DiceTray";
 import { StatusBar } from "./StatusBar";
 
@@ -24,6 +25,7 @@ export interface ActionBarProps {
 }
 
 export function ActionBar(p: ActionBarProps) {
+  useT();
   const { view, staged } = p;
   const passStaged = staged?.kind === "PASS";
   const markStaged: { color: Color; number: number } | null =
@@ -35,7 +37,7 @@ export function ActionBar(p: ActionBarProps) {
   if (view.you.canRoll) {
     primary = (
       <RollButton controls={p.rollControls} class="btn btn-primary g-primary" disabled={p.rolling}>
-        Roll
+        {t("action.roll")}
       </RollButton>
     );
   } else if (markStaged) {
@@ -46,7 +48,7 @@ export function ActionBar(p: ActionBarProps) {
         disabled={disabled}
         onClick={p.onConfirm}
       >
-        Mark {COLOR_NAME[markStaged.color]} {markStaged.number}
+        {t("action.mark", { color: colorName(markStaged.color), n: markStaged.number })}
       </button>
     );
   } else if (passStaged) {
@@ -57,13 +59,13 @@ export function ActionBar(p: ActionBarProps) {
         disabled={disabled}
         onClick={p.onConfirm}
       >
-        Confirm pass
+        {t("action.confirmPass")}
       </button>
     );
   } else {
     primary = (
       <button type="button" class="btn g-primary" disabled>
-        {p.sent ? "Sent…" : canPass(view) ? "Pick a box" : "Waiting…"}
+        {p.sent ? t("action.sent") : canPass(view) ? t("action.pickBox") : t("action.waiting")}
       </button>
     );
   }

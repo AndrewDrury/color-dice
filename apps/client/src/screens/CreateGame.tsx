@@ -17,16 +17,17 @@ import {
   requestErrorText,
 } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { t, useT } from "../i18n";
 import { getRemembered, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
-const FIELD_TEXT: Record<string, string> = {
-  roomName: `Room names are ${ROOM_NAME_MIN}–${ROOM_NAME_MAX} characters.`,
-  name: `Enter a name (1–${PLAYER_NAME_MAX} characters).`,
-  password: "Passwords are 4–64 characters.",
-  maxPlayers: "Pick 2 to 5 players.",
-};
+const fieldText = (): Record<string, string> => ({
+  roomName: t("field.roomName", { min: ROOM_NAME_MIN, max: ROOM_NAME_MAX }),
+  name: t("field.name", { max: PLAYER_NAME_MAX }),
+  password: t("field.password"),
+  maxPlayers: t("field.maxPlayers"),
+});
 
 const SIZES = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => MIN_PLAYERS + i);
 
@@ -44,6 +45,7 @@ const segStyle = (on: boolean) => ({
 });
 
 export function CreateGame() {
+  useT();
   const [initial] = useState(getRemembered);
   const [roomName, setRoomName] = useState(initial.roomName);
   const [name, setName] = useState(rememberedName);
@@ -69,7 +71,7 @@ export function CreateGame() {
     setFormError(null);
     const parsed = CreateGameReqSchema.safeParse({ roomName, name, password, maxPlayers, listed });
     if (!parsed.success) {
-      setErrors(issuesByField(parsed.error.issues, FIELD_TEXT));
+      setErrors(issuesByField(parsed.error.issues, fieldText()));
       return;
     }
     setErrors({});
@@ -103,12 +105,12 @@ export function CreateGame() {
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
       <div class="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: "var(--fs-title)" }}>Create game</h1>
-        <Button onClick={() => navigate("home")}>Back</Button>
+        <h1 style={{ fontSize: "var(--fs-title)" }}>{t("create.title")}</h1>
+        <Button onClick={() => navigate("home")}>{t("common.back")}</Button>
       </div>
       <form class="card stack" onSubmit={submit} noValidate style={{ maxWidth: "560px" }}>
         <Field
-          label="Room name"
+          label={t("field.roomName.label")}
           name="roomName"
           value={roomName}
           onValue={setRoomName}
@@ -119,7 +121,7 @@ export function CreateGame() {
           autofocus
         />
         <Field
-          label="Your name"
+          label={t("field.yourName")}
           name="name"
           value={name}
           onValue={setName}
@@ -132,12 +134,14 @@ export function CreateGame() {
           value={password}
           onValue={setPassword}
           error={errors.password}
-          hint="Share it privately with your friends."
+          hint={t("create.passwordHint")}
           autocomplete="off"
           enterkeyhint="next"
         />
         <fieldset class="stack" style={{ border: 0, padding: 0, margin: 0, gap: "var(--s1)" }}>
-          <legend style={{ fontWeight: "var(--fw-bold)", padding: 0 }}>Max players</legend>
+          <legend style={{ fontWeight: "var(--fw-bold)", padding: 0 }}>
+            {t("create.maxPlayers")}
+          </legend>
           <div
             class="row"
             style={{
@@ -171,12 +175,12 @@ export function CreateGame() {
             onChange={(e) => setListed(e.currentTarget.checked)}
             style={{ width: "22px", height: "22px" }}
           />
-          <span>Show in public list</span>
+          <span>{t("create.listed")}</span>
         </label>
         <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
-          Create game
+          {t("create.title")}
         </Button>
       </form>
     </main>

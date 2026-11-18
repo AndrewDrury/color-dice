@@ -124,7 +124,7 @@ export function exportTransferCode(): string {
   return TRANSFER_PREFIX + b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
-export type ImportResult = { ok: true; added: number } | { ok: false; reason: string };
+export type ImportResult = { ok: true; added: number } | { ok: false; reason: "bad" | "empty" };
 
 /** Strictly parses a transfer code and merges it into the history (dedupe by code + game). Never throws. */
 export function importTransferCode(text: string): ImportResult {
@@ -132,11 +132,11 @@ export function importTransferCode(text: string): ImportResult {
     const t = String(text).trim();
     const legacy = t.startsWith(LEGACY_PREFIX);
     if ((!legacy && !t.startsWith(TRANSFER_PREFIX)) || t.length > TRANSFER_MAX_CHARS) {
-      return { ok: false, reason: "That is not a valid transfer code." };
+      return { ok: false, reason: "bad" };
     }
     const b64 = t.slice(TRANSFER_PREFIX.length).replaceAll("-", "+").replaceAll("_", "/");
     const rows: unknown = JSON.parse(atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4)));
-    if (!Array.isArray(rows)) return { ok: false, reason: "That is not a valid transfer code." };
+    if (!Array.isArray(rows)) return { ok: false, reason: "bad" };
     const incoming = sanitizeHistory(
       rows.slice(0, HISTORY_CAP * 2).map((r) =>
         Array.isArray(r) && r.length === 4
@@ -149,7 +149,7 @@ export function importTransferCode(text: string): ImportResult {
           : null,
       ),
     );
-    if (incoming.length === 0) return { ok: false, reason: "That code has no games in it." };
+    if (incoming.length === 0) return { ok: false, reason: "empty" };
     const cur = getHistory();
     const have = new Set(cur.map(keyOf));
     const fresh = incoming.filter((e) => !have.has(keyOf(e)));
@@ -158,7 +158,7 @@ export function importTransferCode(text: string): ImportResult {
     }
     return { ok: true, added: fresh.length };
   } catch {
-    return { ok: false, reason: "That is not a valid transfer code." };
+    return { ok: false, reason: "bad" };
   }
 }
 
