@@ -8,9 +8,15 @@ import {
 import { useEffect, useRef, useState } from "preact/hooks";
 import { getMe, reclaimSeat } from "../api";
 import { Button } from "../components/Button";
-import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
+import {
+  Field,
+  FieldError,
+  issuesByField,
+  RememberToggle,
+  requestErrorText,
+} from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
-import { getPrefs, setPrefs } from "../prefs";
+import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { getSession, saveSession } from "../session";
 
@@ -37,8 +43,10 @@ export interface ReclaimProps {
 /** Take back an offline seat (new device, cleared storage) with code + name + password. */
 export function Reclaim({ code: initialCode }: ReclaimProps) {
   const [code, setCode] = useState(initialCode ?? "");
-  const [name, setName] = useState(() => getPrefs().lastName);
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState(rememberedName);
+  const [password, setPassword] = useState(() => (initialCode ? getRoomPassword(initialCode) : ""));
+  const [remember, setRemember] = useState(true);
+  const passwordTouched = useRef(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,13 +72,22 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
     setBusy(true);
     try {
       const res = await reclaimSeat(code, parsed.data);
-      setPrefs({ lastName: parsed.data.name });
+      const roomName = getSession(res.code)?.roomName ?? "";
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,
         name: parsed.data.name,
-        roomName: getSession(res.code)?.roomName ?? "",
+        roomName,
       });
+      rememberSubmit(
+        {
+          code: res.code,
+          name: parsed.data.name,
+          ...(roomName ? { roomName } : {}),
+          password: parsed.data.password,
+        },
+        remember,
+      );
       let screen: "waiting" | "game" = "waiting";
       try {
         const me = await getMe(res.code, res.token);
@@ -100,7 +117,12 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
           label="Game code"
           name="code"
           value={code}
-          onValue={setCode}
+          onValue={(v) => {
+            setCode(v);
+            if (!passwordTouched.current && GameCodeSchema.safeParse(v).success) {
+              setPassword(getRoomPassword(v));
+            }
+          }}
           filter={cleanCode}
           error={errors.code}
           maxLength={CODE_LENGTH}
@@ -122,7 +144,15 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
           enterkeyhint="next"
           autofocus
         />
-        <PasswordField value={password} onValue={setPassword} error={errors.password} />
+        <PasswordField
+          value={password}
+          onValue={(v) => {
+            passwordTouched.current = true;
+            setPassword(v);
+          }}
+          error={errors.password}
+        />
+        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           Reclaim seat

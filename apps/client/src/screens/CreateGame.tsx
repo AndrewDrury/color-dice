@@ -9,9 +9,15 @@ import {
 import { useEffect, useRef, useState } from "preact/hooks";
 import { createGame } from "../api";
 import { Button } from "../components/Button";
-import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
+import {
+  Field,
+  FieldError,
+  issuesByField,
+  RememberToggle,
+  requestErrorText,
+} from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
-import { getPrefs, setPrefs } from "../prefs";
+import { getRemembered, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -38,9 +44,11 @@ const segStyle = (on: boolean) => ({
 });
 
 export function CreateGame() {
-  const [roomName, setRoomName] = useState("");
-  const [name, setName] = useState(() => getPrefs().lastName);
-  const [password, setPassword] = useState("");
+  const [initial] = useState(getRemembered);
+  const [roomName, setRoomName] = useState(initial.roomName);
+  const [name, setName] = useState(rememberedName);
+  const [password, setPassword] = useState(initial.password);
+  const [remember, setRemember] = useState(true);
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [listed, setListed] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,13 +76,21 @@ export function CreateGame() {
     setBusy(true);
     try {
       const res = await createGame(parsed.data);
-      setPrefs({ lastName: parsed.data.name });
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,
         name: parsed.data.name,
         roomName: parsed.data.roomName,
       });
+      rememberSubmit(
+        {
+          code: res.code,
+          name: parsed.data.name,
+          roomName: parsed.data.roomName,
+          password: parsed.data.password,
+        },
+        remember,
+      );
       // navigate() writes ?game=CODE with history.replaceState.
       navigate("waiting", res.code);
     } catch (err) {
@@ -117,7 +133,7 @@ export function CreateGame() {
           onValue={setPassword}
           error={errors.password}
           hint="Share it privately with your friends."
-          autocomplete="new-password"
+          autocomplete="off"
           enterkeyhint="next"
         />
         <fieldset class="stack" style={{ border: 0, padding: 0, margin: 0, gap: "var(--s1)" }}>
@@ -157,6 +173,7 @@ export function CreateGame() {
           />
           <span>Show in public list</span>
         </label>
+        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           Create game

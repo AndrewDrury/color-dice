@@ -126,3 +126,25 @@ export function issuesByField(
   }
   return out;
 }
+
+/** "Remember on this device" checkbox shared by Create, Join and Reclaim (default ON). */
+export function RememberToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label class="row" style={{ minHeight: "var(--tap)", cursor: "pointer" }}>
+      <input
+        type="checkbox"
+        name="remember"
+        checked={checked}
+        onChange={(e) => onChange(e.currentTarget.checked)}
+        style={{ width: "22px", height: "22px" }}
+      />
+      <span>Remember on this device</span>
+    </label>
+  );
+}

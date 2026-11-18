@@ -3,9 +3,15 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { ApiError, joinGame } from "../api";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
-import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
+import {
+  Field,
+  FieldError,
+  issuesByField,
+  RememberToggle,
+  requestErrorText,
+} from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
-import { getPrefs, setPrefs } from "../prefs";
+import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -27,8 +33,10 @@ export interface JoinDialogProps {
 }
 
 export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
-  const [name, setName] = useState(() => getPrefs().lastName);
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState(rememberedName);
+  // Only for a room this device already holds a seat in; never for an unknown room.
+  const [password, setPassword] = useState(() => getRoomPassword(code));
+  const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -81,13 +89,21 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
     setBusy(true);
     try {
       const res = await joinGame(code, parsed.data);
-      setPrefs({ lastName: parsed.data.name });
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,
         name: parsed.data.name,
         roomName: roomName ?? "",
       });
+      rememberSubmit(
+        {
+          code: res.code,
+          name: parsed.data.name,
+          ...(roomName ? { roomName } : {}),
+          password: parsed.data.password,
+        },
+        remember,
+      );
       navigate("waiting", res.code);
     } catch (err) {
       if (!alive.current) return;
@@ -123,8 +139,9 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
           value={password}
           onValue={setPassword}
           error={errors.password}
-          autocomplete="current-password"
+          autocomplete="off"
         />
+        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
           Join

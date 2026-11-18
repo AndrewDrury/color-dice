@@ -8,8 +8,8 @@ export interface PasswordFieldProps {
   onValue: (value: string) => void;
   error?: string | undefined;
   hint?: string;
-  /** "new-password" when creating a room, "current-password" when joining. */
-  autocomplete?: "new-password" | "current-password";
+  /** Defaults to "off": a room password is a shared secret, not an account login. */
+  autocomplete?: "off" | "new-password" | "current-password";
   enterkeyhint?: "go" | "next" | "done";
 }
 
@@ -25,7 +25,7 @@ export function PasswordField(props: PasswordFieldProps) {
       error={props.error}
       {...(props.hint ? { hint: props.hint } : {})}
       maxLength={PASSWORD_MAX}
-      autocomplete={props.autocomplete ?? "current-password"}
+      autocomplete={props.autocomplete ?? "off"}
       autocapitalize="off"
       autocorrect="off"
       spellcheck={false}

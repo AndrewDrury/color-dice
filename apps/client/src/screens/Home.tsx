@@ -6,6 +6,7 @@ import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { useHistoryTotals } from "../history";
+import { removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
@@ -40,6 +41,7 @@ function YourGames() {
           // 401 = session revoked; 404 = room deleted. Either way the seat is gone.
           if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
             forgetSession(s.code);
+            removeRoomPassword(s.code);
             if (alive) setSessions((cur) => cur.filter((x) => x.code !== s.code));
           }
         },
@@ -73,6 +75,7 @@ function YourGames() {
                 aria-label={`Forget ${s.roomName || s.code}`}
                 onClick={() => {
                   forgetSession(s.code);
+                  removeRoomPassword(s.code);
                   setSessions((cur) => cur.filter((x) => x.code !== s.code));
                 }}
               >

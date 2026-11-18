@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { hapticsSupported } from "../fx/haptics";
 import { clearHistory, exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
 import { getPrefs, type MotionPref, onPrefs, type Prefs, setPrefs, type ThemePref } from "../prefs";
+import { clearRemembered, getRemembered } from "../remembered";
 import { BottomSheet } from "./BottomSheet";
 import { HowToPlay } from "./HowToPlay";
 import { GearIcon } from "./icons";
@@ -151,6 +152,40 @@ function RecordSection() {
   );
 }
 
+function SavedInfoSection() {
+  const [saved, setSaved] = useState(getRemembered);
+  const [note, setNote] = useState<string | null>(null);
+  const hasAny = !!(saved.name || saved.roomName || saved.password || saved.rooms.length);
+  return (
+    <section class="stack" aria-label="Saved info">
+      <h3>Saved info</h3>
+      {hasAny ? (
+        <ul class="stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {saved.name ? <li>Name: {saved.name}</li> : null}
+          {saved.roomName ? <li>Room name: {saved.roomName}</li> : null}
+          {saved.password || saved.rooms.length ? <li>Room password: saved</li> : null}
+        </ul>
+      ) : (
+        <p class="muted">Nothing saved on this device.</p>
+      )}
+      {hasAny ? (
+        <button
+          type="button"
+          class="btn"
+          onClick={() => {
+            clearRemembered();
+            setSaved(getRemembered());
+            setNote("Saved info cleared.");
+          }}
+        >
+          Clear saved info
+        </button>
+      ) : null}
+      {note ? <p role="status">{note}</p> : null}
+    </section>
+  );
+}
+
 export function Settings({
   onClose,
   onPanel,
@@ -183,6 +218,7 @@ export function Settings({
         onChange={(v) => setPrefs({ theme: v })}
       />
       <RecordSection />
+      <SavedInfoSection />
       <button type="button" class="btn" onClick={() => onPanel("help")}>
         How to play
       </button>
