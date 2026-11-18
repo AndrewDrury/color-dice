@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { GearButton, type Panel, Panels } from "../components/Settings";
+import { useHistoryTotals } from "../history";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
@@ -82,6 +83,17 @@ function YourGames() {
         })}
       </ul>
     </section>
+  );
+}
+
+/** "Your record: 12 W – 7 L" from this device's history; hidden while empty. */
+function YourRecord() {
+  const { wins, losses } = useHistoryTotals();
+  if (wins + losses === 0) return null;
+  return (
+    <p class="muted" data-testid="your-record" style={{ margin: 0 }}>
+      Your record: <span class="num">{wins}</span> W – <span class="num">{losses}</span> L
+    </p>
   );
 }
 
@@ -171,6 +183,7 @@ export function Home({ route }: HomeProps) {
       <Panels panel={panel} onPanel={setPanel} />
       <div class="cols-2 stack">
         <div class="stack">
+          <YourRecord />
           <YourGames />
           <InviteCode />
         </div>

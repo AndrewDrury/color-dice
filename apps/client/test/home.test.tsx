@@ -187,3 +187,19 @@ describe("CreateGame", () => {
     expect(screen.getByText("Too many attempts, try again in 42 s.")).toBeTruthy();
   });
 });
+
+describe("Home record", () => {
+  it("shows 'Your record' only when history is non-empty", async () => {
+    const { recordGame, _resetHistoryForTests } = await import("../src/history");
+    _resetHistoryForTests();
+    const { unmount } = render(<Home route={{ screen: "home", code: null }} />);
+    expect(screen.queryByTestId("your-record")).toBeNull();
+    act(() => {
+      recordGame({ code: CODE, game: 1, won: true, at: 1 });
+    });
+    expect(screen.getByTestId("your-record").textContent).toBe("Your record: 1 W – 0 L");
+    unmount();
+    localStorage.clear();
+    _resetHistoryForTests();
+  });
+});

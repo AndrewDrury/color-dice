@@ -11,6 +11,7 @@ import {
   fromJSON,
   type GameState,
   toJSON,
+  winners,
 } from "@cd/engine";
 import {
   AWAY_AFTER_OFFLINE_MS,
@@ -123,6 +124,18 @@ function awaySeats(seats: SeatRecord[]): Set<number> {
   const out = new Set<number>();
   for (const s of seats) if (s.away && s.seatIndex !== null) out.add(s.seatIndex);
   return out;
+}
+
+/** Every co-winner gets a win (ties), every other seated player a loss. Mutates `seats`. */
+export function tallyRecord(seats: SeatRecord[], winners: readonly string[]): void {
+  const won = new Set(winners);
+  for (const s of seats) {
+    if (s.seatIndex === null) continue;
+    const r = s.record ?? { wins: 0, losses: 0 };
+    if (won.has(playerId(s.seatIndex))) r.wins += 1;
+    else r.losses += 1;
+    s.record = r;
+  }
 }
 
 export interface PlayDeps {
@@ -289,6 +302,8 @@ export class RoomPlay {
     const next = autopass(state, awaySeats(seats), dice.dice);
     if (next.phase === "GAME_OVER") {
       if (meta.status !== "finished") {
+        // Exactly once per game end: later saves (e.g. setAway) see status "finished".
+        tallyRecord(seats, winners(next));
         meta.status = "finished";
         meta.finishedAt = this.d.now();
       }

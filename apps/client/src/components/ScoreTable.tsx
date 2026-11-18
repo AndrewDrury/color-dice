@@ -35,11 +35,13 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
           ))}
           <th scope="col">Pen.</th>
           <th scope="col">Total</th>
+          <th scope="col">Record</th>
         </tr>
       </thead>
       <tbody>
         {rankPlayers(view).map((p) => {
           const win = winners.has(p.seat);
+          const rec = seatInfo(view, p)?.record;
           return (
             <tr key={p.seat} class={win ? "is-winner" : ""} data-winner={win ? "true" : undefined}>
               <th scope="row">
@@ -56,6 +58,9 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
               </td>
               <td class="g-total-cell">
                 <Count value={p.score.total} />
+              </td>
+              <td class="num" data-record>
+                {rec ? `${rec.wins}–${rec.losses}` : "–"}
               </td>
             </tr>
           );

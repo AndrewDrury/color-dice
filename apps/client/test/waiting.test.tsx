@@ -85,6 +85,7 @@ function view(opts: { host?: boolean; seats?: number; status?: "lobby" | "playin
     host: host ? i === 0 : i === 1,
     online: true,
     away: false,
+    record: { wins: 0, losses: 0 },
   }));
   v.you.host = host;
   if (opts.status) v.room.status = opts.status;

@@ -162,9 +162,13 @@ describe("full games over sockets", () => {
     expect(new Set(views.map((v) => v.version)).size).toBe(1);
     expectScoresMatch(views);
     expect(g?.players.map((p) => p.score.total)).toEqual([-20, -15]);
+    // Record (J5): updated once at game end; public to everyone.
+    const rec = (v: ViewMessage) => v.seats.map((s) => `${s.record.wins}-${s.record.losses}`);
+    for (const v of views) expect(rec(v)).toEqual(["0-1", "1-0"]);
 
     // Rematch: same seats, version keeps increasing, turn 1 starts.
     const before = c0.view();
+    await queueDice(room.code, [6, ...Array(7 * 6).fill(1)]);
     c1.send({ type: "rematch" });
     expect((await c1.next("error")).code).toBe("E_NOT_HOST");
     c0.send({ type: "rematch" });
@@ -178,5 +182,22 @@ describe("full games over sockets", () => {
     // Hidden again after the rematch: only your own card is sent.
     expect(after.game?.players.map((p) => p.sheet === null)).toEqual([false, true]);
     expect(room.players).toHaveLength(2);
+    expect(rec(after)).toEqual(["0-1", "1-0"]); // no change mid-game
+
+    // Second game: the record accumulates, and a replayed save (setAway) does not double-count.
+    // Fresh sockets: each socket is limited to 30 messages per 10 s.
+    for (const c of conns) c.close();
+    const g2 = await connectAll(room);
+    const d0 = g2[0] as Conn;
+    for (let t = 1; t <= 7; t++) {
+      await playTurn(g2, { a1: ["PASS", "PASS"], a2: "PASS" });
+      if (t < 7) await d0.until(() => d0.view().game?.turn?.number === t + 1);
+    }
+    const over = await settled(g2);
+    for (const v of over) expect(rec(v)).toEqual(["0-2", "2-0"]);
+    d0.send({ type: "setAway", seatId: after.seats[1]?.seatId as string, away: false });
+    (g2[1] as Conn).send({ type: "ping" });
+    await (g2[1] as Conn).next("pong");
+    for (const v of await settled(g2)) expect(rec(v)).toEqual(["0-2", "2-0"]);
   });
 });

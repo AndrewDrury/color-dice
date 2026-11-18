@@ -29,8 +29,22 @@ const fixture: ViewMessage = {
     joinLockedUntil: null,
   },
   seats: [
-    { seatId: "a1b2c3d4", name: "Andrew", host: true, online: true, away: false },
-    { seatId: "e5f6g7h8", name: "Bo", host: false, online: false, away: true },
+    {
+      seatId: "a1b2c3d4",
+      name: "Andrew",
+      host: true,
+      online: true,
+      away: false,
+      record: { wins: 0, losses: 0 },
+    },
+    {
+      seatId: "e5f6g7h8",
+      name: "Bo",
+      host: false,
+      online: false,
+      away: true,
+      record: { wins: 2, losses: 1 },
+    },
   ],
   game: {
     phase: "ACTION_1",
@@ -130,8 +144,22 @@ describe("ViewMessage built from the engine's viewFor", () => {
       code: "K7QF2",
       room: { name: "Room", listed: true, maxPlayers: 4, status: "playing", joinLockedUntil: null },
       seats: [
-        { seatId: "a1b2c3d4", name: "A", host: true, online: true, away: false },
-        { seatId: "e5f6g7h8", name: "B", host: false, online: true, away: false },
+        {
+          seatId: "a1b2c3d4",
+          name: "A",
+          host: true,
+          online: true,
+          away: false,
+          record: { wins: 0, losses: 0 },
+        },
+        {
+          seatId: "e5f6g7h8",
+          name: "B",
+          host: false,
+          online: true,
+          away: false,
+          record: { wins: 0, losses: 0 },
+        },
       ],
       game: {
         ...ev.game,

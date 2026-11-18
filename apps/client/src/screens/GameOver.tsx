@@ -10,6 +10,7 @@ import { Sheet } from "../components/Sheet";
 import { reducedMotion } from "../fx/motion";
 import { hasCard, joinNames, seatInfo, seatOfPlayer } from "../game/model";
 import { endReasonText } from "../game/status";
+import { recordGame } from "../history";
 import "../styles/opponents.css";
 
 const NO_FX = { flash: {}, glint: null, floats: [], shakeKey: 0 };
@@ -72,6 +73,21 @@ function useConfetti(winner: boolean): ComponentType | null {
   return C;
 }
 
+/** Appends this finished game to the device history once (dedupe by room code + game number). */
+function useDeviceHistory(view: ViewMessage, won: boolean) {
+  useEffect(() => {
+    if (view.game?.phase !== "GAME_OVER" || view.you.seat === null) return;
+    const mine = view.seats.find((s) => s.seatId === view.you.seatId);
+    if (!mine) return;
+    recordGame({
+      code: view.code,
+      game: mine.record.wins + mine.record.losses,
+      won,
+      at: Date.now(),
+    });
+  }, []);
+}
+
 export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOverProps) {
   const g = view.game;
   const winnerSeats = (g?.winners ?? []).map((id) => seatOfPlayer(id, g));
@@ -81,6 +97,7 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   );
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
   const tableRef = useFlipReorder(view);
+  useDeviceHistory(view, iWon);
   const Confetti = useConfetti(iWon);
   return (
     <div class="g-backdrop g-over">

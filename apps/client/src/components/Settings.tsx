@@ -1,6 +1,7 @@
 /** Settings sheet (H12) and the panel host shared by Home and the game screen. */
 import { useEffect, useState } from "preact/hooks";
 import { hapticsSupported } from "../fx/haptics";
+import { clearHistory, exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
 import { getPrefs, type MotionPref, onPrefs, type Prefs, setPrefs, type ThemePref } from "../prefs";
 import { BottomSheet } from "./BottomSheet";
 import { HowToPlay } from "./HowToPlay";
@@ -81,6 +82,75 @@ const THEMES = [
   { value: "dark", text: "Dark" },
 ] as const satisfies readonly { value: ThemePref; text: string }[];
 
+function RecordSection() {
+  const record = useHistoryTotals();
+  const [note, setNote] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const total = record.wins + record.losses;
+  return (
+    <section class="stack" aria-label="Your record">
+      <div class="st-row">
+        <span>
+          Your record: {record.wins} W – {record.losses} L
+        </span>
+        {total > 0 ? (
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
+              clearHistory();
+              setNote("Record reset.");
+            }}
+          >
+            Reset record
+          </button>
+        ) : null}
+      </div>
+      {total > 0 ? (
+        <button
+          type="button"
+          class="btn"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(exportTransferCode());
+              setNote("Transfer code copied.");
+            } catch {
+              setNote("Could not copy. Select and copy the code below instead.");
+              setCode(exportTransferCode());
+            }
+          }}
+        >
+          Copy transfer code
+        </button>
+      ) : null}
+      <label class="stack">
+        <span>Import transfer code</span>
+        <input
+          class="input"
+          value={code}
+          autocomplete="off"
+          spellcheck={false}
+          onInput={(e) => setCode((e.currentTarget as HTMLInputElement).value)}
+        />
+      </label>
+      <button
+        type="button"
+        class="btn"
+        onClick={() => {
+          const r = importTransferCode(code);
+          if (r.ok) {
+            setNote(`Imported ${r.added} new game${r.added === 1 ? "" : "s"}.`);
+            setCode("");
+          } else setNote(r.reason);
+        }}
+      >
+        Import
+      </button>
+      {note ? <p role="status">{note}</p> : null}
+    </section>
+  );
+}
+
 export function Settings({
   onClose,
   onPanel,
@@ -112,6 +182,7 @@ export function Settings({
         options={THEMES}
         onChange={(v) => setPrefs({ theme: v })}
       />
+      <RecordSection />
       <button type="button" class="btn" onClick={() => onPanel("help")}>
         How to play
       </button>

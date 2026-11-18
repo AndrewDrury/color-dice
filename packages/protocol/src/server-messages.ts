@@ -41,6 +41,8 @@ export interface ViewSeat {
   host: boolean;
   online: boolean;
   away: boolean;
+  /** Wins/losses in this room across rematches. Public. */
+  record: { wins: number; losses: number };
 }
 
 export interface ViewRow {
@@ -271,6 +273,7 @@ export const ViewMessageSchema = z
             host: z.boolean(),
             online: z.boolean(),
             away: z.boolean(),
+            record: z.object({ wins: NonNegInt, losses: NonNegInt }).strict(),
           })
           .strict(),
       )

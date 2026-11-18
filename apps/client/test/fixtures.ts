@@ -16,7 +16,16 @@ export function makeView(version: number): ViewMessage {
       status: "lobby",
       joinLockedUntil: null,
     },
-    seats: [{ seatId: SEAT, name: "Andrew", host: true, online: true, away: false }],
+    seats: [
+      {
+        seatId: SEAT,
+        name: "Andrew",
+        host: true,
+        online: true,
+        away: false,
+        record: { wins: 0, losses: 0 },
+      },
+    ],
     game: null,
     you: {
       seatId: SEAT,

@@ -30,11 +30,13 @@ function SeatRow({
   seat,
   you,
   canKick,
+  showRecord,
   onKick,
 }: {
   seat: Seat;
   you: boolean;
   canKick: boolean;
+  showRecord: boolean;
   onKick: ((seat: Seat) => void) | undefined;
 }) {
   const ref = useRef<HTMLLIElement>(null);
@@ -68,6 +70,16 @@ function SeatRow({
         />
         <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{seat.name}</span>
         {you ? <span class="muted">(you)</span> : null}
+        {showRecord ? (
+          <span
+            role="img"
+            class="num muted"
+            data-record={`${seat.record.wins}-${seat.record.losses}`}
+            aria-label={`${seat.record.wins} wins, ${seat.record.losses} losses`}
+          >
+            {seat.record.wins}–{seat.record.losses}
+          </span>
+        ) : null}
         {seat.host ? (
           <span
             style={{
@@ -97,6 +109,8 @@ function SeatRow({
 
 /** Live seat list: online dot, name (text only), host badge, "(you)", host kick buttons. */
 export function SeatList({ seats, youSeatId, isHost, onKick }: SeatListProps) {
+  // W–L is hidden until somebody in the room has played a game.
+  const showRecord = seats.some((s) => s.record.wins + s.record.losses > 0);
   return (
     <ul class="stack" aria-label="Players" style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {seats.map((seat) => (
@@ -105,6 +119,7 @@ export function SeatList({ seats, youSeatId, isHost, onKick }: SeatListProps) {
           seat={seat}
           you={seat.seatId === youSeatId}
           canKick={isHost && seat.seatId !== youSeatId}
+          showRecord={showRecord}
           onKick={onKick}
         />
       ))}

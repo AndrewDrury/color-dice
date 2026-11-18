@@ -15,6 +15,7 @@ function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
     host: s.host,
     online: isOnline(sockets, s.seatId),
     away: s.away,
+    record: { wins: s.record?.wins ?? 0, losses: s.record?.losses ?? 0 },
   }));
 }
 

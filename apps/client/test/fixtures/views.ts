@@ -89,6 +89,7 @@ export function makeGameView(o: Opts = {}): ViewMessage {
       host: i === 0,
       online: true,
       away: false,
+      record: { wins: 0, losses: 0 },
     })),
     game: {
       phase,
