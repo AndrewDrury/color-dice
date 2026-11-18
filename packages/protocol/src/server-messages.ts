@@ -288,7 +288,7 @@ export const ErrorMessageSchema = z
     code: ErrorCodeSchema,
     reason: z.string().max(200).optional(),
     command: z
-      .enum(["auth", "roll", "action1", "action2", "setAway", "rematch", "ping"])
+      .enum(["auth", "roll", "action1", "action2", "setAway", "rematch", "ping", "chat", "react"])
       .nullable(),
   })
   .strict();

@@ -22,6 +22,7 @@ export function MiniSheet({ view, player, flash, onOpen }: MiniSheetProps) {
   return (
     <button
       type="button"
+      data-seat-id={seat?.seatId}
       class={`g-mini card${st.active ? " is-active" : ""}`}
       aria-label={`${name}, ${player.score.total} points. Open full sheet`}
       onClick={onOpen}
