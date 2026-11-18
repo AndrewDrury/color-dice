@@ -42,13 +42,15 @@
   z-index: 25;
   display: flex;
   gap: 2px;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 8px);
   padding: var(--s1);
   border-radius: var(--r-button);
   background: var(--paper);
   box-shadow: var(--e2);
 }
 .rx-pick {
-  width: 40px;
+  width: 44px;
   height: 44px;
   border: 0;
   background: transparent;

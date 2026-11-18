@@ -1,6 +1,6 @@
 /** Small horizontal popover with the 8 allow-listed reactions (I3). One tap sends and closes. */
 import { REACTIONS, type Reaction } from "@cd/protocol";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 export function ReactionPicker({
   onPick,
@@ -12,6 +12,18 @@ export function ReactionPicker({
   const ref = useRef<HTMLFieldSetElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
+  // Keep the popover inside the viewport (phones: the anchor can sit left of centre).
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const margin = 4;
+    let dx = 0;
+    if (r.left < margin) dx = margin - r.left;
+    else if (r.right > vw - margin) dx = vw - margin - r.right;
+    if (dx) el.style.transform = `translateX(${Math.round(dx)}px)`;
+  }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") close.current();

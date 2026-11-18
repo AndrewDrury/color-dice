@@ -149,7 +149,7 @@ test("chat: longest names do not cause horizontal scroll at 375 px (home, waitin
 // 30 chars. Repro: host name "W"x30, room 50 chars, 2 players, start; on the guest's page at
 // 375x667 `.g-status` / `.g-actionbar` (status text naming the host) has scrollWidth 475 and
 // documentElement.scrollWidth is 491 > 375. The long unbroken name is not wrapped/ellipsized.
-test.fixme("chat: guest's board has no horizontal scroll with a 30-char host name at 375 px", async ({
+test("chat: guest's board has no horizontal scroll with a 30-char host name at 375 px", async ({
   browser,
 }) => {
   const { a, b, code } = await longNamesGame(browser);
@@ -168,7 +168,7 @@ test.fixme("chat: guest's board has no horizontal scroll with a 30-char host nam
 // Repro: 2 players in a started game, viewport 390x844, tap the 😊 "Send reaction" button.
 // `.rx-picker` is at x=-68 (width 342), so "React 👍" (x=-64) is outside the viewport and
 // cannot be tapped; its buttons are also 40 px wide (< 44). Fine at 1280 px.
-test.fixme("chat: every reaction in the picker is on screen at 390 px", async ({ browser }) => {
+test("chat: every reaction in the picker is on screen at 390 px", async ({ browser }) => {
   const a = await newPlayer(browser, "Ana");
   const b = await newPlayer(browser, "Bo");
   try {

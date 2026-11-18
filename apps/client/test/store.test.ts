@@ -41,3 +41,17 @@ describe("store", () => {
     expect(seen).toEqual(["Hello", "-"]);
   });
 });
+
+describe("store presence-only views", () => {
+  it("accepts an equal-version view whose seat presence differs, not an identical one", () => {
+    const a = makeView(5);
+    expect(applyView(a)).toBe(true);
+    const seats = a.seats.map((s) => ({ ...s, online: false }));
+    expect(applyView({ ...a, seats })).toBe(true);
+    expect(getState().view?.seats[0]?.online).toBe(false);
+    expect(Object.keys(getState().offlineSince)).toHaveLength(seats.length);
+    expect(applyView({ ...a, seats })).toBe(false);
+    expect(applyView({ ...a, version: 4, seats: a.seats })).toBe(false);
+    expect(getState().view?.seats[0]?.online).toBe(false);
+  });
+});

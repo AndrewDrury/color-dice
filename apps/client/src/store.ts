@@ -43,11 +43,17 @@ export function subscribe(cb: Listener): () => void {
 }
 
 /**
- * Apply a server view. Ignored unless its version is strictly higher than the current
- * one (out-of-order or duplicate frames after a reconnect). Returns true when applied.
+ * Apply a server view. Ignored unless its version is higher than the current one (or equal with changed
+ * presence/seat data) (out-of-order or duplicate frames after a reconnect). Returns true when applied.
  */
 export function applyView(v: ViewMessage): boolean {
-  if (state.view && v.version <= state.view.version) return false;
+  const cur = state.view;
+  if (cur && v.version < cur.version) return false;
+  // Presence-only changes (socket auth/close) keep the same version: accept an equal-version
+  // view for the same game only when its seat data differs. Game.tsx diffs per version, so no
+  // dice, sounds or animations replay for it.
+  if (cur && v.version === cur.version && !(v.code === cur.code && seatsDiffer(cur.seats, v.seats)))
+    return false;
   const offlineSince: Record<string, number> = {};
   const now = Date.now();
   for (const seat of v.seats) {
@@ -55,6 +61,21 @@ export function applyView(v: ViewMessage): boolean {
   }
   set({ view: v, offlineSince });
   return true;
+}
+
+function seatsDiffer(a: ViewMessage["seats"], b: ViewMessage["seats"]): boolean {
+  if (a.length !== b.length) return true;
+  return a.some((x, i) => {
+    const y = b[i];
+    return (
+      !y ||
+      x.seatId !== y.seatId ||
+      x.name !== y.name ||
+      x.host !== y.host ||
+      x.online !== y.online ||
+      x.away !== y.away
+    );
+  });
 }
 
 /** Forget the current view (leaving a game, switching to another code). */

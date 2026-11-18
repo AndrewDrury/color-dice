@@ -408,7 +408,13 @@
   gap: var(--s2);
   padding: var(--s2) 0;
 }
+.g-status,
+.g-actionbar {
+  min-width: 0;
+}
 .g-status-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
   min-height: 1.4em;
   font-weight: var(--fw-bold);
 }
@@ -661,5 +667,15 @@
   .g-panel {
     animation-duration: 1ms;
     animation-iteration-count: 1;
+  }
+}
+
+/* Phones: the sheet card bleeds to 8 px from the screen edge so each box is >= 26 px at 375 px. */
+@media (max-width: 599px) {
+  .g-sheet {
+    margin-inline: calc(var(--gutter-sheet) - var(--gutter));
+  }
+  .g-sheet .g-row {
+    gap: 1px;
   }
 }
