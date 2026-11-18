@@ -87,12 +87,12 @@ function RecordSection() {
   const record = useHistoryTotals();
   const [note, setNote] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const total = record.wins + record.losses;
+  const total = record.wins + record.ties + record.losses;
   return (
     <section class="stack" aria-label="Your record">
       <div class="st-row">
         <span>
-          Your record: {record.wins} W – {record.losses} L
+          Your record: {record.wins} W – {record.ties} T – {record.losses} L
         </span>
         {total > 0 ? (
           <button

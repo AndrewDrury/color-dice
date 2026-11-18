@@ -390,7 +390,7 @@ describe("pure helpers", () => {
     seatIndex: null,
     tokenHash: "h",
     away: false,
-    record: { wins: 0, losses: 0 },
+    record: { wins: 0, ties: 0, losses: 0 },
     lastSeenAt: 0,
   });
 

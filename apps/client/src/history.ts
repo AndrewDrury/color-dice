@@ -1,16 +1,18 @@
 /**
- * Device-local game history (J5): which games this browser won or lost. Never sent anywhere.
+ * Device-local game history (J5): which games this browser won, tied or lost. Never sent anywhere.
  * Stored in localStorage with an in-memory fallback; storage content is untrusted, so every
  * read is sanitized (shape, bounds, dedupe) and the list is capped at `HISTORY_CAP`.
  */
 import { GameCodeSchema } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 
+export type GameResult = "W" | "T" | "L";
+
 export interface HistoryEntry {
   code: string;
-  /** Game number in the room (your wins + losses after this game); with `code` it is the dedupe key. */
+  /** Game number in the room (your wins + ties + losses after this game); with `code` it is the dedupe key. */
   game: number;
-  won: boolean;
+  result: GameResult;
   /** Epoch ms. */
   at: number;
 }
@@ -45,12 +47,21 @@ export function sanitizeHistory(data: unknown): HistoryEntry[] {
     if (!Number.isSafeInteger(r.game) || (r.game as number) < 1 || (r.game as number) > 1_000_000) {
       continue;
     }
-    if (typeof r.won !== "boolean") continue;
+    // Legacy entries stored a boolean `won`.
+    const result: GameResult | null =
+      r.result === "W" || r.result === "T" || r.result === "L"
+        ? r.result
+        : r.result === undefined && typeof r.won === "boolean"
+          ? r.won
+            ? "W"
+            : "L"
+          : null;
+    if (result === null) continue;
     if (!Number.isSafeInteger(r.at) || (r.at as number) < 0) continue;
     const e: HistoryEntry = {
       code: r.code as string,
       game: r.game as number,
-      won: r.won,
+      result,
       at: r.at as number,
     };
     if (seen.has(keyOf(e))) continue;
@@ -100,13 +111,15 @@ export function recordGame(entry: HistoryEntry): void {
   write(next);
 }
 
-const TRANSFER_PREFIX = "CD1.";
+const TRANSFER_PREFIX = "CD2.";
+/** Legacy code version: carries won/lost (1/0) instead of W/T/L. Still accepted on import. */
+const LEGACY_PREFIX = "CD1.";
 /** 200 entries are ~14 KB of JSON; anything far beyond that is not one of our codes. */
 const TRANSFER_MAX_CHARS = 40_000;
 
 /** Compact, versioned text code for moving the record to another device. No names. */
 export function exportTransferCode(): string {
-  const rows = getHistory().map((e) => [e.code, e.game, e.won ? 1 : 0, e.at]);
+  const rows = getHistory().map((e) => [e.code, e.game, e.result, e.at]);
   const b64 = btoa(JSON.stringify(rows));
   return TRANSFER_PREFIX + b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
@@ -117,7 +130,8 @@ export type ImportResult = { ok: true; added: number } | { ok: false; reason: st
 export function importTransferCode(text: string): ImportResult {
   try {
     const t = String(text).trim();
-    if (!t.startsWith(TRANSFER_PREFIX) || t.length > TRANSFER_MAX_CHARS) {
+    const legacy = t.startsWith(LEGACY_PREFIX);
+    if ((!legacy && !t.startsWith(TRANSFER_PREFIX)) || t.length > TRANSFER_MAX_CHARS) {
       return { ok: false, reason: "That is not a valid transfer code." };
     }
     const b64 = t.slice(TRANSFER_PREFIX.length).replaceAll("-", "+").replaceAll("_", "/");
@@ -129,7 +143,7 @@ export function importTransferCode(text: string): ImportResult {
           ? {
               code: r[0],
               game: r[1],
-              won: r[2] === 1 ? true : r[2] === 0 ? false : r[2],
+              result: legacy ? (r[2] === 1 ? "W" : r[2] === 0 ? "L" : r[2]) : r[2],
               at: r[3],
             }
           : null,
@@ -154,10 +168,11 @@ export function clearHistory(): void {
 
 export function historyTotals(h: readonly HistoryEntry[] = getHistory()): {
   wins: number;
+  ties: number;
   losses: number;
 } {
-  const wins = h.filter((e) => e.won).length;
-  return { wins, losses: h.length - wins };
+  const count = (r: GameResult) => h.filter((e) => e.result === r).length;
+  return { wins: count("W"), ties: count("T"), losses: count("L") };
 }
 
 export function onHistory(cb: Listener): () => void {
@@ -173,8 +188,12 @@ export function _resetHistoryForTests(): void {
   listeners.clear();
 }
 
-/** Live wins/losses for this device. */
-export function useHistoryTotals(): { wins: number; losses: number } {
+/** Live wins/ties/losses for this device. */
+export function useHistoryTotals(): {
+  wins: number;
+  ties: number;
+  losses: number;
+} {
   const [t, setT] = useState(() => historyTotals());
   useEffect(() => {
     setT(historyTotals());

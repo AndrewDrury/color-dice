@@ -33,8 +33,8 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
     await expectGameOver(b.page);
     // Record (J5): Alma lost game 1, Boris won it. Same table on both screens.
     for (const p of [a, b]) {
-      await expectRecord(p.page, "Alma", "0–1");
-      await expectRecord(p.page, "Boris", "1–0");
+      await expectRecord(p.page, "Alma", "0–0–1");
+      await expectRecord(p.page, "Boris", "1–0–0");
     }
     await expect(b.page.getByRole("button", { name: "Rematch" })).toHaveCount(0);
 
@@ -68,8 +68,8 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
     }
     for (const p of [a, b]) {
       await expectGameOver(p.page);
-      await expectRecord(p.page, "Alma", "0–2");
-      await expectRecord(p.page, "Boris", "2–0");
+      await expectRecord(p.page, "Alma", "0–0–2");
+      await expectRecord(p.page, "Boris", "2–0–0");
     }
   } finally {
     await closeAll([a, b]);

@@ -89,13 +89,14 @@ function YourGames() {
   );
 }
 
-/** "Your record: 12 W – 7 L" from this device's history; hidden while empty. */
+/** "Your record: 12 W – 2 T – 7 L" from this device's history; hidden while empty. */
 function YourRecord() {
-  const { wins, losses } = useHistoryTotals();
-  if (wins + losses === 0) return null;
+  const { wins, ties, losses } = useHistoryTotals();
+  if (wins + ties + losses === 0) return null;
   return (
     <p class="muted" data-testid="your-record" style={{ margin: 0 }}>
-      Your record: <span class="num">{wins}</span> W – <span class="num">{losses}</span> L
+      Your record: <span class="num">{wins}</span> W – <span class="num">{ties}</span> T –{" "}
+      <span class="num">{losses}</span> L
     </p>
   );
 }

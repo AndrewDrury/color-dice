@@ -55,6 +55,12 @@ export const CrownIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const TieIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 9h14M5 15h14" />
+  </Svg>
+);
+
 export const CheckIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4.5 12.5l5 5 10-11" />

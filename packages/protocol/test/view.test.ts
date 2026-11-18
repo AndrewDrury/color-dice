@@ -35,7 +35,7 @@ const fixture: ViewMessage = {
       host: true,
       online: true,
       away: false,
-      record: { wins: 0, losses: 0 },
+      record: { wins: 0, ties: 0, losses: 0 },
     },
     {
       seatId: "e5f6g7h8",
@@ -43,7 +43,7 @@ const fixture: ViewMessage = {
       host: false,
       online: false,
       away: true,
-      record: { wins: 2, losses: 1 },
+      record: { wins: 2, ties: 1, losses: 1 },
     },
   ],
   game: {
@@ -150,7 +150,7 @@ describe("ViewMessage built from the engine's viewFor", () => {
           host: true,
           online: true,
           away: false,
-          record: { wins: 0, losses: 0 },
+          record: { wins: 0, ties: 0, losses: 0 },
         },
         {
           seatId: "e5f6g7h8",
@@ -158,7 +158,7 @@ describe("ViewMessage built from the engine's viewFor", () => {
           host: false,
           online: true,
           away: false,
-          record: { wins: 0, losses: 0 },
+          record: { wins: 0, ties: 0, losses: 0 },
         },
       ],
       game: {

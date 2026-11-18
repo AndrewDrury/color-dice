@@ -239,7 +239,7 @@ describe("Game screen", () => {
       }),
     );
     mount();
-    expect(screen.getByText(/Tied winners/)).toBeTruthy();
+    expect(document.querySelector(".g-winner")?.textContent).toContain("Tie: ");
     expect(screen.getByText("Two rows locked")).toBeTruthy();
     expect(document.querySelectorAll("tr[data-winner]")).toHaveLength(2);
     // Every player's full read-only card is revealed.

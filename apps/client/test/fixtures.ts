@@ -23,7 +23,7 @@ export function makeView(version: number): ViewMessage {
         host: true,
         online: true,
         away: false,
-        record: { wins: 0, losses: 0 },
+        record: { wins: 0, ties: 0, losses: 0 },
       },
     ],
     game: null,

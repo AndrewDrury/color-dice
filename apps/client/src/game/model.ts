@@ -71,3 +71,31 @@ export function joinNames(names: readonly string[]): string {
   if (names.length <= 1) return names[0] ?? "";
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
+
+/** "2–1–0" (wins–ties–losses). */
+export function recordText(r: { wins: number; ties: number; losses: number }): string {
+  return `${r.wins}–${r.ties}–${r.losses}`;
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** Screen-reader spelling of a record: "2 wins, 1 tie, 0 losses". */
+export function recordLabel(r: { wins: number; ties: number; losses: number }): string {
+  return `${plural(r.wins, "win", "wins")}, ${plural(r.ties, "tie", "ties")}, ${plural(r.losses, "loss", "losses")}`;
+}
+
+/** Seats sharing the highest total (the engine's `winners`), as a tie/win summary. */
+export function tieInfo(view: ViewMessage): {
+  winnerSeats: number[];
+  tie: boolean;
+  allTied: boolean;
+} {
+  const g = view.game;
+  const winnerSeats = (g?.winners ?? []).map((id) => seatOfPlayer(id, g));
+  const tie = winnerSeats.length > 1;
+  return {
+    winnerSeats,
+    tie,
+    allTied: tie && winnerSeats.length === (g?.players.length ?? 0),
+  };
+}

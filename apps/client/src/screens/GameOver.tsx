@@ -4,13 +4,13 @@ import type { ComponentType } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Button } from "../components/Button";
 import { ChatControls } from "../components/ChatButton";
-import { CrownIcon } from "../components/icons";
-import { rankPlayers, ScoreTable } from "../components/ScoreTable";
+import { CrownIcon, TieIcon } from "../components/icons";
+import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
 import { Sheet } from "../components/Sheet";
 import { reducedMotion } from "../fx/motion";
-import { hasCard, joinNames, seatInfo, seatOfPlayer } from "../game/model";
+import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { endReasonText } from "../game/status";
-import { recordGame } from "../history";
+import { type GameResult, recordGame } from "../history";
 import "../styles/opponents.css";
 
 const NO_FX = { flash: {}, glint: null, floats: [], shakeKey: 0 };
@@ -74,15 +74,15 @@ function useConfetti(winner: boolean): ComponentType | null {
 }
 
 /** Appends this finished game to the device history once (dedupe by room code + game number). */
-function useDeviceHistory(view: ViewMessage, won: boolean) {
+function useDeviceHistory(view: ViewMessage, result: GameResult) {
   useEffect(() => {
     if (view.game?.phase !== "GAME_OVER" || view.you.seat === null) return;
     const mine = view.seats.find((s) => s.seatId === view.you.seatId);
     if (!mine) return;
     recordGame({
       code: view.code,
-      game: mine.record.wins + mine.record.losses,
-      won,
+      game: mine.record.wins + mine.record.ties + mine.record.losses,
+      result,
       at: Date.now(),
     });
   }, []);
@@ -90,15 +90,19 @@ function useDeviceHistory(view: ViewMessage, won: boolean) {
 
 export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOverProps) {
   const g = view.game;
-  const winnerSeats = (g?.winners ?? []).map((id) => seatOfPlayer(id, g));
+  const { winnerSeats, tie, allTied } = tieInfo(view);
   const names = winnerSeats.map(
     (s) =>
       view.seats.find((x) => x.seatId === g?.players.find((p) => p.seat === s)?.seatId)?.name ?? "",
   );
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
   const tableRef = useFlipReorder(view);
-  useDeviceHistory(view, iWon);
+  useDeviceHistory(view, !iWon ? "L" : tie ? "T" : "W");
   const Confetti = useConfetti(iWon);
+  const ranked = rankPlayers(view);
+  const ranks = new Map(
+    rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
+  );
   return (
     <div class="g-backdrop g-over">
       <section
@@ -108,42 +112,53 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         aria-label="Results"
       >
         {Confetti ? <Confetti /> : null}
-        <h2 class="g-winner">
-          <CrownIcon size={22} /> {winnerSeats.length > 1 ? "Tied winners" : "Winner"}
-          {": "}
-          <span class="g-name">{joinNames(names)}</span>
+        <h2 class="g-winner" data-tie={tie ? (allTied ? "all" : "some") : undefined}>
+          {tie ? <TieIcon size={22} /> : <CrownIcon size={22} />}{" "}
+          {allTied ? (
+            "It's a tie!"
+          ) : (
+            <>
+              {tie ? "Tie: " : "Winner: "}
+              {names.map((n, i) => (
+                <>
+                  {i > 0 ? " & " : null}
+                  <span class="g-name" title={n}>
+                    {n}
+                  </span>
+                </>
+              ))}
+            </>
+          )}
         </h2>
         <p class="muted g-reason">{endReasonText(view)}</p>
         <div ref={tableRef}>
           <ScoreTable view={view} />
         </div>
         <section class="g-final-cards" aria-label="Final score cards">
-          {rankPlayers(view)
-            .filter(hasCard)
-            .map((p, i) => (
-              <article
-                key={p.seat}
-                class="g-final-card"
-                data-seat-id={seatInfo(view, p)?.seatId}
-                aria-label={`${seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}'s card`}
-              >
-                <h3 class="g-final-head">
-                  <span class="num">{i + 1}.</span>{" "}
-                  <span class="g-name">{seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}</span>
-                </h3>
-                <Sheet
-                  player={p}
-                  lockedColors={g?.lockedColors ?? []}
-                  legal={NO_LEGAL}
-                  staged={null}
-                  ghost={null}
-                  disabled
-                  readOnly
-                  fx={NO_FX}
-                  onPick={noop}
-                />
-              </article>
-            ))}
+          {ranked.filter(hasCard).map((p) => (
+            <article
+              key={p.seat}
+              class="g-final-card"
+              data-seat-id={seatInfo(view, p)?.seatId}
+              aria-label={`${seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}'s card`}
+            >
+              <h3 class="g-final-head">
+                <span class="num">{ranks.get(p.seat)}.</span>{" "}
+                <span class="g-name">{seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}</span>
+              </h3>
+              <Sheet
+                player={p}
+                lockedColors={g?.lockedColors ?? []}
+                legal={NO_LEGAL}
+                staged={null}
+                ghost={null}
+                disabled
+                readOnly
+                fx={NO_FX}
+                onPick={noop}
+              />
+            </article>
+          ))}
         </section>
         <div class="chat-over">
           <ChatControls send={send} />

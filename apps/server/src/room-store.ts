@@ -37,7 +37,7 @@ export interface SeatRecord {
   away: boolean;
   lastSeenAt: number;
   /** Win/loss tally across rematches (J5). Absent = 0-0. Dies with the seat. */
-  record?: { wins: number; losses: number };
+  record?: { wins: number; ties: number; losses: number };
 }
 
 /** Storage key `"chat"`: persisted id counter + ring buffer of text messages. */

@@ -30,3 +30,21 @@
   gap: 6px;
   align-items: baseline;
 }
+
+/* Tie badge (T-UX-7): glyph + word, so a tie is not colour-only. */
+.g-tie-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  padding: 0 var(--s2);
+  border: 1px solid currentColor;
+  border-radius: var(--r-pill);
+}
+.g-rank {
+  color: var(--ink-muted);
+}
+.g-winner[data-tie] .g-name {
+  max-width: 14ch;
+}

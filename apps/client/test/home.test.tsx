@@ -195,9 +195,9 @@ describe("Home record", () => {
     const { unmount } = render(<Home route={{ screen: "home", code: null }} />);
     expect(screen.queryByTestId("your-record")).toBeNull();
     act(() => {
-      recordGame({ code: CODE, game: 1, won: true, at: 1 });
+      recordGame({ code: CODE, game: 1, result: "W", at: 1 });
     });
-    expect(screen.getByTestId("your-record").textContent).toBe("Your record: 1 W – 0 L");
+    expect(screen.getByTestId("your-record").textContent).toBe("Your record: 1 W – 0 T – 0 L");
     unmount();
     localStorage.clear();
     _resetHistoryForTests();

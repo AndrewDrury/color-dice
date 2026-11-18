@@ -126,14 +126,16 @@ function awaySeats(seats: SeatRecord[]): Set<number> {
   return out;
 }
 
-/** Every co-winner gets a win (ties), every other seated player a loss. Mutates `seats`. */
+/** A sole winner gets a win, co-winners (a tie) each get a tie, every other seated player a loss. Mutates `seats`. */
 export function tallyRecord(seats: SeatRecord[], winners: readonly string[]): void {
   const won = new Set(winners);
   for (const s of seats) {
     if (s.seatIndex === null) continue;
-    const r = s.record ?? { wins: 0, losses: 0 };
-    if (won.has(playerId(s.seatIndex))) r.wins += 1;
-    else r.losses += 1;
+    const r = s.record ?? { wins: 0, ties: 0, losses: 0 };
+    if (won.has(playerId(s.seatIndex))) {
+      if (won.size > 1) r.ties += 1;
+      else r.wins += 1;
+    } else r.losses += 1;
     s.record = r;
   }
 }

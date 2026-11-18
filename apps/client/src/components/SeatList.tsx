@@ -1,6 +1,7 @@
 import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
+import { recordLabel, recordText } from "../game/model";
 
 export type Seat = ViewMessage["seats"][number];
 
@@ -74,10 +75,10 @@ function SeatRow({
           <span
             role="img"
             class="num muted"
-            data-record={`${seat.record.wins}-${seat.record.losses}`}
-            aria-label={`${seat.record.wins} wins, ${seat.record.losses} losses`}
+            data-record={`${seat.record.wins}-${seat.record.ties}-${seat.record.losses}`}
+            aria-label={recordLabel(seat.record)}
           >
-            {seat.record.wins}–{seat.record.losses}
+            {recordText(seat.record)}
           </span>
         ) : null}
         {seat.host ? (
@@ -109,8 +110,8 @@ function SeatRow({
 
 /** Live seat list: online dot, name (text only), host badge, "(you)", host kick buttons. */
 export function SeatList({ seats, youSeatId, isHost, onKick }: SeatListProps) {
-  // W–L is hidden until somebody in the room has played a game.
-  const showRecord = seats.some((s) => s.record.wins + s.record.losses > 0);
+  // W–T–L is hidden until somebody in the room has played a game.
+  const showRecord = seats.some((s) => s.record.wins + s.record.ties + s.record.losses > 0);
   return (
     <ul class="stack" aria-label="Players" style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {seats.map((seat) => (
