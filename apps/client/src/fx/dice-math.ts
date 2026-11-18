@@ -1,0 +1,163 @@
+/**
+ * Pure dice geometry (H4). Cube faces are placed in CSS space (x right, y down, z toward
+ * the viewer): 1 front (+Z), 6 back (-Z), 3 right (+X), 4 left (-X), 2 top (-Y), 5 bottom (+Y).
+ * Opposite faces sum to 7. The cube transform is `rotateZ(z) rotateX(x) rotateY(y)`.
+ */
+
+export type Face = 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface Angles {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface SettlePose extends Angles {
+  /** Resting position jitter in px. */
+  tx: number;
+  ty: number;
+}
+
+export const FACE_NORMALS: Readonly<Record<Face, readonly [number, number, number]>> = {
+  1: [0, 0, 1],
+  6: [0, 0, -1],
+  3: [1, 0, 0],
+  4: [-1, 0, 0],
+  2: [0, -1, 0],
+  5: [0, 1, 0],
+};
+
+const FACE_ROTATION: Readonly<Record<Face, { x: number; y: number }>> = {
+  1: { x: 0, y: 0 },
+  6: { x: 0, y: 180 },
+  3: { x: 0, y: -90 },
+  4: { x: 0, y: 90 },
+  2: { x: -90, y: 0 },
+  5: { x: 90, y: 0 },
+};
+
+/** Cube rotation that turns `face` toward the viewer. */
+export function faceRotation(face: Face): { x: number; y: number } {
+  return { ...FACE_ROTATION[face] };
+}
+
+/** FNV-1a over the parts, so (code, turn, die) always gives the same seed for every player. */
+export function hashSeed(...parts: Array<string | number>): number {
+  let h = 0x811c9dc5;
+  for (const ch of parts.join("|")) {
+    h ^= ch.codePointAt(0) ?? 0;
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/** mulberry32: small deterministic PRNG returning floats in [0, 1). */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function between(rand: () => number, min: number, max: number): number {
+  return min + (max - min) * rand();
+}
+
+export const MAX_YAW = 12;
+export const MAX_JITTER = 6;
+
+/** Final pose: face rotation + 1–2 whole spins per axis + small yaw and position jitter. */
+export function settleTransform(face: Face, seed: number): SettlePose {
+  const rand = seededRandom(seed ^ 0x5e771e);
+  const base = FACE_ROTATION[face];
+  const spinsX = 1 + Math.floor(rand() * 2);
+  const spinsY = 1 + Math.floor(rand() * 2);
+  return {
+    x: base.x + 360 * spinsX,
+    y: base.y + 360 * spinsY,
+    z: Math.round(between(rand, -MAX_YAW, MAX_YAW) * 10) / 10,
+    tx: Math.round(between(rand, -MAX_JITTER, MAX_JITTER) * 10) / 10,
+    ty: Math.round(between(rand, -MAX_JITTER, MAX_JITTER) * 10) / 10,
+  };
+}
+
+/** Normalise an angle to [0, 360). */
+export function mod360(a: number): number {
+  return ((a % 360) + 360) % 360;
+}
+
+export function rotateCss(a: Angles): string {
+  return `rotateZ(${a.z}deg) rotateX(${a.x}deg) rotateY(${a.y}deg)`;
+}
+
+export interface TumblePlan {
+  /** One loop; it repeats seamlessly because every axis turns a whole number of times. */
+  keyframes: Keyframe[];
+  duration: number;
+  from: Angles;
+  /** Degrees added per loop, per axis. */
+  delta: Angles;
+}
+
+/** Spin rate 720–1080 °/s on the fastest axis, with random axis weights and directions. */
+export function tumbleKeyframes(seed: number): TumblePlan {
+  const rand = seededRandom(seed ^ 0x7a3b1e);
+  const rate = between(rand, 720, 1080);
+  const sx = rand() < 0.5 ? -1 : 1;
+  const sy = rand() < 0.5 ? -1 : 1;
+  // Axis weights: one axis turns twice per loop, the other once (or the other way round).
+  const xHeavy = rand() < 0.5;
+  const delta: Angles = { x: sx * (xHeavy ? 720 : 360), y: sy * (xHeavy ? 360 : 720), z: 0 };
+  const duration = Math.round((720 / rate) * 1000);
+  const from: Angles = {
+    x: Math.round(rand() * 360),
+    y: Math.round(rand() * 360),
+    z: Math.round(between(rand, -20, 20)),
+  };
+  const mid: Angles = {
+    x: from.x + delta.x / 2,
+    y: from.y + delta.y / 2,
+    z: from.z + between(rand, -25, 25),
+  };
+  const to: Angles = { x: from.x + delta.x, y: from.y + delta.y, z: from.z };
+  return {
+    keyframes: [
+      { transform: rotateCss(from) },
+      { transform: rotateCss(mid) },
+      { transform: rotateCss(to) },
+    ],
+    duration,
+    from,
+    delta,
+  };
+}
+
+/** Where the (linear) tumble is after `elapsed` ms. z wobble is ignored (it is small). */
+export function anglesAt(plan: TumblePlan, elapsed: number): Angles {
+  const t = plan.duration > 0 ? (Math.max(0, elapsed) % plan.duration) / plan.duration : 0;
+  return {
+    x: plan.from.x + plan.delta.x * t,
+    y: plan.from.y + plan.delta.y * t,
+    z: plan.from.z,
+  };
+}
+
+/**
+ * Shift each axis of `target` by whole turns so the cube keeps turning the way it tumbled,
+ * by at least `minTravel` degrees, then decelerates onto the face. The yaw takes the short way.
+ */
+export function continueTo(from: Angles, target: Angles, dir: Angles, minTravel = 60): Angles {
+  const axis = (f: number, t: number, d: number): number => {
+    const sign = d < 0 ? -1 : 1;
+    let travel = mod360((t - f) * sign);
+    if (travel < minTravel) travel += 360;
+    return f + sign * travel;
+  };
+  let dz = mod360(target.z - from.z);
+  if (dz > 180) dz -= 360;
+  return { x: axis(from.x, target.x, dir.x), y: axis(from.y, target.y, dir.y), z: from.z + dz };
+}

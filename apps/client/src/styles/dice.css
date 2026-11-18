@@ -1,0 +1,350 @@
+/* Dice and tray (H4). Animate transform/opacity only; JS (Web Animations) drives the roll. */
+
+.tray {
+  --die-size: 52px;
+  --die-gap: 10px;
+  --die-ivory: #fbf8f1;
+  --die-ink: #1c2230;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tray__felt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 104px;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background:
+    radial-gradient(120% 140% at 30% 0%, rgb(255 255 255 / 0.35), transparent 60%),
+    color-mix(in srgb, var(--paper) 55%, var(--table));
+  box-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 0.08),
+    inset 0 0 0 1px rgb(0 0 0 / 0.04);
+  overflow: visible;
+}
+
+.tray__dice {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--die-gap);
+}
+
+/* A small gap between the white pair and the coloured dice. */
+.tray__dice > .die:nth-child(2) {
+  margin-right: calc(var(--die-gap) * 0.8);
+}
+
+.tray__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 56px;
+}
+
+.tray__sum {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--e2);
+  font-size: var(--fs-large);
+  font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+}
+
+.tray__sum.is-pop {
+  animation: tray-pop var(--t-med) var(--ease-spring) both;
+}
+
+@keyframes tray-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tray__status,
+.tray__combo {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tray__roll {
+  min-height: var(--tap);
+  padding: 0 var(--s6);
+  border: 0;
+  border-radius: var(--r-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: var(--fw-heavy);
+  font-size: var(--fs-large);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 80ms var(--ease-out);
+}
+
+.tray__roll:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.tray__roll:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tray__roll:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* ---------- Die ---------- */
+
+.die {
+  --half: calc(var(--die-size) / 2);
+  --body: var(--die-ivory);
+  --pip: var(--die-ink);
+  --edge: #e3ddd0;
+  position: relative;
+  width: var(--die-size);
+  height: var(--die-size);
+  flex: none;
+  perspective: 600px;
+}
+
+.die--red {
+  --body: var(--row-red);
+  --pip: #fff;
+  --edge: #b02a31;
+}
+
+.die--yellow {
+  --body: var(--row-yellow);
+  --pip: var(--die-ink);
+  --edge: #c99600;
+}
+
+.die--green {
+  --body: var(--row-green);
+  --pip: #fff;
+  --edge: #167a43;
+}
+
+.die--blue {
+  --body: var(--row-blue);
+  --pip: #fff;
+  --edge: #1b52ad;
+}
+
+.die__fx,
+.die__body,
+.die__cube {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.die__shadow {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -9%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.35), transparent);
+  opacity: 0.85;
+  filter: blur(1.5px);
+}
+
+.die__face,
+.die__core {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-die);
+  backface-visibility: hidden;
+}
+
+.die__core {
+  inset: 3%;
+  border-radius: 12%;
+  background: var(--edge);
+  backface-visibility: visible;
+}
+
+.die__core--y {
+  transform: rotateY(90deg);
+}
+
+.die__core--z {
+  transform: rotateX(90deg);
+}
+
+.die__face {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 15%;
+  background:
+    radial-gradient(90% 80% at 28% 22%, rgb(255 255 255 / 0.45), transparent 55%), var(--body);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.06),
+    inset 0 -3px 5px rgb(0 0 0 / 0.14),
+    inset 0 3px 4px rgb(255 255 255 / 0.4);
+}
+
+.die__face--1 {
+  transform: translateZ(var(--half));
+}
+.die__face--6 {
+  transform: rotateY(180deg) translateZ(var(--half));
+}
+.die__face--3 {
+  transform: rotateY(90deg) translateZ(var(--half));
+}
+.die__face--4 {
+  transform: rotateY(-90deg) translateZ(var(--half));
+}
+.die__face--2 {
+  transform: rotateX(90deg) translateZ(var(--half));
+}
+.die__face--5 {
+  transform: rotateX(-90deg) translateZ(var(--half));
+}
+
+.pip {
+  width: 72%;
+  aspect-ratio: 1;
+  place-self: center;
+  border-radius: 50%;
+  background: var(--pip);
+  box-shadow: inset 0 1px 1.5px rgb(0 0 0 / 0.35);
+}
+
+.die.is-moving .die__body,
+.die.is-moving .die__cube,
+.die.is-moving .die__shadow {
+  will-change: transform;
+}
+
+.die.is-highlight::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: calc(var(--die-size) * 0.3);
+  box-shadow: 0 0 0 2px var(--accent);
+  pointer-events: none;
+}
+
+.die.is-removed .die__fx {
+  transform: scale(0.6);
+  opacity: 0.3;
+}
+
+.die__lock {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .die__shadow {
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .die__shadow {
+    background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
+  }
+}
+
+/* ---------- Sizes ---------- */
+
+/* Phones: six dice in one row with the sum badge underneath (fits 360 px). */
+@media (max-width: 599px) {
+  .tray {
+    --die-size: 42px;
+    --die-gap: 6px;
+  }
+  .tray__felt {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s2);
+    padding: var(--s2);
+  }
+  .tray__side {
+    flex-direction: row;
+    min-height: 30px;
+  }
+}
+
+@media (max-height: 699px) and (max-width: 599px) {
+  .tray {
+    --die-size: 36px;
+  }
+  .tray__felt {
+    min-height: 84px;
+    padding-block: var(--s1);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tray {
+    --die-size: 64px;
+    --die-gap: 14px;
+  }
+  .tray__felt {
+    min-height: 140px;
+  }
+}
+
+@media (hover: hover) {
+  .tray__roll:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 94%, #000);
+  }
+}
+
+/* ---------- Reduced motion (CSS side; JS skips tumble, spin and bounce) ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .tray__sum.is-pop {
+    animation: tray-fade var(--t-fast) linear both;
+  }
+  .tray__roll {
+    transition: none;
+  }
+}
+
+.tray--reduced .tray__sum.is-pop {
+  animation: tray-fade var(--t-fast) linear both;
+}
+
+@keyframes tray-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
