@@ -59,8 +59,18 @@ describe("leave during play", () => {
     });
     expect(v.seats.find((s) => s.seatId === host.seatId)).toMatchObject({
       away: true,
+      left: true,
       online: false,
     });
+    expect(v.seats.filter((s) => s.seatId !== host.seatId).map((s) => s.left)).toEqual([
+      false,
+      false,
+    ]);
+    // No hidden info added: seat entries carry only the allow-listed keys.
+    for (const s of v.seats)
+      expect(Object.keys(s).sort()).toEqual(
+        ["away", "host", "left", "name", "online", "record", "seatId"].sort(),
+      );
     expect(((await (await me(room.code, p1.token)).json()) as MeRes).host).toBe(true);
     // The left seat can't come back.
     const back = await api("POST", `/api/games/${room.code}/reclaim`, {
@@ -94,6 +104,18 @@ describe("leave during play", () => {
     expect(await storageSize(room.code)).toEqual({ keys: 0, alarm: null });
     expect((await me(room.code, p2.token)).status).toBe(401);
     for (const c of conns) c.close();
+  });
+
+  it("lobby seats report left=false; a lobby leave removes the seat", async () => {
+    const room = await createRoom(2);
+    const [host, p1] = room.players as [AuthRes, AuthRes];
+    const c0 = await connect(room.code, host.token);
+    const v0 = await c0.until(() => (c0.view().seats.length === 2 ? c0.view() : undefined));
+    expect(v0.seats.map((s) => s.left)).toEqual([false, false]);
+    expect((await leave(room.code, p1.token)).status).toBe(204);
+    const v1 = await c0.until(() => (c0.view().seats.length === 1 ? c0.view() : undefined));
+    expect(v1.seats.map((s) => s.left)).toEqual([false]);
+    c0.close();
   });
 
   it("the last lobby player leaving deletes the room and its public entry", async () => {

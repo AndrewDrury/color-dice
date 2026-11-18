@@ -42,6 +42,8 @@ export interface ViewSeat {
   host: boolean;
   online: boolean;
   away: boolean;
+  /** The seat left the game for good (K2.2). The server always sends it. */
+  left?: boolean;
   /** Wins/ties/losses in this room across rematches. Public. */
   record: { wins: number; ties: number; losses: number };
 }
@@ -288,6 +290,7 @@ export const ViewMessageSchema = z
             host: z.boolean(),
             online: z.boolean(),
             away: z.boolean(),
+            left: z.boolean().optional(),
             record: z.object({ wins: NonNegInt, ties: NonNegInt, losses: NonNegInt }).strict(),
           })
           .strict(),

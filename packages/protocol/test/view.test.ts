@@ -95,6 +95,13 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(lobby).success).toBe(true);
   });
 
+  it("seat `left` is an optional boolean", () => {
+    const withLeft = { ...fixture, seats: fixture.seats.map((s) => ({ ...s, left: true })) };
+    expect(ViewMessageSchema.safeParse(withLeft).success).toBe(true);
+    const bad = { ...fixture, seats: fixture.seats.map((s) => ({ ...s, left: "yes" })) };
+    expect(ViewMessageSchema.safeParse(bad).success).toBe(false);
+  });
+
   it("parses hidden opponent cards (sheet and score.rows null)", () => {
     const g = fixture.game;
     const mine = g?.players[0];
