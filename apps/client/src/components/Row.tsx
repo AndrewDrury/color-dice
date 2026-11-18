@@ -1,5 +1,5 @@
 /** One colour row: letter rail, 11 number boxes, the lock box. Memoised by its data. */
-import { boxStatus, type Color, numberAt } from "@cd/engine";
+import { boxStatus, type Color, LOCK_MIN_MARKS, numberAt } from "@cd/engine";
 import type { ViewRow } from "@cd/protocol";
 import { memo } from "preact/compat";
 import { COLOR_LETTER, COLOR_NAME, COLORS, cssColor, markCount } from "../game/model";
@@ -24,7 +24,9 @@ export interface RowProps {
 function RowImpl(p: RowProps) {
   const engineRow = { color: p.color, marked: p.row.marked, lockCrossed: p.row.lockCrossed };
   const closed = p.lockedColors.includes(p.color);
-  const gated = markCount(p.row) < 5;
+  const marks = markCount(p.row);
+  const gated = marks < LOCK_MIN_MARKS;
+  const pips = !closed && !p.row.lockCrossed;
   return (
     <div
       class={`g-row c-${cssColor(p.color)}${closed ? " is-closed" : ""}${p.glint ? " has-glint" : ""}`}
@@ -51,17 +53,24 @@ function RowImpl(p: RowProps) {
         );
       })}
       <span
-        class={`g-lockbox${p.row.lockCrossed ? " is-crossed" : ""}`}
+        class={`g-lockbox${p.row.lockCrossed ? " is-crossed" : ""}${pips && !gated ? " is-available" : ""}`}
         role="img"
         aria-label={
           p.row.lockCrossed
             ? `${COLOR_NAME[p.color]} lock, crossed`
             : gated && !closed
-              ? `${COLOR_NAME[p.color]} lock, needs 5 marks`
-              : `${COLOR_NAME[p.color]} lock`
+              ? `${COLOR_NAME[p.color]} lock, needs ${LOCK_MIN_MARKS} marks, has ${marks}`
+              : `${COLOR_NAME[p.color]} lock${pips ? ", available" : ""}`
         }
       >
-        <LockIcon size={16} />
+        <LockIcon size={14} />
+        {pips ? (
+          <span class="g-pips" data-marks={Math.min(marks, LOCK_MIN_MARKS)} aria-hidden="true">
+            {Array.from({ length: LOCK_MIN_MARKS }, (_, i) => (
+              <i key={i} class={i < marks ? "is-on" : ""} />
+            ))}
+          </span>
+        ) : null}
       </span>
     </div>
   );

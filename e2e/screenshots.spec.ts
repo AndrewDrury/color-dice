@@ -73,6 +73,9 @@ test.describe("screenshots @shots", () => {
             await expect(active.page.locator(".g-pass")).toBeVisible();
             if (t === 0) await shot(active, "action2");
             await pass(active.page);
+            // Lock progress pips: Red at 3 marks, then at 5 (lock available).
+            if (t === 2) await shot(a, "marks3");
+            if (t === 4) await shot(a, "marks5");
           }
           // Red is locked: its die is removed and its row closed.
           await expect(a.page.locator("[data-die].is-removed")).toHaveCount(1);
@@ -107,6 +110,7 @@ test.describe("screenshots @shots", () => {
             await pass(other.page);
             await pass(active.page);
             await pass(active.page);
+            if (turn === 8) await shot(a, "penalties");
             if (turn >= 13) break;
           }
           await expectGameOver(a.page);

@@ -1,6 +1,7 @@
 /** Your big score sheet: four rows, penalties and the row-score line. */
 import type { Color } from "@cd/engine";
 import type { FullViewPlayer } from "@cd/protocol";
+import { Fragment } from "preact";
 import { COLOR_LETTER, COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
 import { Row } from "./Row";
@@ -81,28 +82,45 @@ export function Sheet(p: SheetProps) {
         />
       ))}
       <div class="g-foot">
-        <span class="g-pen" role="img" aria-label={`${p.player.sheet.penalties} of 4 penalties`}>
+        <span
+          class="g-pen"
+          role="img"
+          aria-label={`${p.player.sheet.penalties} of 4 penalties, minus 5 each`}
+          title="Active player who marks nothing takes one. 4th ends the game."
+        >
+          <span class="g-pen-label">Penalty −5 each</span>
           {Array.from({ length: 4 }, (_, i) => (
             <span
               key={i}
               class={`g-pbox${i < p.player.sheet.penalties ? " is-on" : ""}${p.warnPenalty && i === p.player.sheet.penalties ? " is-warn" : ""}`}
             >
-              {i < p.player.sheet.penalties ? "✕" : ""}
+              {i < p.player.sheet.penalties ? "✕" : "−5"}
             </span>
           ))}
         </span>
-        <span class="g-scores">
-          {COLORS.map((c) => (
-            <RowScore
-              key={c}
-              color={c}
-              value={p.player.score.rows[c]}
-              floats={p.fx.floats}
-              done={p.onFloatDone}
-            />
+        <span class="g-scores g-eq">
+          {COLORS.map((c, i) => (
+            <Fragment key={c}>
+              {i > 0 ? <span class="g-op">+</span> : null}
+              <RowScore
+                color={c}
+                value={p.player.score.rows[c]}
+                floats={p.fx.floats}
+                done={p.onFloatDone}
+              />
+            </Fragment>
           ))}
+          <span class="g-op">−</span>
+          <span class="g-score g-penscore" title="Penalty points">
+            <span class="g-pencount" aria-hidden="true">
+              {"✕".repeat(p.player.sheet.penalties)}
+            </span>{" "}
+            <span class="num" data-penalty-points={Math.abs(p.player.score.penalties)}>
+              {Math.abs(p.player.score.penalties)}
+            </span>
+          </span>
+          <span class="g-op">=</span>
           <span class="g-total">
-            ={" "}
             <span class="num" data-total={p.player.score.total}>
               {total}
             </span>

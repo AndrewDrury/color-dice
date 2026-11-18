@@ -229,24 +229,26 @@
 }
 .g-foot {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
   min-height: 32px;
   font-size: var(--fs-small);
 }
 .g-pen {
   display: inline-flex;
+  align-items: center;
   gap: 3px;
 }
 .g-pbox {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 18px;
   border-radius: 4px;
   border: 1.5px solid var(--ink-muted);
-  font-size: 11px;
+  color: var(--ink-muted);
+  font-size: 10px;
   line-height: 1;
 }
 .g-pbox.is-on {
@@ -261,8 +263,9 @@
 .g-scores {
   display: inline-flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--s2);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
   font-weight: var(--fw-bold);
 }
 .g-score {

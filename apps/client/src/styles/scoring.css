@@ -1,0 +1,121 @@
+/* Score card clarity (T-UX-3): penalty label, equation chips, points guide, lock pips. */
+.g-pen-label {
+  margin-right: 4px;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  color: var(--ink-muted);
+}
+.g-eq {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.g-eq .g-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  background: var(--row-tint);
+  color: var(--row-ink);
+}
+.g-eq .g-score abbr {
+  color: var(--row-ink);
+  font-weight: var(--fw-heavy);
+}
+.g-eq .g-penscore {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--danger);
+  color: var(--danger);
+}
+.g-pencount {
+  font-size: 10px;
+  letter-spacing: -1px;
+}
+.g-op {
+  color: var(--ink-muted);
+  font-weight: var(--fw-heavy);
+}
+.g-eq .g-total {
+  margin-left: 0;
+  font-size: 1.15em;
+  font-weight: var(--fw-heavy);
+}
+
+/* Lock box: five pips toward the 5 marks needed. */
+.g-lockbox:has(.g-pips) {
+  width: 100%;
+  max-width: 34px;
+  height: 30px;
+  gap: 1px;
+  align-content: center;
+  border-radius: var(--r-box);
+}
+.g-pips {
+  display: flex;
+  gap: 1px;
+}
+.g-pips i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--row-ink);
+}
+.g-pips i.is-on {
+  background: var(--row-ink);
+}
+.g-lockbox.is-available {
+  background: var(--row-color);
+  color: var(--row-on);
+}
+.g-lockbox.is-available .g-pips i {
+  box-shadow: inset 0 0 0 1px var(--row-on);
+  background: var(--row-on);
+}
+
+/* Points guide */
+.g-guide {
+  padding: var(--s2) var(--s3);
+  font-size: var(--fs-small);
+}
+.g-guide > summary {
+  cursor: pointer;
+  font-weight: var(--fw-bold);
+  min-height: 24px;
+}
+.g-guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.g-guide-table th {
+  width: 30px;
+  text-align: left;
+  font-weight: var(--fw-bold);
+  color: var(--ink-muted);
+}
+.g-guide-table td {
+  padding: 1px 0;
+}
+.g-guide-pts td {
+  font-weight: var(--fw-bold);
+  font-size: 0.85em;
+}
+.g-guide-dots td {
+  height: 14px;
+  white-space: nowrap;
+}
+.g-guide-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--row-color);
+  box-shadow: 0 0 0 1px var(--paper);
+  margin: 0 -1px;
+}
+.g-guide-cap {
+  margin: var(--s1) 0 0;
+  color: var(--ink-muted);
+}

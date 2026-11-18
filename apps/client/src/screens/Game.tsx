@@ -9,6 +9,7 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, type RollControls } from "../components/DiceTray";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
+import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
 import { feedback } from "../fx/feedback";
@@ -28,6 +29,7 @@ import { getPrefs, setPrefs } from "../prefs";
 import { navigate, resyncUrl } from "../router";
 import { clearView, dismissToast, showToast, useAppState } from "../store";
 import "../styles/game.css";
+import "../styles/scoring.css";
 import { GameHint } from "./GameHint";
 import { GameOver } from "./GameOver";
 
@@ -312,7 +314,9 @@ function Board({
               onFloatDone={fx.dropFloat}
             />
           ) : null}
-          <div class="g-guide-slot" />
+          <div class="g-guide-slot">
+            {me ? <ScoreGuide rows={me.sheet.rows} collapsible={viewport === "phone"} /> : null}
+          </div>
           <DiceTray
             roll={g.roll}
             lockedColors={g.lockedColors}
