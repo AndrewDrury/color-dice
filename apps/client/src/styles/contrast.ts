@@ -12,10 +12,11 @@ export const TOKENS: Record<Theme, Record<string, string>> = {
     "--table": "#EFE9DF",
     "--paper": "#FFFDF8",
     "--ink": "#1C2230",
-    "--ink-muted": "#72757C", // 62 % ink over paper
+    "--ink-muted": "#5E626A", // ~65 % ink over paper, AA on paper and table
     "--accent": "#5B5BF0",
     "--on-accent": "#FFFFFF",
-    "--danger": "#D6453D",
+    "--danger": "#B3342A",
+    "--on-danger": "#FFFFFF",
     "--row-red": "#D9363E",
     "--row-red-tint": "#FCE3E2",
     "--row-red-ink": "#7A1015",
@@ -41,6 +42,7 @@ export const TOKENS: Record<Theme, Record<string, string>> = {
     "--accent": "#8C8CFF",
     "--on-accent": "#0E131C",
     "--danger": "#FF7A70",
+    "--on-danger": "#0E131C",
     "--row-red": "#D9363E",
     "--row-red-tint": "#442633", // 22 % solid over paper
     "--row-red-ink": "#F4F6FA",
@@ -73,16 +75,21 @@ export const PAIRS: Record<Theme, ContrastPair[]> = {
     { fg: "--ink", bg: "--table" },
     { fg: "--ink", bg: "--paper" },
     { fg: "--ink-muted", bg: "--paper" },
+    { fg: "--ink-muted", bg: "--table" },
+    { fg: "--danger", bg: "--table" },
+    { fg: "--on-danger", bg: "--danger" }, // toast and danger buttons
     { fg: "--accent", bg: "--paper" },
     { fg: "--on-accent", bg: "--accent" },
-    // 4.3:1 — penalty figures are bold ≥ 18.66 px; never use danger for body text on paper.
-    { fg: "--danger", bg: "--paper", large: true },
+    { fg: "--danger", bg: "--paper" },
     ...rowPairs(),
   ],
   dark: [
     { fg: "--ink", bg: "--table" },
     { fg: "--ink", bg: "--paper" },
     { fg: "--ink-muted", bg: "--paper" },
+    { fg: "--ink-muted", bg: "--table" },
+    { fg: "--danger", bg: "--table" },
+    { fg: "--on-danger", bg: "--danger" }, // toast and danger buttons
     { fg: "--accent", bg: "--paper" },
     { fg: "--on-accent", bg: "--accent" },
     { fg: "--danger", bg: "--paper" },

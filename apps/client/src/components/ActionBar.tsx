@@ -3,6 +3,7 @@ import type { Color } from "@cd/engine";
 import type { ViewMessage } from "@cd/protocol";
 import { COLOR_NAME, cssColor } from "../game/model";
 import { canPass, passLabel, passTakesPenalty, type Staged } from "../game/staging";
+import { RollButton, type RollControls } from "./DiceTray";
 import { StatusBar } from "./StatusBar";
 
 export interface ActionBarProps {
@@ -14,7 +15,10 @@ export interface ActionBarProps {
   sent: boolean;
   /** Dice still tumbling: no marking yet. */
   gated: boolean;
-  onRoll: () => void;
+  /** Roll press handlers from the tray (hold to shake, release to throw). */
+  rollControls: { current: RollControls | null };
+  /** The dice are tumbling: Roll is disabled. */
+  rolling?: boolean;
   onPass: () => void;
   onConfirm: () => void;
 }
@@ -30,9 +34,9 @@ export function ActionBar(p: ActionBarProps) {
   let primary: preact.JSX.Element;
   if (view.you.canRoll) {
     primary = (
-      <button type="button" class="btn btn-primary g-primary" onClick={p.onRoll}>
+      <RollButton controls={p.rollControls} class="btn btn-primary g-primary" disabled={p.rolling}>
         Roll
-      </button>
+      </RollButton>
     );
   } else if (markStaged) {
     primary = (

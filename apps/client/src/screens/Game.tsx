@@ -6,7 +6,7 @@ import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { DiceTray } from "../components/DiceTray";
+import { DiceTray, type RollControls } from "../components/DiceTray";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
 import { GearButton, type Panel, Panels } from "../components/Settings";
@@ -25,7 +25,7 @@ import { useStaging } from "../game/useStaging";
 import { useViewport } from "../game/useViewport";
 import { errorText } from "../i18n";
 import { getPrefs, setPrefs } from "../prefs";
-import { navigate } from "../router";
+import { navigate, resyncUrl } from "../router";
 import { clearView, dismissToast, showToast, useAppState } from "../store";
 import "../styles/game.css";
 import { GameHint } from "./GameHint";
@@ -47,13 +47,15 @@ interface Info {
 export function Game({ code }: { code: string }) {
   const [rollFailed, setRollFailed] = useState(0);
   const [failSignal, setFailSignal] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  useBackGuard(() => setLeaving(true));
   const { view: storeView, status, toast, epoch, offlineSince } = useAppState();
   const view = storeView?.code === code ? storeView : null;
   const conn = useGameSocket(code, (e: ErrorMessage) => {
     showToast(errorText(e.code, e.reason), "error");
     feedback("error");
     if (e.command === "roll") setRollFailed((n) => n + 1);
-    setFailSignal((n) => n + 1);
+    if (e.command === "action1" || e.command === "action2") setFailSignal((n) => n + 1);
   });
 
   useEffect(() => {
@@ -85,6 +87,8 @@ export function Game({ code }: { code: string }) {
       conn={conn}
       rollFailed={rollFailed}
       failSignal={failSignal}
+      leaving={leaving}
+      setLeaving={setLeaving}
     />
   );
 }
@@ -97,6 +101,8 @@ interface BoardProps {
   conn: ReturnType<typeof useGameSocket>;
   rollFailed: number;
   failSignal: number;
+  leaving: boolean;
+  setLeaving: (v: boolean) => void;
 }
 
 /** Push one history entry so Back / swipe-back asks before leaving (H10). */
@@ -117,14 +123,34 @@ function useBackGuard(onBack: () => void) {
       cb.current();
     };
     globalThis.addEventListener("popstate", on);
-    return () => globalThis.removeEventListener("popstate", on);
+    return () => {
+      globalThis.removeEventListener("popstate", on);
+      // Pop our extra entry so Back works normally on Home, then restore the URL it exposes.
+      try {
+        if ((globalThis.history.state as { cdGuard?: boolean } | null)?.cdGuard) {
+          globalThis.addEventListener("popstate", resyncUrl, { once: true });
+          globalThis.history.back();
+        }
+      } catch {
+        // No history (tests, sandboxed frames).
+      }
+    };
   }, []);
 }
 
-function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal }: BoardProps) {
+function Board({
+  offlineSince,
+  view,
+  status,
+  toast,
+  conn,
+  rollFailed,
+  failSignal,
+  leaving,
+  setLeaving,
+}: BoardProps) {
   const game = view.game;
   const viewport = useViewport();
-  const [leaving, setLeaving] = useState(false);
   const [rematching, setRematching] = useState(false);
   const [rematchBusy, setRematchBusy] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
@@ -162,15 +188,28 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
   const [landedKey, setLandedKey] = useState<string | null>(null);
   const landed = pending.current === null || landedKey === pending.current;
   const landTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const markLanded = (delay: number) => {
     const key = pending.current;
     clearTimeout(landTimer.current);
+    clearTimeout(fallbackTimer.current);
     landTimer.current = setTimeout(() => setLandedKey(key), delay);
   };
   useEffect(() => {
-    if (cur.liveRollKey) markLanded(LAND_FALLBACK_MS);
-    return () => clearTimeout(landTimer.current);
+    if (!cur.liveRollKey) return;
+    const key = cur.liveRollKey;
+    // The tray normally reports the landing first (its effect runs before this one).
+    clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(() => setLandedKey(key), LAND_FALLBACK_MS);
   }, [cur.liveRollKey]);
+  // Only on unmount: a newer view (liveRollKey back to null) must not cancel a pending landing.
+  useEffect(
+    () => () => {
+      clearTimeout(landTimer.current);
+      clearTimeout(fallbackTimer.current);
+    },
+    [],
+  );
 
   // ---- staging, errors, effects ----
   const st = useStaging(view, conn.send);
@@ -193,6 +232,8 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
     showToast("Not connected. Trying to reconnect…", "error");
     setLocalFail((n) => n + 1);
   };
+  const rollControls = useRef<RollControls | null>(null);
+  const [rolling, setRolling] = useState(false);
   const gameOver = g.phase === "GAME_OVER";
 
   const myMove =
@@ -200,7 +241,6 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
   useWakeLock(!gameOver);
   useTabAttention(myMove);
-  useBackGuard(() => setLeaving(true));
   useGameKeys({
     canRoll: view.you.canRoll && panel === null && !leaving && !rematching && !gameOver,
     canPass: canPass(view) && !view.you.canRoll && panel === null && !leaving && !gameOver,
@@ -223,7 +263,8 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
         staged={st.staged}
         sent={st.sent !== null}
         gated={!landed}
-        onRoll={onRoll}
+        rollControls={rollControls}
+        rolling={rolling}
         onPass={st.stagePass}
         onConfirm={st.confirm}
       />
@@ -266,6 +307,8 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
             rollFailed={rollFailed + localFail}
             resync={cur.resync}
             onLanded={() => markLanded(LAND_GLOW_DELAY_MS)}
+            controls={rollControls}
+            onBusyChange={setRolling}
           />
           {me ? (
             <Sheet

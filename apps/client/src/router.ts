@@ -47,6 +47,11 @@ function syncUrl(code: string | null): void {
   }
 }
 
+/** Re-apply `?game=` for the current route (after history moved under us). */
+export function resyncUrl(): void {
+  syncUrl(route.code);
+}
+
 export function navigate(screen: Screen, code: string | null = null): void {
   const nextCode = NEEDS_CODE.has(screen) ? code : null;
   if (

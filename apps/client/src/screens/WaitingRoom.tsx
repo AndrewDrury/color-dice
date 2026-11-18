@@ -165,6 +165,15 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const maxPlayers = view?.room.maxPlayers ?? 0;
   const canStart = players >= MIN_PLAYERS && players <= maxPlayers;
   const lockedUntil = view?.room.joinLockedUntil ?? null;
+  const [, setNow] = useState(0);
+  // Re-render when the join lock expires so the warning disappears.
+  useEffect(() => {
+    if (lockedUntil === null) return;
+    const ms = lockedUntil - Date.now();
+    if (ms <= 0) return;
+    const t = setTimeout(() => setNow(Date.now()), ms + 50);
+    return () => clearTimeout(t);
+  }, [lockedUntil]);
   const showLock = isHost && lockedUntil !== null && lockedUntil > Date.now();
 
   return (

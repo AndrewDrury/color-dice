@@ -21,9 +21,7 @@ export function ReactionFloat({ entry, mine }: { entry: ReactionEntry; mine: boo
     return () => clearTimeout(t);
   }, [entry.id, reduced]);
   const style = rect
-    ? reduced
-      ? { left: `${rect.right + 4}px`, top: `${rect.top + rect.height / 2}px` }
-      : { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom}px` }
+    ? { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom + 6}px` } // below the chip, never over its name
     : { right: "16px", top: "calc(env(safe-area-inset-top) + 60px)" };
   return (
     <span class={`rx-float${reduced ? " is-static" : ""}`} style={style} aria-hidden="true">

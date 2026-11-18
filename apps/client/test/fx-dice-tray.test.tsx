@@ -1,6 +1,12 @@
 import { act, cleanup, fireEvent, render } from "@testing-library/preact";
+import { useRef, useState } from "preact/hooks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DiceTray, type DiceTrayProps } from "../src/components/DiceTray";
+import {
+  DiceTray,
+  type DiceTrayProps,
+  RollButton,
+  type RollControls,
+} from "../src/components/DiceTray";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 
@@ -15,6 +21,22 @@ function props(over: Partial<DiceTrayProps> = {}): DiceTrayProps {
     turnKey: { code: "K7QF2", turnNumber: 9 },
     ...over,
   };
+}
+
+/** The tray plus the single Roll control the ActionBar renders. */
+function Harness(p: DiceTrayProps) {
+  const controls = useRef<RollControls | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <DiceTray {...p} controls={controls} onBusyChange={setBusy} />
+      {p.canRoll ? (
+        <RollButton controls={controls} class="tray__roll" disabled={busy}>
+          Roll
+        </RollButton>
+      ) : null}
+    </>
+  );
 }
 
 const dieEl = (c: Element, id: string) => c.querySelector<HTMLElement>(`[data-die="${id}"]`);
@@ -60,14 +82,14 @@ describe("DiceTray", () => {
     expect(c.querySelector(".tray__sum")?.textContent).toContain("8");
   });
 
-  it("hides Roll when canRoll is false", () => {
-    const { container } = render(<DiceTray {...props({ roll: ROLL })} />);
-    expect(container.querySelector(".tray__roll")).toBeNull();
+  it("never renders its own Roll button (the ActionBar owns the one Roll control)", () => {
+    const { container } = render(<DiceTray {...props({ roll: ROLL, canRoll: true })} />);
+    expect(container.querySelector("button")).toBeNull();
   });
 
   it("a quick tap on Roll throws once and tumbles", () => {
     const onRoll = vi.fn();
-    const { container } = render(<DiceTray {...props({ canRoll: true, onRoll })} />);
+    const { container } = render(<Harness {...props({ canRoll: true, onRoll })} />);
     const btn = container.querySelector<HTMLButtonElement>(".tray__roll");
     if (!btn) throw new Error("no Roll button");
     fireEvent.pointerDown(btn, { button: 0, pointerId: 1 });
@@ -80,7 +102,7 @@ describe("DiceTray", () => {
 
   it("holding Space shakes, releasing throws", () => {
     const onRoll = vi.fn();
-    const { container } = render(<DiceTray {...props({ canRoll: true, onRoll })} />);
+    const { container } = render(<Harness {...props({ canRoll: true, onRoll })} />);
     const btn = container.querySelector<HTMLButtonElement>(".tray__roll");
     if (!btn) throw new Error("no Roll button");
     fireEvent.keyDown(btn, { key: " " });

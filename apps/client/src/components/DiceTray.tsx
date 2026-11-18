@@ -3,6 +3,7 @@
  * the Action 2 helper highlight and the hold-to-shake Roll button (pointer + Space/Enter).
  */
 import type { Color } from "@cd/engine";
+import type { JSX } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 import { type Face, hashSeed } from "../fx/dice-math";
 import { feedback } from "../fx/feedback";
@@ -35,6 +36,49 @@ export interface DiceTrayProps {
   resync?: boolean;
   /** After the last die lands on a live roll (legal-box glow starts 100 ms later). */
   onLanded?: () => void;
+  /** Filled with the Roll press handlers; the ActionBar's `RollButton` (the one Roll control) uses them. */
+  controls?: { current: RollControls | null };
+  /** Called when the dice start / stop tumbling (the Roll button disables meanwhile). */
+  onBusyChange?: (busy: boolean) => void;
+}
+
+export interface RollControls {
+  enabled: boolean;
+  onPointerDown: (e: PointerEvent) => void;
+  onPointerUp: () => void;
+  onPointerCancel: () => void;
+  onKeyDown: (e: KeyboardEvent) => void;
+  onKeyUp: (e: KeyboardEvent) => void;
+  onClick: () => void;
+}
+
+/**
+ * The single primary Roll control (tap throws, hold shakes, release throws). Rendered by the
+ * ActionBar; its behaviour comes from the tray through `controls`.
+ */
+export function RollButton(p: {
+  controls: { current: RollControls | null };
+  class?: string;
+  disabled?: boolean;
+  children?: JSX.Element | string;
+}) {
+  const c = p.controls;
+  return (
+    <button
+      type="button"
+      class={p.class}
+      disabled={p.disabled}
+      onPointerDown={(e) => c.current?.onPointerDown(e)}
+      onPointerUp={() => c.current?.onPointerUp()}
+      onPointerCancel={() => c.current?.onPointerCancel()}
+      onKeyDown={(e) => c.current?.onKeyDown(e)}
+      onKeyUp={(e) => c.current?.onKeyUp(e)}
+      onClick={() => c.current?.onClick()}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {p.children ?? "Roll"}
+    </button>
+  );
 }
 
 const COLORED: readonly Color[] = ["RED", "YELLOW", "GREEN", "BLUE"];
@@ -144,7 +188,10 @@ export function DiceTray(props: DiceTrayProps) {
     if (press.current) throwNow();
   };
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === " " || e.key === "Enter") e.preventDefault();
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation(); // the document-level Space/R shortcut must not roll a second time
+    }
     if (e.repeat) return;
     if (e.key === " ") beginPress();
     else if (e.key === "Enter" && rollEnabled) throwNow();
@@ -159,6 +206,23 @@ export function DiceTray(props: DiceTrayProps) {
     if (Date.now() < suppressClickUntil.current || press.current || !rollEnabled) return;
     throwNow();
   };
+
+  if (props.controls) {
+    props.controls.current = {
+      enabled: rollEnabled,
+      onPointerDown,
+      onPointerUp,
+      onPointerCancel: cancelPress,
+      onKeyDown,
+      onKeyUp,
+      onClick,
+    };
+  }
+  const onBusyRef = useRef(props.onBusyChange);
+  onBusyRef.current = props.onBusyChange;
+  useEffect(() => {
+    onBusyRef.current?.(busy);
+  }, [busy]);
 
   // ---- Dice ----
   let present = 0;
@@ -222,22 +286,6 @@ export function DiceTray(props: DiceTrayProps) {
           ) : null}
         </div>
       </div>
-      {canRoll ? (
-        <button
-          type="button"
-          class="tray__roll"
-          disabled={!rollEnabled}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
-          onPointerCancel={cancelPress}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          onClick={onClick}
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          Roll
-        </button>
-      ) : null}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import type { PublicGame } from "@cd/protocol";
 import { useLayoutEffect, useRef } from "preact/hooks";
+import { LockIcon } from "./icons";
 
 export const ROW_ANIM_MS = 220;
 
@@ -66,7 +67,7 @@ export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
       }}
     >
       <span aria-label="Password protected" role="img">
-        🔒
+        <LockIcon size={16} />
       </span>
       <span class="stack" style={{ gap: 0, flex: "1 1 10rem", minWidth: 0 }}>
         <strong style={{ overflowWrap: "anywhere" }}>{game.roomName}</strong>

@@ -20,10 +20,20 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
   const [shake, setShake] = useState(0);
   const latest = useRef({ view, staged, sent });
   latest.current = { view, staged, sent };
+  /** phase + turn at the time of the send. */
+  const sentAt = useRef<string | null>(null);
+  const phaseKey = (v: ViewMessage) => `${v.game?.phase}:${v.game?.turn?.number ?? ""}`;
 
-  // A newer view answers the send; keep a staged choice only while it is still legal.
+  // The send is answered once your own decision is registered or the phase/turn moved on
+  // (not by any unrelated new version). Keep a staged choice only while it is still legal.
   useEffect(() => {
-    setSent(null);
+    if (
+      latest.current.sent &&
+      (phaseKey(view) !== sentAt.current ||
+        (view.game?.phase === "ACTION_1" && view.you.action1Decision !== null))
+    ) {
+      setSent(null);
+    }
     setStaged((s) => {
       if (!s) return s;
       const ok =
@@ -41,6 +51,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
       return;
     }
     if (send(msg)) {
+      sentAt.current = phaseKey(v);
       setSent(s);
       setStaged(null);
     } else {
