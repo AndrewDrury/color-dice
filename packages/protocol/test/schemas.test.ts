@@ -16,9 +16,11 @@ import {
   MaxPlayersSchema,
   MIN_PLAYERS,
   PatchRoomReqSchema,
+  PLAYER_NAME_MAX,
   PublicGameSchema,
   parseClientMessage,
   ReclaimReqSchema,
+  ROOM_NAME_MAX,
 } from "../src";
 
 const TOKEN = "A".repeat(43);
@@ -72,10 +74,32 @@ describe("HTTP request schemas", () => {
 
   it("rejects names that are empty after cleaning, and space-only room names", () => {
     expect(JoinReqSchema.safeParse({ name: " \u0000​ ", password: "abcd" }).success).toBe(false);
-    expect(JoinReqSchema.safeParse({ name: "x".repeat(21), password: "abcd" }).success).toBe(false);
+    expect(
+      JoinReqSchema.safeParse({ name: "x".repeat(PLAYER_NAME_MAX + 1), password: "abcd" }).success,
+    ).toBe(false);
     expect(CreateGameReqSchema.safeParse({ ...createOk, roomName: "      " }).success).toBe(false);
     expect(CreateGameReqSchema.safeParse({ ...createOk, roomName: "ab" }).success).toBe(false);
-    expect(CreateGameReqSchema.safeParse({ ...createOk, roomName: "x".repeat(31) }).success).toBe(
+    expect(
+      CreateGameReqSchema.safeParse({ ...createOk, roomName: "x".repeat(ROOM_NAME_MAX + 1) })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts names at the max length and rejects max + 1", () => {
+    expect(ROOM_NAME_MAX).toBe(50);
+    expect(PLAYER_NAME_MAX).toBe(30);
+    const ok = (roomName: string, name: string) =>
+      CreateGameReqSchema.safeParse({ ...createOk, roomName, name }).success;
+    expect(ok("r".repeat(ROOM_NAME_MAX), "p".repeat(PLAYER_NAME_MAX))).toBe(true);
+    expect(ok("r".repeat(ROOM_NAME_MAX + 1), "p")).toBe(false);
+    expect(ok("room", "p".repeat(PLAYER_NAME_MAX + 1))).toBe(false);
+    expect(
+      JoinReqSchema.safeParse({ name: "p".repeat(PLAYER_NAME_MAX), password: "abcd" }).success,
+    ).toBe(true);
+    expect(PatchRoomReqSchema.safeParse({ roomName: "r".repeat(ROOM_NAME_MAX) }).success).toBe(
+      true,
+    );
+    expect(PatchRoomReqSchema.safeParse({ roomName: "r".repeat(ROOM_NAME_MAX + 1) }).success).toBe(
       false,
     );
   });

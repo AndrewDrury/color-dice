@@ -38,9 +38,9 @@ function cleanedName(min: number, max: number) {
   return z.string().max(NAME_RAW_MAX).transform(cleanName).pipe(z.string().min(min).max(max));
 }
 
-/** Player name: cleaned with `cleanName`, then 1–20 chars. Output is the cleaned value. */
+/** Player name: cleaned with `cleanName`, then 1–30 chars. Output is the cleaned value. */
 export const PlayerNameSchema = cleanedName(PLAYER_NAME_MIN, PLAYER_NAME_MAX);
-/** Room name: cleaned with `cleanName`, then 3–30 chars. Output is the cleaned value. */
+/** Room name: cleaned with `cleanName`, then 3–50 chars. Output is the cleaned value. */
 export const RoomNameSchema = cleanedName(ROOM_NAME_MIN, ROOM_NAME_MAX);
 
 export const MaxPlayersSchema = z.literal([2, 3, 4, 5]);

@@ -9,9 +9,9 @@ export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 5;
 
 export const ROOM_NAME_MIN = 3;
-export const ROOM_NAME_MAX = 30;
+export const ROOM_NAME_MAX = 50;
 export const PLAYER_NAME_MIN = 1;
-export const PLAYER_NAME_MAX = 20;
+export const PLAYER_NAME_MAX = 30;
 export const PASSWORD_MIN = 4;
 export const PASSWORD_MAX = 64;
 /** Raw (pre-cleaning) cap on any name-like input, so cleaning does bounded work. */
