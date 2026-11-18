@@ -18,6 +18,9 @@ export async function newPlayer(browser: Browser, name: string, ip = uniqueIp())
   await context.route(`${SERVER}/**`, (route) =>
     route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": ip } }),
   );
+  // WebSocket upgrades bypass context.route; the extra header covers them (per-IP wsConnect
+  // limit is 30/min, which a whole run on one shared IP would exhaust).
+  await context.setExtraHTTPHeaders({ "cf-connecting-ip": ip });
   const page = await context.newPage();
   return { context, page, name };
 }
@@ -87,4 +90,47 @@ export async function roll(page: Player["page"]) {
   await expect
     .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
     .toBe(0);
+}
+
+export interface NetControl {
+  /** Network down: `setOffline(true)` plus an explicit drop of the open game socket(s). */
+  goOffline(): Promise<void>;
+  goOnline(): Promise<void>;
+}
+
+/**
+ * Chromium's `setOffline` does not tear down an already-open WebSocket, so the client
+ * would never notice. This pairs `setOffline` with a routed game socket we can sever,
+ * and refuses new game sockets while "offline". Call it before the first navigation.
+ */
+export async function controlNetwork(player: Player): Promise<NetControl> {
+  let offline = false;
+  const open = new Set<{ close: () => void }>();
+  await player.page.routeWebSocket(/\/ws\/game\//, (ws) => {
+    if (offline) {
+      ws.close();
+      return;
+    }
+    const server = ws.connectToServer();
+    const both = {
+      close: () => {
+        server.close({ code: 1001 });
+        ws.close({ code: 1001 });
+      },
+    };
+    open.add(both);
+    ws.onClose(() => open.delete(both));
+  });
+  return {
+    async goOffline() {
+      offline = true;
+      await player.context.setOffline(true);
+      for (const s of [...open]) s.close();
+      open.clear();
+    },
+    async goOnline() {
+      offline = false;
+      await player.context.setOffline(false);
+    },
+  };
 }
