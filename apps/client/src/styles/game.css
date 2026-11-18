@@ -18,9 +18,25 @@
   min-height: 44px;
 }
 .g-code {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: var(--fw-bold);
   letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.g-code-room {
+  flex: 0 1 auto;
+  min-width: 3ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.g-code-turn {
+  flex: 0 100000 auto;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
 }
 .g-home {
   flex: 0 0 auto;
@@ -32,7 +48,7 @@
   height: 10px;
   border-radius: var(--r-pill);
   background: var(--ink-muted);
-  margin-inline: var(--s2);
+  margin-inline: 2px;
 }
 .g-conn.is-online {
   background: var(--row-green);
@@ -289,10 +305,11 @@
 .g-float {
   position: absolute;
   left: 0;
-  bottom: 100%;
+  /* Falls away below the score line: never covers the "Penalty -5 each" label above. */
+  top: 100%;
   font-weight: var(--fw-heavy);
   color: var(--row-color);
-  animation: g-rise 600ms var(--ease-out) both;
+  animation: g-fall 600ms var(--ease-out) both;
   pointer-events: none;
 }
 .g-sheet.is-shaking {
@@ -327,6 +344,9 @@
 }
 .g-chip.is-flash {
   animation: g-pop var(--t-med) var(--ease-spring);
+}
+.g-chip {
+  font-size: 13px;
 }
 .g-chip-top {
   display: flex;
@@ -477,6 +497,13 @@
   gap: var(--s2);
   justify-content: flex-end;
   flex-wrap: wrap;
+  /* Sticky footer inside the scrolling results dialog: Rematch / Back home never scroll away. */
+  position: sticky;
+  bottom: calc(-1 * (var(--s4) + env(safe-area-inset-bottom)));
+  margin-bottom: calc(-1 * (var(--s4) + env(safe-area-inset-bottom)));
+  padding: var(--s2) 0 calc(var(--s2) + env(safe-area-inset-bottom));
+  background: var(--paper);
+  z-index: 3;
 }
 
 /* ---------- Layouts (H3) ---------- */
@@ -578,6 +605,16 @@
   }
   to {
     transform: translateY(-28px);
+    opacity: 0;
+  }
+}
+@keyframes g-fall {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(18px);
     opacity: 0;
   }
 }
@@ -722,6 +759,56 @@
     flex: 0 1 420px;
   }
   .g-actions .btn {
+    min-height: 44px;
+  }
+}
+
+/* ---------- T-FIX-9: phone play loop fits 360x640 / 375x667 without page scroll ---------- */
+@media (max-width: 599.98px) {
+  .g-game {
+    gap: 6px;
+  }
+  .g-guide {
+    padding: 0 var(--s3);
+  }
+  .g-guide > summary {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+  }
+  .g-actionbar {
+    gap: 6px;
+    padding: 6px 0;
+  }
+  .g-status-text {
+    min-height: 0;
+    line-height: 1.25;
+  }
+  .g-foot {
+    min-height: 0;
+    gap: 2px;
+  }
+  .g-actions .btn {
+    min-height: 44px;
+  }
+}
+@media (max-width: 599.98px) and (max-height: 699.98px) {
+  .g-box {
+    height: 36px;
+  }
+  .g-sheet {
+    gap: 3px;
+    padding-block: var(--s2);
+  }
+  .g-chips {
+    min-height: 44px;
+  }
+  .g-chip {
+    min-height: 44px;
+    padding-block: 3px;
+    gap: 2px;
+  }
+  .g-top {
     min-height: 44px;
   }
 }

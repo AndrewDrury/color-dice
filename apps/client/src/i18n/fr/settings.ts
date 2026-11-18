@@ -37,6 +37,8 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.savedClear": "Effacer les infos enregistrées",
   "settings.savedCleared": "Infos effacées.",
 
+  "chat.says": "{name} dit : {text}",
+  "chat.reacted": "{name} a réagi {emoji}",
   "chat.title": "Chat",
   "chat.messages": "Messages du chat",
   "chat.empty": "Aucun message pour l'instant.",

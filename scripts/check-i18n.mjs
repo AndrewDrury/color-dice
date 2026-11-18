@@ -118,18 +118,6 @@ export const TS_ALLOW = new Map([
       "not a #RRGGBB colour: ${hex}",
       "developer-only assertion in the contrast tool",
     ],
-    // KNOWN LEAK, outside T-FIX-10 paths: screen-reader announcements are English-only. Needs
-    // chat.says / chat.reacted catalog keys; remove these entries when fixed.
-    [
-      "apps/client/src/chat/store.ts",
-      "${seatName(e.seatId)} says: ${e.text}",
-      "TODO(leak): announce() text not localized",
-    ],
-    [
-      "apps/client/src/chat/store.ts",
-      "${seatName(e.seatId)} reacted ${e.emoji}",
-      "TODO(leak): announce() text not localized",
-    ],
   ].map(([file, text, reason]) => [`${file}:${text}`, reason]),
 ]);
 

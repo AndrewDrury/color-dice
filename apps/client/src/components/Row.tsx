@@ -69,7 +69,13 @@ function RowImpl(p: RowProps) {
                 : t("row.lock", { color: cn })
         }
       >
-        <LockIcon size={14} />
+        {pips && gated ? (
+          <span class="g-pipcount num" aria-hidden="true">
+            {marks}/{LOCK_MIN_MARKS}
+          </span>
+        ) : (
+          <LockIcon size={14} />
+        )}
         {pips ? (
           <span class="g-pips" data-marks={Math.min(marks, LOCK_MIN_MARKS)} aria-hidden="true">
             {Array.from({ length: LOCK_MIN_MARKS }, (_, i) => (

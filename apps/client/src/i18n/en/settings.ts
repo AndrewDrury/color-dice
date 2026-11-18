@@ -35,6 +35,8 @@ export const settings = {
   "settings.savedClear": "Clear saved info",
   "settings.savedCleared": "Saved info cleared.",
 
+  "chat.says": "{name} says: {text}",
+  "chat.reacted": "{name} reacted {emoji}",
   "chat.title": "Chat",
   "chat.messages": "Chat messages",
   "chat.empty": "No messages yet.",

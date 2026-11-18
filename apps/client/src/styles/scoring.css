@@ -41,34 +41,43 @@
   font-weight: var(--fw-heavy);
 }
 
-/* Lock box: five pips toward the 5 marks needed. */
+/* Lock box: "3/5" plus five 6 px pips (solid = marked, 2 px ring = still needed). */
 .g-lockbox:has(.g-pips) {
   width: 100%;
   max-width: 34px;
-  height: 30px;
-  gap: 1px;
+  height: 36px;
+  gap: 2px;
   align-content: center;
   border-radius: var(--r-box);
 }
+.g-pipcount {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+}
 .g-pips {
-  display: flex;
-  gap: 1px;
+  display: grid;
+  grid-template-columns: repeat(3, 6px);
+  gap: 2px;
+  justify-content: center;
 }
 .g-pips i {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--row-ink);
+  box-shadow: inset 0 0 0 2px var(--row-color);
+  background: transparent;
 }
 .g-pips i.is-on {
-  background: var(--row-ink);
+  background: var(--row-color);
 }
 .g-lockbox.is-available {
   background: var(--row-color);
   color: var(--row-on);
 }
 .g-lockbox.is-available .g-pips i {
-  box-shadow: inset 0 0 0 1px var(--row-on);
+  box-shadow: inset 0 0 0 2px var(--row-on);
   background: var(--row-on);
 }
 

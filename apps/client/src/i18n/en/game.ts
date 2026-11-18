@@ -37,10 +37,10 @@ export const game = {
   "player.fallback": "Player {n}",
 
   "hint.gotIt": "Got it",
-  "hint.whiteSum": "Everyone may use the white sum. Tap a glowing box, or Pass.",
-  "hint.yourTurn": "Your turn: combine one white die with one coloured die.",
-  "hint.leftRight": "Marks must go left → right. Skipped numbers are gone for good.",
-  "hint.lock": "Mark 5 in a row to unlock its lock box.",
+  "hint.whiteSum": "Tap a glowing box, or Pass.",
+  "hint.yourTurn": "Combine 1 white + 1 coloured die.",
+  "hint.leftRight": "Mark left → right; skips are lost.",
+  "hint.lock": "5 marks in a row unlock its lock.",
 
   "action.roll": "Roll",
   "action.mark": "Mark {color} {n}",

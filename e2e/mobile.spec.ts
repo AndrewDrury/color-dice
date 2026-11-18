@@ -160,6 +160,32 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
     }
     await b.page.setViewportSize({ width: 390, height: 844 });
 
+    // After a roll (coaching hint showing) the play loop still needs no page scroll on small phones,
+    // and the hint's "Got it" button sits fully inside the viewport, clear of the action bar.
+    for (const [w, h] of [
+      [360, 640],
+      [375, 667],
+    ] as const) {
+      for (const p of players) {
+        await p.page.setViewportSize({ width: w, height: h });
+        await p.page.waitForTimeout(300);
+        const m = await p.page.evaluate(() => ({
+          over: document.documentElement.scrollHeight - window.innerHeight,
+          hint:
+            document.querySelector(".g-hintline .btn")?.getBoundingClientRect().toJSON() ?? null,
+          bar: document.querySelector(".g-actionbar")?.getBoundingClientRect().toJSON() ?? null,
+          cells: [...document.querySelectorAll<HTMLElement>(".g-box")].map((e) => e.offsetWidth),
+        }));
+        expect(m.over, `page scroll @${w}x${h}`).toBeLessThanOrEqual(0);
+        expect(Math.min(...m.cells), `min cell @${w}x${h}`).toBeGreaterThanOrEqual(26);
+        if (m.hint && m.bar) {
+          expect(m.hint.bottom, "hint above action bar").toBeLessThanOrEqual(m.bar.top + 0.5);
+          expect(m.hint.top).toBeGreaterThanOrEqual(0);
+        }
+      }
+    }
+    for (const p of players) await p.page.setViewportSize({ width: 390, height: 844 });
+
     // Every button and chip is at least 44x44 (sheet cells: H3, whole cell, 40 px tall).
     for (const p of players) {
       expect(await smallTargets(p.page)).toEqual([]);
@@ -172,8 +198,8 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
           );
         expect(cells.length).toBeGreaterThan(0);
         for (const [w, h] of cells) {
-          // H3 asks for >= 26 px at 375 px wide; the app gives 23.75 (reported in FOLLOW-UPS).
-          expect(w).toBeGreaterThanOrEqual(22);
+          // H3: >= 26 px wide cells (measured by bounding rect).
+          expect(w).toBeGreaterThanOrEqual(26);
           expect(h).toBeGreaterThanOrEqual(40);
         }
       }
@@ -190,6 +216,14 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
       .poll(() => sentByB.filter((f) => !f.includes('"ping"')).length)
       .toBeGreaterThan(before);
     expect(sentByB.at(-1)).toContain("RED");
+    // Cross animation uses transform/opacity only: layout width never shrinks during it.
+    for (let i = 0; i < 6; i++) {
+      const w = await b.page
+        .locator(".g-box")
+        .evaluateAll((els) => Math.min(...els.map((e) => (e as HTMLElement).offsetWidth)));
+      expect(w).toBeGreaterThanOrEqual(26);
+      await b.page.waitForTimeout(40);
+    }
 
     // Reload: the same faces at once, nothing tumbling.
     await a.page.reload();

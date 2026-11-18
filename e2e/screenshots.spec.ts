@@ -7,6 +7,7 @@ declare const process: { env: Record<string, string | undefined> };
 
 const OUT = new URL("./screenshots/", import.meta.url).pathname;
 const SIZES = [
+  [360, 640],
   [375, 667],
   [390, 844],
   [430, 932],

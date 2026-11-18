@@ -235,7 +235,9 @@ kbd {
   display: flex;
   align-items: center;
   gap: var(--s2);
-  padding: var(--s1) var(--s3);
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 2px var(--s2) 2px var(--s3);
   border-radius: var(--r-box);
   background: var(--paper);
   box-shadow: var(--e1);
@@ -243,6 +245,14 @@ kbd {
 }
 .g-hintline p {
   flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 /* ---------- Confetti ---------- */
@@ -330,4 +340,6 @@ kbd {
 .g-hintline .btn {
   white-space: nowrap;
   flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--s3);
 }

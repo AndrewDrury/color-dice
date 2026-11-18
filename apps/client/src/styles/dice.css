@@ -66,7 +66,7 @@
   justify-content: center;
   gap: var(--s2);
   min-width: 96px;
-  min-height: 34px;
+  min-height: 32px;
 }
 
 .tray__sum {
@@ -74,6 +74,7 @@
   align-items: baseline;
   gap: 4px;
   padding: 4px 12px;
+  line-height: 1.2;
   border-radius: var(--r-pill);
   background: var(--paper);
   color: var(--ink);
@@ -284,7 +285,11 @@
     gap: 2px;
   }
   .tray__side {
-    min-height: 28px;
+    min-height: 26px;
+  }
+  .tray__sum {
+    padding-block: 1px;
+    font-size: 17px;
   }
 }
 

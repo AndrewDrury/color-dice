@@ -93,7 +93,7 @@ function ingestText(e: TextEntry, mine: boolean): void {
       play("chat");
     }
     patch.toasts = [...state.toasts, e].slice(-MAX_TOASTS);
-    announce(`${seatName(e.seatId)} says: ${e.text}`);
+    announce(t("chat.says", { name: seatName(e.seatId), text: e.text }));
   }
   set(patch);
 }
@@ -103,7 +103,7 @@ function ingestReaction(e: ReactionEntry, mine: boolean): void {
   if (!mine && !getPrefs().showChat) return;
   if (state.floats.filter((f) => f.seatId === e.seatId).length >= MAX_FLOATS_PER_SEAT) return;
   set({ floats: [...state.floats, e] });
-  if (!mine) announce(`${seatName(e.seatId)} reacted ${e.emoji}`);
+  if (!mine) announce(t("chat.reacted", { name: seatName(e.seatId), emoji: e.emoji }));
 }
 
 /** Route one server message into the chat store. Returns true when it was a chat message. */

@@ -39,11 +39,10 @@ export const game: Record<keyof typeof en, string> = {
   "player.fallback": "Joueur {n}",
 
   "hint.gotIt": "Compris",
-  "hint.whiteSum":
-    "Tout le monde peut utiliser la somme des blancs. Touche une case lumineuse, ou passe.",
-  "hint.yourTurn": "À toi : combine un dé blanc avec un dé de couleur.",
-  "hint.leftRight": "Coche de gauche à droite. Les numéros sautés sont perdus.",
-  "hint.lock": "Avec 5 croix dans une ligne, son verrou se débloque.",
+  "hint.whiteSum": "Touche une case lumineuse, ou passe.",
+  "hint.yourTurn": "Combine 1 blanc + 1 dé de couleur.",
+  "hint.leftRight": "Coche de gauche à droite ; sauts perdus.",
+  "hint.lock": "5 croix d'affilée : verrou débloqué.",
 
   "action.roll": "Lancer",
   "action.mark": "Cocher {color} {n}",

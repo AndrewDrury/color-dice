@@ -39,10 +39,10 @@ export const game: Record<keyof typeof en, string> = {
   "player.fallback": "Jugador {n}",
 
   "hint.gotIt": "Entendido",
-  "hint.whiteSum": "Todos pueden usar la suma blanca. Toca una casilla brillante, o pasa.",
-  "hint.yourTurn": "Tu turno: combina un dado blanco con uno de color.",
-  "hint.leftRight": "Marca de izquierda a derecha. Los números que saltes se pierden.",
-  "hint.lock": "Con 5 marcas en una fila se desbloquea su candado.",
+  "hint.whiteSum": "Toca una casilla brillante, o pasa.",
+  "hint.yourTurn": "Combina 1 dado blanco + 1 de color.",
+  "hint.leftRight": "De izquierda a derecha; lo saltado se pierde.",
+  "hint.lock": "5 marcas en una fila abren el candado.",
 
   "action.roll": "Tirar",
   "action.mark": "Marcar {color} {n}",
