@@ -1,1 +1,141 @@
-export {};
+import {
+  type Browser,
+  type BrowserContext,
+  test as base,
+  expect,
+  type Page,
+  request,
+} from "@playwright/test";
+
+export { expect };
+export const test = base;
+
+export const SERVER = "http://localhost:8787";
+
+export interface Player {
+  context: BrowserContext;
+  page: Page;
+  name: string;
+}
+
+export interface CreateOpts {
+  roomName: string;
+  password: string;
+  max?: number;
+  listed?: boolean;
+}
+
+/** A separate browser context per player = a separate "computer" (own storage). */
+export async function newPlayer(browser: Browser, name: string): Promise<Player> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  return { context, page, name };
+}
+
+export function codeOf(page: Page): string {
+  const code = new URL(page.url()).searchParams.get("game");
+  if (!code) throw new Error(`no ?game= in ${page.url()}`);
+  return code;
+}
+
+/** Host creates a room; resolves with its code once the waiting room shows. */
+export async function createGame(player: Player, o: CreateOpts): Promise<string> {
+  const { page } = player;
+  await page.goto("/");
+  await page.getByRole("button", { name: "Create game" }).first().click();
+  await page.getByLabel("Room name").fill(o.roomName);
+  await page.getByLabel("Your name").fill(player.name);
+  await page.getByLabel("Password", { exact: true }).fill(o.password);
+  if (o.max !== undefined)
+    await page.locator(`label:has(input[name="maxPlayers"][value="${o.max}"])`).click();
+  if (o.listed === false) await page.getByLabel("Show in public list").uncheck();
+  await page.getByRole("button", { name: "Create game" }).last().click();
+  await expect(page.getByRole("button", { name: "Leave" })).toBeVisible();
+  return codeOf(page);
+}
+
+/** Join through the public list (the room must be listed). */
+export async function joinGame(player: Player, code: string, password: string, roomName?: string) {
+  const { page } = player;
+  await page.goto("/");
+  if (roomName) {
+    await page.getByRole("button", { name: `Join ${roomName}` }).click();
+  } else {
+    await page.getByLabel("Have an invite code?").fill(code);
+    await page.getByRole("button", { name: "Join", exact: true }).first().click();
+  }
+  await fillJoin(player, password);
+}
+
+async function fillJoin(player: Player, password: string) {
+  const { page } = player;
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Your name").fill(player.name);
+  await dialog.getByLabel("Password", { exact: true }).fill(password);
+  await dialog.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Leave" })).toBeVisible();
+}
+
+export async function startGame(host: Player) {
+  await host.page.getByRole("button", { name: /^Start/ }).click();
+}
+
+/** Queue scripted dice (server must run with ALLOW_TEST_HOOKS=1). */
+export async function queueDice(code: string, faces: number[]) {
+  const api = await request.newContext({ baseURL: SERVER });
+  try {
+    const res = await api.post(`/api/games/${code}/__test/dice`, { data: { faces } });
+    expect(res.status()).toBe(204);
+  } finally {
+    await api.dispose();
+  }
+}
+
+/** Collects every text frame received on every WebSocket of the page. */
+export function collectWsFrames(page: Page): string[] {
+  const frames: string[] = [];
+  page.on("websocket", (ws) => {
+    ws.on("framereceived", (f) => {
+      frames.push(typeof f.payload === "string" ? f.payload : f.payload.toString("utf8"));
+    });
+  });
+  return frames;
+}
+
+const COLOR_LABEL: Record<string, string> = {
+  RED: "Red",
+  YELLOW: "Yellow",
+  GREEN: "Green",
+  BLUE: "Blue",
+};
+
+export function boxLocator(page: Page, color: string, n: number) {
+  const c = COLOR_LABEL[color.toUpperCase()] ?? color;
+  return page.getByRole("button", { name: new RegExp(`^${c} ${n},`) });
+}
+
+/** Tap a box to stage it, then tap the primary button to confirm. */
+export async function mark(page: Page, color: string, n: number) {
+  await boxLocator(page, color, n).click();
+  await page.locator(".g-primary.g-mark").click();
+}
+
+/** Stage a pass and confirm it. */
+export async function pass(page: Page) {
+  await page.locator(".g-pass").click();
+  await page.locator(".g-primary").click();
+}
+
+/** Tap Roll and wait until every die has settled (has data-face). */
+export async function roll(page: Page) {
+  await page.locator(".g-primary", { hasText: "Roll" }).click();
+  const dice = page.locator("[data-die]");
+  await expect(dice.first()).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        (await dice.count()) > 0 &&
+        (await page.locator("[data-die]:not([data-face])").count()) === 0,
+    )
+    .toBe(true);
+}
