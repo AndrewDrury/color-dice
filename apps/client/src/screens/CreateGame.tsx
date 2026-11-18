@@ -11,6 +11,7 @@ import { createGame } from "../api";
 import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { getPrefs, setPrefs } from "../prefs";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -38,8 +39,7 @@ const segStyle = (on: boolean) => ({
 
 export function CreateGame() {
   const [roomName, setRoomName] = useState("");
-  // TODO(T17b): prefill from prefs.lastName once prefs land.
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => getPrefs().lastName);
   const [password, setPassword] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [listed, setListed] = useState(true);
@@ -68,6 +68,7 @@ export function CreateGame() {
     setBusy(true);
     try {
       const res = await createGame(parsed.data);
+      setPrefs({ lastName: parsed.data.name });
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,

@@ -1,0 +1,21 @@
+{
+  "name": "Color Dice",
+  "short_name": "Color Dice",
+  "description": "A fast dice-and-paper game for friends.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#efe9df",
+  "theme_color": "#efe9df",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { ApiError, getMe } from "../api";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
+import { GearButton, type Panel, Panels } from "../components/Settings";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
@@ -138,6 +139,7 @@ export interface HomeProps {
 
 export function Home({ route }: HomeProps) {
   const [games, setGames] = useState<PublicGame[] | null>(null);
+  const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
 
   useEffect(() => {
@@ -159,10 +161,14 @@ export function Home({ route }: HomeProps) {
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
       <header class="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: "var(--fs-title)" }}>Color Dice</h1>
-        <Button variant="primary" onClick={() => navigate("create")}>
-          Create game
-        </Button>
+        <div class="row">
+          <GearButton onClick={() => setPanel("settings")} />
+          <Button variant="primary" onClick={() => navigate("create")}>
+            Create game
+          </Button>
+        </div>
       </header>
+      <Panels panel={panel} onPanel={setPanel} />
       <div class="cols-2 stack">
         <div class="stack">
           <YourGames />

@@ -1,0 +1,313 @@
+/* Device polish (H7, H10-H12): sheets, settings, help, confetti, hints. */
+
+/* ---------- Bottom sheet / popover ---------- */
+.bs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.45);
+}
+.bs-sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  box-shadow: var(--e2);
+  padding: var(--s4) var(--s4) calc(var(--s4) + env(safe-area-inset-bottom));
+  animation: bs-up var(--t-slow) var(--ease-out);
+}
+.bs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.bs-head h2 {
+  font-size: var(--fs-large);
+}
+.bs-body h3 {
+  font-size: var(--fs-body);
+  margin-bottom: var(--s1);
+}
+@media (min-width: 600px) {
+  .bs-backdrop {
+    align-items: center;
+  }
+  .bs-sheet {
+    border-radius: var(--r-card);
+  }
+}
+/* Desktop: a popover under the top-right corner, no dimming. */
+@media (min-width: 1024px) {
+  .bs-backdrop {
+    align-items: flex-start;
+    justify-content: flex-end;
+    background: transparent;
+    padding: 56px var(--s4) 0;
+  }
+  .bs-sheet {
+    width: 380px;
+    max-height: calc(100dvh - 72px);
+    border-radius: var(--r-card);
+    box-shadow:
+      var(--e2),
+      0 0 0 1px rgb(128 128 128 / 0.25);
+    padding-bottom: var(--s4);
+  }
+}
+@keyframes bs-up {
+  from {
+    transform: translateY(32px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- Settings ---------- */
+.st-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: var(--tap);
+  font-weight: var(--fw-bold);
+}
+.st-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink-muted);
+  cursor: pointer;
+}
+.st-switch.is-on {
+  background: var(--accent);
+}
+.st-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.st-switch.is-on .st-knob {
+  transform: translateX(20px);
+}
+.st-seg {
+  margin: 0;
+  border: 0;
+  min-width: 0;
+  display: inline-flex;
+  border-radius: var(--r-box);
+  background: var(--table);
+  padding: 2px;
+}
+.st-seg button {
+  min-height: 40px;
+  min-width: 44px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+.st-seg button.is-on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.st-gear {
+  padding: 0;
+}
+
+/* ---------- How to play / shortcuts ---------- */
+.htp-list {
+  margin: 0;
+  padding-left: var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.htp-cap {
+  font-size: var(--fs-small);
+  margin-bottom: var(--s2);
+}
+.htp-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.htp-row span {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  border-radius: var(--r-box);
+  background: var(--row-red-tint);
+  color: var(--row-red-ink);
+  font-weight: var(--fw-bold);
+}
+.htp-row .is-x {
+  background: var(--row-red);
+  color: var(--row-red-on);
+}
+.htp-row .is-skip {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+.htp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+  text-align: center;
+}
+.htp-table th,
+.htp-table td {
+  padding: 4px 2px;
+}
+.htp-table th[scope="row"] {
+  text-align: left;
+}
+.kb-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.kb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.kb-item dt {
+  flex: 0 0 8rem;
+}
+.kb-item dd {
+  margin: 0;
+}
+kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ink-muted);
+  background: var(--table);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+
+/* ---------- Coaching hint ---------- */
+.g-hintline {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-box);
+  background: var(--paper);
+  box-shadow: var(--e1);
+  font-size: var(--fs-small);
+}
+.g-hintline p {
+  flex: 1 1 auto;
+}
+
+/* ---------- Confetti ---------- */
+.cf {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.cf-p {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: cf-burst 1600ms var(--ease-out) both;
+}
+@keyframes cf-burst {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + 260px)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+/* ---------- Names, touch ---------- */
+.g-chip,
+.g-mini,
+.g-sheet {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.g-results .g-name {
+  display: inline-block;
+  max-width: 9ch;
+  vertical-align: bottom;
+}
+.g-winner {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.g-winner .g-name {
+  max-width: 100%;
+}
+.g-results-card {
+  position: relative;
+}
+.key-hint {
+  display: none;
+  font-size: var(--fs-small);
+}
+@media (hover: hover) {
+  .key-hint {
+    display: inline;
+  }
+}
+
+/* ---------- Motion pref "Reduced" (the OS setting is handled per stylesheet) ---------- */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  /* biome-ignore lint/complexity/noImportantStyles: user-chosen reduced motion must win over component animations */
+  animation-duration: 1ms !important;
+  /* biome-ignore lint/complexity/noImportantStyles: user-chosen reduced motion must win over component animations */
+  animation-iteration-count: 1 !important;
+  /* biome-ignore lint/complexity/noImportantStyles: user-chosen reduced motion must win over component animations */
+  transition-duration: 1ms !important;
+}
+:root[data-motion="reduced"] .cf {
+  display: none;
+}
+.g-hintline .btn {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}

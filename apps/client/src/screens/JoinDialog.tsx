@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { getPrefs, setPrefs } from "../prefs";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -26,8 +27,7 @@ export interface JoinDialogProps {
 }
 
 export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
-  // TODO(T17b): prefill from prefs.lastName once prefs land.
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => getPrefs().lastName);
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -81,6 +81,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
     setBusy(true);
     try {
       const res = await joinGame(code, parsed.data);
+      setPrefs({ lastName: parsed.data.name });
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,

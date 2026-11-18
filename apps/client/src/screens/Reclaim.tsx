@@ -10,6 +10,7 @@ import { getMe, reclaimSeat } from "../api";
 import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { getPrefs, setPrefs } from "../prefs";
 import { navigate } from "../router";
 import { getSession, saveSession } from "../session";
 
@@ -36,7 +37,7 @@ export interface ReclaimProps {
 /** Take back an offline seat (new device, cleared storage) with code + name + password. */
 export function Reclaim({ code: initialCode }: ReclaimProps) {
   const [code, setCode] = useState(initialCode ?? "");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => getPrefs().lastName);
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
     setBusy(true);
     try {
       const res = await reclaimSeat(code, parsed.data);
+      setPrefs({ lastName: parsed.data.name });
       saveSession(res.code, {
         token: res.token,
         seatId: res.seatId,

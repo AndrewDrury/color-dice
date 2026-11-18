@@ -7,20 +7,26 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray } from "../components/DiceTray";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
+import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
 import { feedback } from "../fx/feedback";
+import { useGameKeys } from "../fx/keyboard";
+import { useTabAttention } from "../fx/tabAttention";
+import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync } from "../game/feedback";
 import { youPlayer } from "../game/model";
-import { legalBoxes, passTakesPenalty } from "../game/staging";
+import { canPass, legalBoxes, passTakesPenalty } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
 import { useFx } from "../game/useFx";
 import { useGameSocket } from "../game/useGameSocket";
 import { useStaging } from "../game/useStaging";
 import { useViewport } from "../game/useViewport";
 import { errorText } from "../i18n";
+import { getPrefs, setPrefs } from "../prefs";
 import { navigate } from "../router";
 import { clearView, dismissToast, showToast, useAppState } from "../store";
 import "../styles/game.css";
+import { GameHint } from "./GameHint";
 import { GameOver } from "./GameOver";
 
 /** Fallback if the tray never reports landing (so legal boxes can't stay dark). */
@@ -91,12 +97,35 @@ interface BoardProps {
   failSignal: number;
 }
 
+/** Push one history entry so Back / swipe-back asks before leaving (H10). */
+function useBackGuard(onBack: () => void) {
+  const cb = useRef(onBack);
+  cb.current = onBack;
+  useEffect(() => {
+    const push = () => {
+      try {
+        globalThis.history.pushState({ cdGuard: true }, "");
+      } catch {
+        // No history (tests, sandboxed frames).
+      }
+    };
+    push();
+    const on = () => {
+      push();
+      cb.current();
+    };
+    globalThis.addEventListener("popstate", on);
+    return () => globalThis.removeEventListener("popstate", on);
+  }, []);
+}
+
 function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal }: BoardProps) {
   const game = view.game;
   const viewport = useViewport();
   const [leaving, setLeaving] = useState(false);
   const [rematching, setRematching] = useState(false);
   const [rematchBusy, setRematchBusy] = useState(false);
+  const [panel, setPanel] = useState<Panel>(null);
 
   // ---- diff against the previous view (once per applied version) ----
   const prev = useRef<ViewMessage | null>(null);
@@ -164,18 +193,38 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
   };
   const gameOver = g.phase === "GAME_OVER";
 
+  const myMove =
+    view.you.canRoll ||
+    (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
+  useWakeLock(!gameOver);
+  useTabAttention(myMove);
+  useBackGuard(() => setLeaving(true));
+  useGameKeys({
+    canRoll: view.you.canRoll && panel === null && !leaving && !rematching && !gameOver,
+    canPass: canPass(view) && !view.you.canRoll && panel === null && !leaving && !gameOver,
+    roll: onRoll,
+    pass: st.stagePass,
+    cancel: st.cancel,
+    mute: () => setPrefs({ sound: !getPrefs().sound }),
+    help: () => setPanel((p) => (p === "keys" ? null : "keys")),
+  });
+
+  const hint = gameOver ? null : <GameHint view={view} />;
   const actionBar = (
-    <ActionBar
-      view={view}
-      status={statusText(view)}
-      announce={cur.announce}
-      staged={st.staged}
-      sent={st.sent !== null}
-      gated={!landed}
-      onRoll={onRoll}
-      onPass={st.stagePass}
-      onConfirm={st.confirm}
-    />
+    <>
+      {hint}
+      <ActionBar
+        view={view}
+        status={statusText(view)}
+        announce={cur.announce}
+        staged={st.staged}
+        sent={st.sent !== null}
+        gated={!landed}
+        onRoll={onRoll}
+        onPass={st.stagePass}
+        onConfirm={st.confirm}
+      />
+    </>
   );
 
   return (
@@ -188,11 +237,14 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
           <span class="num">{view.code}</span>
           {g.turn ? <> · Turn {g.turn.number}</> : null}
         </span>
-        <span
-          class={`g-conn is-${status}`}
-          role="img"
-          aria-label={status === "online" ? "online" : "reconnecting"}
-        />
+        <span class="row">
+          <span
+            class={`g-conn is-${status}`}
+            role="img"
+            aria-label={status === "online" ? "online" : "reconnecting"}
+          />
+          <GearButton onClick={() => setPanel("settings")} />
+        </span>
       </header>
       <AwayControls view={view} offlineSince={offlineSince} send={conn.send} />
       {viewport === "phone" ? (
@@ -248,6 +300,7 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
           }}
         />
       ) : null}
+      <Panels panel={panel} onPanel={setPanel} />
       {leaving ? (
         <ConfirmDialog
           title="Leave the table?"

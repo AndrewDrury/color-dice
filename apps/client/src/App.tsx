@@ -1,5 +1,7 @@
+import { useEffect } from "preact/hooks";
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
+import { getPrefs, onPrefs } from "./prefs";
 import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
 import { Game } from "./screens/Game";
@@ -8,10 +10,24 @@ import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
 import { WaitingRoom } from "./screens/WaitingRoom";
 import { useAppState } from "./store";
+import "./styles/polish.css";
+
+/** Mirror the theme and motion prefs onto <html> (tokens.css and polish.css key off them). */
+export function applyPrefs(root: HTMLElement = document.documentElement): void {
+  const { theme, motion } = getPrefs();
+  if (theme === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", theme);
+  if (motion === "reduced") root.setAttribute("data-motion", "reduced");
+  else root.removeAttribute("data-motion");
+}
 
 export function App() {
   const route = useRoute();
   const { status } = useAppState();
+  useEffect(() => {
+    applyPrefs();
+    return onPrefs(() => applyPrefs());
+  }, []);
 
   let screen = null;
   switch (route.screen) {
