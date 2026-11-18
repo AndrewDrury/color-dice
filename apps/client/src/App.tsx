@@ -3,6 +3,7 @@ import { CreateGame } from "./screens/CreateGame";
 import { Home } from "./screens/Home";
 import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
+import { WaitingRoom } from "./screens/WaitingRoom";
 import { useAppState } from "./store";
 
 export function App() {
@@ -21,8 +22,11 @@ export function App() {
     case "reclaim":
       screen = <Reclaim key={route.code ?? ""} code={route.code} />;
       break;
+    case "waiting":
+      screen = route.code ? <WaitingRoom key={route.code} code={route.code} /> : null;
+      break;
     default:
-      // Waiting room and game screens land in later tasks.
+      // The game screen lands in a later task.
       screen = <Placeholder route={route} status={status} />;
   }
 
