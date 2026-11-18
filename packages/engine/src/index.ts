@@ -9,3 +9,4 @@ export * from "./scoring";
 export * from "./serialize";
 export * from "./status";
 export type * from "./types";
+export * from "./view";
