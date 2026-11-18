@@ -6,7 +6,7 @@ import { CODE, SEAT, TOKEN } from "./fixtures";
 beforeEach(() => {
   localStorage.clear();
   _resetMemoryForTests();
-  history.replaceState(null, "", "/qwixx/");
+  history.replaceState(null, "", "/color-dice/");
 });
 
 describe("router", () => {
@@ -25,7 +25,7 @@ describe("router", () => {
 
   it("keeps the URL in sync and keeps the base path", () => {
     navigate("waiting", CODE);
-    expect(location.pathname).toBe("/qwixx/");
+    expect(location.pathname).toBe("/color-dice/");
     expect(location.search).toBe(`?game=${CODE}`);
     navigate("home");
     expect(location.search).toBe("");

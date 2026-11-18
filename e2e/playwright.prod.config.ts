@@ -5,7 +5,7 @@ declare const process: { env: Record<string, string | undefined> };
 
 // Production smoke config: no webServer, hits the live Pages site. Run EXACTLY once per
 // check (production rate limits creates to 5 per 10 min per IP).
-const raw = process.env.PROD_URL || "https://andrewdrury.github.io/qwixx/";
+const raw = process.env.PROD_URL || "https://andrewdrury.github.io/color-dice/";
 const baseURL = raw.endsWith("/") ? raw : `${raw}/`;
 
 export default defineConfig({

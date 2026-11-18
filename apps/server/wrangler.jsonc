@@ -1,9 +1,9 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "qwixx",
+  "name": "color-dice",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-17",
-  // The dashboard Worker "qwixx" has workers.dev OFF; deploy turns it on.
+  // workers_dev: true makes deploy turn on the color-dice.<subdomain>.workers.dev URL.
   "workers_dev": true,
   "preview_urls": false,
   "observability": { "enabled": true },

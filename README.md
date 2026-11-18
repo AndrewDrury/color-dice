@@ -2,7 +2,9 @@
 
 An online dice game for 2 to 5 players. Create a room, share the 5-character code (or let it show up in the public room list), and play in real time from any browser. Rooms can be password protected. No accounts.
 
-Play: https://andrewdrury.github.io/qwixx/
+Play: https://andrewdrury.github.io/color-dice/
+
+Server: https://color-dice.andrewjdrury.workers.dev
 
 ## Features
 

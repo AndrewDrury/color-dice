@@ -14,7 +14,7 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
       ws.on("framereceived", (f) => frames.push(`${p.name} < ${String(f.payload).slice(0, 120)}`));
     });
   try {
-    // Host creates an unlisted room. "./" keeps the baseURL's /qwixx/ path.
+    // Host creates an unlisted room. "./" keeps the baseURL's /color-dice/ path.
     const h = host.page;
     await h.goto("./");
     await h.getByRole("button", { name: "Create game" }).first().click();
