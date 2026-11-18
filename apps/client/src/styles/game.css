@@ -53,6 +53,11 @@
   min-width: 0;
 }
 
+/* Filled by the points guide (T-UX-3); takes no space while empty. */
+.g-guide-slot:empty {
+  display: none;
+}
+
 /* ---------- Sheet ---------- */
 .g-sheet {
   display: flex;
@@ -303,12 +308,10 @@
   background: var(--paper);
   box-shadow: var(--e1);
 }
-.g-chip.is-active,
-.g-mini.is-active {
+.g-chip.is-active {
   box-shadow: 0 0 0 2px var(--accent);
 }
-.g-chip.is-flash,
-.g-mini-cell.is-flash {
+.g-chip.is-flash {
   animation: g-pop var(--t-med) var(--ease-spring);
 }
 .g-chip-top {
@@ -319,22 +322,6 @@
 .g-chip-top .g-name {
   flex: 1;
   text-align: left;
-}
-.g-bars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 3px;
-}
-.g-bar {
-  height: 3px;
-  border-radius: 2px;
-  background: var(--row-tint);
-  overflow: hidden;
-}
-.g-bar span {
-  display: block;
-  height: 100%;
-  background: var(--row-color);
 }
 .g-glyph {
   display: inline-flex;
@@ -356,58 +343,6 @@
 .g-glyph.is-thinking {
   animation: g-blink 1.2s ease-in-out infinite;
 }
-.g-minis {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s2);
-}
-.g-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border: 0;
-  width: 100%;
-  text-align: left;
-  padding: var(--s2) var(--s3);
-}
-.g-mini-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.g-mini-head .g-name {
-  flex: 1;
-}
-.g-mini-grid {
-  display: grid;
-  gap: 2px;
-}
-.g-mini-row {
-  display: grid;
-  grid-template-columns: 12px repeat(12, 14px);
-  gap: 1px;
-  align-items: center;
-}
-.g-mini-l {
-  font-size: 9px;
-  font-weight: var(--fw-heavy);
-  color: var(--row-color);
-}
-.g-mini-cell {
-  height: 14px;
-  border-radius: 3px;
-  background: var(--row-tint);
-}
-.g-mini-cell.is-on {
-  background: var(--row-color);
-}
-.g-mini-lock {
-  border-radius: var(--r-pill);
-}
-.g-mini-row.is-closed {
-  opacity: 0.45;
-}
-
 /* ---------- Action bar, status, log, toast ---------- */
 .g-actionbar {
   display: flex;
@@ -667,7 +602,6 @@
   .g-box.s-marked .g-x path,
   .g-box.is-flash,
   .g-chip.is-flash,
-  .g-mini-cell.is-flash,
   .g-sheet.is-shaking,
   .g-row.has-glint::after,
   .g-glyph.is-thinking,
@@ -723,6 +657,9 @@
   }
   .g-left {
     display: contents;
+  }
+  .g-guide-slot {
+    display: none;
   }
   .g-left > .tray {
     grid-column: 2;

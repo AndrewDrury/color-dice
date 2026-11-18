@@ -73,6 +73,35 @@ describe("Game screen", () => {
     expect(status()).toBe("Waiting for Cleo to roll…");
   });
 
+  it("exactly one Roll control at phone, tablet and desktop widths", () => {
+    for (const w of [390, 768, 1280]) {
+      setWidth(w);
+      show(makeGameView({ phase: "AWAIT_ROLL", canRoll: true, active: 0 }));
+      const { container } = mount();
+      const rolls = screen.getAllByRole("button", { name: /roll/i });
+      expect(rolls).toHaveLength(1);
+      expect(container.querySelectorAll(".tray button")).toHaveLength(0);
+      cleanup();
+      _resetStoreForTests();
+    }
+  });
+
+  it("lays out sheet, guide slot, dice tray, then action bar (sheet above the dice)", () => {
+    for (const w of [390, 1280]) {
+      setWidth(w);
+      show(makeGameView({ phase: "AWAIT_ROLL", canRoll: true, active: 0 }));
+      const { container } = mount();
+      const kids = Array.from(container.querySelector(".g-left")?.children ?? []);
+      const order = ["g-sheet", "g-guide-slot", "tray"].map((c) =>
+        kids.findIndex((k) => k.classList.contains(c)),
+      );
+      expect(order.every((i) => i >= 0)).toBe(true);
+      expect(order).toEqual([...order].sort((a, b) => a - b));
+      cleanup();
+      _resetStoreForTests();
+    }
+  });
+
   it("ACTION_1 before and after submitting", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();

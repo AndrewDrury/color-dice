@@ -6,8 +6,6 @@ import {
   type Face,
   faceRotation,
   hashSeed,
-  MAX_JITTER,
-  MAX_YAW,
   mod360,
   seededRandom,
   settleTransform,
@@ -68,9 +66,9 @@ describe("settleTransform", () => {
         expect(mod360(a.x)).toBeCloseTo(mod360(base.x), 6);
         expect(mod360(a.y)).toBeCloseTo(mod360(base.y), 6);
         expect(Math.abs(a.x - base.x)).toBeGreaterThanOrEqual(360);
-        expect(Math.abs(a.z)).toBeLessThanOrEqual(MAX_YAW);
-        expect(Math.abs(a.tx)).toBeLessThanOrEqual(MAX_JITTER);
-        expect(Math.abs(a.ty)).toBeLessThanOrEqual(MAX_JITTER);
+        expect(a.z).toBe(0);
+        expect(a.tx).toBe(0);
+        expect(a.ty).toBe(0);
         expectFront(apply(a, [...FACE_NORMALS[f]] as V));
       }
     }

@@ -13,7 +13,7 @@ export interface Angles {
 }
 
 export interface SettlePose extends Angles {
-  /** Resting position jitter in px. */
+  /** Resting position offset in px (always 0: dice rest in a straight row). */
   tx: number;
   ty: number;
 }
@@ -67,10 +67,11 @@ function between(rand: () => number, min: number, max: number): number {
   return min + (max - min) * rand();
 }
 
-export const MAX_YAW = 12;
-export const MAX_JITTER = 6;
+/** Dice rest square: no resting yaw and no position offset (J0.3). */
+export const MAX_YAW = 0;
+export const MAX_JITTER = 0;
 
-/** Final pose: face rotation + 1–2 whole spins per axis + small yaw and position jitter. */
+/** Final pose: face rotation + 1–2 whole spins per axis; zero yaw, zero x/y offset. */
 export function settleTransform(face: Face, seed: number): SettlePose {
   const rand = seededRandom(seed ^ 0x5e771e);
   const base = FACE_ROTATION[face];
@@ -79,9 +80,9 @@ export function settleTransform(face: Face, seed: number): SettlePose {
   return {
     x: base.x + 360 * spinsX,
     y: base.y + 360 * spinsY,
-    z: Math.round(between(rand, -MAX_YAW, MAX_YAW) * 10) / 10,
-    tx: Math.round(between(rand, -MAX_JITTER, MAX_JITTER) * 10) / 10,
-    ty: Math.round(between(rand, -MAX_JITTER, MAX_JITTER) * 10) / 10,
+    z: 0,
+    tx: 0,
+    ty: 0,
   };
 }
 

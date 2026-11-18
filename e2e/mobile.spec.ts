@@ -91,6 +91,16 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
       await p.page.setViewportSize({ width: 390, height: 844 });
     }
 
+    // One Roll control only (the ActionBar's), and the play loop needs no page scroll at 375x667.
+    await expect(a.page.getByRole("button", { name: /roll/i })).toHaveCount(1);
+    await a.page.setViewportSize({ width: 375, height: 667 });
+    await expect
+      .poll(() =>
+        a.page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
+      )
+      .toBe(true);
+    await a.page.setViewportSize({ width: 390, height: 844 });
+
     // Scripted dice: every die shows its scripted face within 1.5 s of tapping Roll.
     const t0 = Date.now();
     await a.page.locator(".g-primary", { hasText: "Roll" }).tap();

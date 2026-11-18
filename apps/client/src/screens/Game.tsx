@@ -297,19 +297,6 @@ function Board({
       ) : null}
       <main class="g-main">
         <div class="g-left">
-          <DiceTray
-            roll={g.roll}
-            lockedColors={g.lockedColors}
-            canRoll={view.you.canRoll}
-            onRoll={onRoll}
-            turnKey={{ code: view.code, turnNumber: g.turn?.number ?? null }}
-            highlight={st.highlight}
-            rollFailed={rollFailed + localFail}
-            resync={cur.resync}
-            onLanded={() => markLanded(LAND_GLOW_DELAY_MS)}
-            controls={rollControls}
-            onBusyChange={setRolling}
-          />
           {me ? (
             <Sheet
               player={me}
@@ -325,6 +312,20 @@ function Board({
               onFloatDone={fx.dropFloat}
             />
           ) : null}
+          <div class="g-guide-slot" />
+          <DiceTray
+            roll={g.roll}
+            lockedColors={g.lockedColors}
+            canRoll={view.you.canRoll}
+            onRoll={onRoll}
+            turnKey={{ code: view.code, turnNumber: g.turn?.number ?? null }}
+            highlight={st.highlight}
+            rollFailed={rollFailed + localFail}
+            resync={cur.resync}
+            onLanded={() => markLanded(LAND_GLOW_DELAY_MS)}
+            controls={rollControls}
+            onBusyChange={setRolling}
+          />
           {viewport === "desktop" ? actionBar : null}
         </div>
         {viewport !== "phone" ? (

@@ -82,6 +82,15 @@ describe("DiceTray", () => {
     expect(c.querySelector(".tray__sum")?.textContent).toContain("8");
   });
 
+  it("keeps six dice in one grid row W W | R Y G B, locked colour keeping its slot", () => {
+    const { container } = render(<DiceTray {...props({ roll: ROLL, lockedColors: ["YELLOW"] })} />);
+    const row = container.querySelector(".tray__dice");
+    const ids = Array.from(row?.children ?? []).map(
+      (c) => c.getAttribute("data-die") ?? (c.classList.contains("tray__divider") ? "|" : "?"),
+    );
+    expect(ids).toEqual(["WHITE_1", "WHITE_2", "|", "RED", "YELLOW", "GREEN", "BLUE"]);
+  });
+
   it("never renders its own Roll button (the ActionBar owns the one Roll control)", () => {
     const { container } = render(<DiceTray {...props({ roll: ROLL, canRoll: true })} />);
     expect(container.querySelector("button")).toBeNull();
