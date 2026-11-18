@@ -82,6 +82,7 @@
 
 /* ---------- Sheet ---------- */
 .g-sheet {
+  container: sheet / inline-size;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -89,7 +90,8 @@
 .g-row {
   position: relative;
   display: grid;
-  grid-template-columns: 18px repeat(12, minmax(0, 1fr));
+  /* rail · 11 numbers · lock · points pill (the pill column is sized in scoring.css) */
+  grid-template-columns: var(--rail-w, 18px) repeat(12, minmax(0, 1fr)) var(--pts-col, 66px);
   gap: 2px;
   overflow: hidden;
 }
@@ -113,6 +115,8 @@
   --row-ink: var(--row-red-ink);
   --row-on: var(--row-red-on);
   --row-pattern: var(--pattern-red);
+  --row-vivid: var(--row-red-vivid);
+  --row-vivid-ink: var(--row-red-vivid-ink);
 }
 .c-yellow {
   --row-color: var(--row-yellow);
@@ -120,6 +124,8 @@
   --row-ink: var(--row-yellow-ink);
   --row-on: var(--row-yellow-on);
   --row-pattern: var(--pattern-yellow);
+  --row-vivid: var(--row-yellow-vivid);
+  --row-vivid-ink: var(--row-yellow-vivid-ink);
 }
 .c-green {
   --row-color: var(--row-green);
@@ -127,6 +133,8 @@
   --row-ink: var(--row-green-ink);
   --row-on: var(--row-green-on);
   --row-pattern: var(--pattern-green);
+  --row-vivid: var(--row-green-vivid);
+  --row-vivid-ink: var(--row-green-vivid-ink);
 }
 .c-blue {
   --row-color: var(--row-blue);
@@ -134,6 +142,8 @@
   --row-ink: var(--row-blue-ink);
   --row-on: var(--row-blue-on);
   --row-pattern: var(--pattern-blue);
+  --row-vivid: var(--row-blue-vivid);
+  --row-vivid-ink: var(--row-blue-vivid-ink);
 }
 
 .g-box {
@@ -172,9 +182,12 @@
   bottom: 1px;
   font-size: 9px;
 }
+/* K3.3: markable boxes get the most vivid fill (pattern kept for colour-blind players). */
 .g-box.is-legal {
   cursor: pointer;
   font-weight: var(--fw-heavy);
+  background: var(--row-pattern), var(--row-vivid);
+  color: var(--row-vivid-ink);
   box-shadow:
     0 0 0 2px var(--row-color),
     0 0 10px color-mix(in srgb, var(--row-color) 55%, transparent);
@@ -254,11 +267,14 @@
   animation: g-glint 700ms var(--ease-out) both;
   pointer-events: none;
 }
+/* K3.2: one line — the equation left, the penalty boxes right-aligned (details in scoring.css). */
 .g-foot {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   min-height: 32px;
   font-size: var(--fs-small);
 }
@@ -289,7 +305,7 @@
 }
 .g-scores {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
@@ -372,7 +388,7 @@
   color: var(--danger);
 }
 .g-glyph.is-decided {
-  color: var(--row-green);
+  color: var(--die-green);
 }
 .g-glyph.is-thinking {
   animation: g-blink 1.2s ease-in-out infinite;
@@ -678,8 +694,8 @@
     margin-inline: calc(4px - var(--gutter));
     padding-inline: 4px;
   }
-  .g-sheet .g-row {
-    grid-template-columns: 14px repeat(12, minmax(0, 1fr));
+  .g-sheet {
+    --rail-w: 14px;
   }
   .g-rail {
     font-size: 11px;
@@ -688,7 +704,7 @@
     font-size: 9.5px;
   }
   .g-sheet .g-row:has(.g-rail.is-two) {
-    grid-template-columns: 16px repeat(12, minmax(0, 1fr));
+    --rail-w: 16px;
   }
 }
 

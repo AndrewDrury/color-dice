@@ -50,22 +50,44 @@
   --on-accent: #ffffff;
   --danger: #b3342a;
   --on-danger: #ffffff;
-  --row-red: #d9363e;
-  --row-red-tint: #fce3e2;
+  /* Row colours (K3.3: vivid). solid / tint (open box) / ink-on-tint / on-solid /
+     vivid (markable box fill, the liveliest) / ink-on-vivid. */
+  --row-red: #e02633;
+  --row-red-tint: #ffd9db;
   --row-red-ink: #7a1015;
   --row-red-on: #ffffff;
-  --row-yellow: #f2b705;
-  --row-yellow-tint: #fff4cc;
+  --row-red-vivid: #ff6b74;
+  --row-red-vivid-ink: #1c2230;
+  --row-yellow: #ffc20a;
+  --row-yellow-tint: #fff0b3;
   --row-yellow-ink: #6b4e00;
   --row-yellow-on: #1c2230;
-  --row-green: #1e9e57;
-  --row-green-tint: #ddf5e6;
+  --row-yellow-vivid: #ffd43b;
+  --row-yellow-vivid-ink: #1c2230;
+  --row-green: #1fb866;
+  --row-green-tint: #cff5de;
   --row-green-ink: #0b5a2e;
   --row-green-on: #1c2230;
-  --row-blue: #2468d9;
-  --row-blue-tint: #e0eafc;
+  --row-green-vivid: #3edc86;
+  --row-green-vivid-ink: #1c2230;
+  --row-blue: #1f63f0;
+  --row-blue-tint: #d9e5ff;
   --row-blue-ink: #0f3778;
   --row-blue-on: #ffffff;
+  --row-blue-vivid: #5e9bff;
+  --row-blue-vivid-ink: #1c2230;
+
+  /* Dice (K3.1): ivory whites with near-black pips; coloured dice with pips >= 3:1. */
+  --die-ivory: #fbf8f1;
+  --die-ink: #1c2230;
+  --die-red: #e02633;
+  --die-red-pip: #ffffff;
+  --die-yellow: #ffc20a;
+  --die-yellow-pip: #1c2230;
+  --die-green: #12a150;
+  --die-green-pip: #ffffff;
+  --die-blue: #1f63f0;
+  --die-blue-pip: #ffffff;
 
   /* Colour-blind patterns (8 % opacity), layered over each row tint */
   --pattern-ink: rgb(0 0 0 / 0.08);
@@ -106,13 +128,13 @@
   --on-accent: #0e131c;
   --danger: #ff7a70;
   --on-danger: #0e131c;
-  --row-red-tint: #442633;
+  --row-red-tint: #5c1f2c;
   --row-red-ink: #f4f6fa;
-  --row-yellow-tint: #4a4227;
+  --row-yellow-tint: #574814;
   --row-yellow-ink: #f4f6fa;
-  --row-green-tint: #1b3d39;
+  --row-green-tint: #134a35;
   --row-green-ink: #f4f6fa;
-  --row-blue-tint: #1c3155;
+  --row-blue-tint: #1b3a78;
   --row-blue-ink: #f4f6fa;
   --pattern-ink: rgb(255 255 255 / 0.08);
   --e1: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
@@ -131,13 +153,13 @@
     --on-accent: #0e131c;
     --danger: #ff7a70;
     --on-danger: #0e131c;
-    --row-red-tint: #442633;
+    --row-red-tint: #5c1f2c;
     --row-red-ink: #f4f6fa;
-    --row-yellow-tint: #4a4227;
+    --row-yellow-tint: #574814;
     --row-yellow-ink: #f4f6fa;
-    --row-green-tint: #1b3d39;
+    --row-green-tint: #134a35;
     --row-green-ink: #f4f6fa;
-    --row-blue-tint: #1c3155;
+    --row-blue-tint: #1b3a78;
     --row-blue-ink: #f4f6fa;
     --pattern-ink: rgb(255 255 255 / 0.08);
     --e1: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);

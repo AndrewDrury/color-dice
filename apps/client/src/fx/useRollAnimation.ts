@@ -7,17 +7,20 @@
  * - Reduced motion: no tumble; the result shows within 150 ms (CSS cross-fade).
  */
 import { useEffect, useRef, useState } from "preact/hooks";
+import { BOUNCE_MS } from "./dice-math";
 import { reducedMotion } from "./motion";
 
 export type RollPhase = "idle" | "shaking" | "tumbling" | "settling" | "settled";
 
+const SETTLE_MS = 350;
+
 /** Tuned in the Dice Lab. */
 export const ROLL_TIMING = Object.freeze({
   minTumble: 550,
-  settle: 350,
+  settle: SETTLE_MS,
   stagger: 45,
-  /** First contact inside the settle bounce (45 % of `settle`). */
-  landAt: 160,
+  /** First contact inside the settle: the short bounce (≤ 120 ms, K3.1) follows it. */
+  landAt: SETTLE_MS - BOUNCE_MS,
   slowAfter: 3000,
   /** No result and no error after this long: ease back so the tray never spins forever. */
   giveUpAfter: 10000,

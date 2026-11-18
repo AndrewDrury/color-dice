@@ -162,3 +162,26 @@ export function continueTo(from: Angles, target: Angles, dir: Angles, minTravel 
   if (dz > 180) dz -= 360;
   return { x: axis(from.x, target.x, dir.x), y: axis(from.y, target.y, dir.y), z: from.z + dz };
 }
+
+/** The settle's landing bounce (K3.1): first contact to rest takes at most this long. */
+export const BOUNCE_MS = 110;
+
+/**
+ * Body keyframes for a settle of `duration` ms: drop from the hover height, touch down
+ * `BOUNCE_MS` before the end, one small hop (−3 px), rest at (tx, ty).
+ */
+export function settleBodyKeyframes(
+  pose: { tx: number; ty: number },
+  duration: number,
+  hover = -10,
+): Keyframe[] {
+  const at = (ms: number) => Math.min(1, Math.max(0, ms / duration));
+  const tr = (x: number, y: number) => `translate(${x}px,${y}px)`;
+  const { tx, ty } = pose;
+  return [
+    { transform: tr(tx, ty + hover), easing: "ease-in" },
+    { transform: tr(tx, ty), offset: at(duration - BOUNCE_MS), easing: "ease-out" },
+    { transform: tr(tx, ty - 3), offset: at(duration - BOUNCE_MS / 2), easing: "ease-in" },
+    { transform: tr(tx, ty) },
+  ];
+}

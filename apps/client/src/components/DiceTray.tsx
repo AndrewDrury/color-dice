@@ -269,27 +269,29 @@ export function DiceTray(props: DiceTrayProps) {
   return (
     <section class={`tray${reduced ? " tray--reduced" : ""}`} aria-label={t("dice.aria")}>
       <div class="tray__felt">
-        <div class="tray__dice">
+        <div class={`tray__dice${highlight ? " has-highlight" : ""}`}>
           {dice.slice(0, 2)}
           <span class="tray__divider" aria-hidden="true" />
           {dice.slice(2)}
-        </div>
-        <div class="tray__side">
-          {settled && sum !== null ? (
-            <output
-              key={`sum-${anim.landings}`}
-              class={`tray__sum${anim.landings > 0 ? " is-pop" : ""}`}
-              aria-label={t("dice.sum", { sum })}
-            >
-              <span aria-hidden="true">=</span> {sum}
-            </output>
-          ) : null}
-          {anim.slow ? <span class="tray__status">{t("dice.rolling")}</span> : null}
-          {settled && hlWhite !== undefined && hlColor !== undefined ? (
-            <span class="tray__combo num">
-              {hlWhite} + {hlColor}
-            </span>
-          ) : null}
+          {/* K3.1: the white sum sits under the white pair only, in a fixed slot. */}
+          <div class="tray__wsum" data-slot="white-sum">
+            {settled && sum !== null ? (
+              <output
+                key={`sum-${anim.landings}`}
+                class={`tray__sum num${anim.landings > 0 ? " is-pop" : ""}`}
+                aria-label={t("dice.sum", { sum })}
+              >
+                {sum}
+              </output>
+            ) : anim.slow ? (
+              <span class="tray__status">{t("dice.rolling")}</span>
+            ) : null}
+            {settled && hlWhite !== undefined && hlColor !== undefined ? (
+              <span class="tray__combo num">
+                {hlWhite} + {hlColor}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

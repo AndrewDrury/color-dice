@@ -1,44 +1,234 @@
-/* Score card clarity (T-UX-3): penalty label, equation chips, points guide, lock pips. */
+/* Score card clarity (T-UX-3, K3.2–K3.4): one-line footer, row points pills, lock pips. */
+
+/* ---------- Footer: equation (left) + penalty boxes (right), one line ---------- */
+.g-foot {
+  /* Shrinks with the card down to 12 px before anything could wrap (K3.2). */
+  font-size: clamp(12px, 3.7cqi, 15px);
+}
+.g-eq {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+.g-eq .g-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 1px 0.45em;
+  border-radius: var(--r-pill);
+  background: var(--row-pattern), var(--row-tint);
+  color: var(--row-ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--row-color) 70%, transparent);
+  white-space: nowrap;
+}
+.g-eq .g-score abbr {
+  color: var(--row-ink);
+  font-weight: var(--fw-heavy);
+  font-size: 0.85em;
+}
+/* The red penalty term, with its "penalties" caption stacked under the number (K3.4). */
+.g-eq .g-penscore {
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--danger);
+  font-weight: var(--fw-heavy);
+  line-height: 1.05;
+}
+.g-pencap {
+  /* May hang a little under the "−" and "=" signs so long words (es) never cost a line. */
+  margin-inline: -0.9em;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: var(--fw-bold);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.g-op {
+  color: var(--ink-muted);
+  font-weight: var(--fw-heavy);
+}
+/* The total: the most prominent thing on the line (≥ 1.5× the terms, high-contrast pill). */
+.g-total--xl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  margin-left: 0.1em;
+  padding: 0.05em 0.45em;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 1.6em;
+  line-height: 1.15;
+  font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: var(--e1);
+}
+.g-total--xl .g-arrow {
+  font-size: 0.7em;
+  opacity: 0.8;
+}
+.g-total--xl.is-preview {
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--accent);
+}
+.g-pen {
+  flex: none;
+  margin-left: auto;
+}
 .g-pen-label {
   margin-right: 4px;
   font-size: var(--fs-small);
   font-weight: var(--fw-bold);
   color: var(--ink-muted);
 }
-.g-eq {
-  width: 100%;
-  font-variant-numeric: tabular-nums;
+.g-foot .g-pbox {
+  width: 1.75em;
+  height: 1.5em;
+  font-size: 0.75em;
 }
-.g-eq .g-score {
+
+/* Narrow cards: no row letters in the equation, no penalty label (the boxes say −5). */
+@container sheet (max-width: 519.98px) {
+  .g-eq .g-score abbr,
+  .g-pen-label {
+    display: none;
+  }
+}
+
+/* Phone cards: tighter spacing so the equation, the preview and the penalties share one line. */
+@container sheet (max-width: 399.98px) {
+  .g-foot {
+    gap: 4px;
+  }
+  .g-eq {
+    gap: 0.18em;
+  }
+  .g-eq .g-score {
+    padding-inline: 0.35em;
+  }
+  .g-pencap {
+    letter-spacing: -0.02em;
+  }
+  .g-total--xl {
+    font-size: 1.5em;
+    padding-inline: 0.35em;
+    gap: 0.12em;
+  }
+  .g-total--xl .g-arrow {
+    font-size: 0.6em;
+  }
+  .g-pen {
+    gap: 2px;
+  }
+  .g-foot .g-pbox {
+    width: 1.5em;
+    height: 1.45em;
+    font-size: 0.7em;
+  }
+}
+
+/* ---------- Row points pill (K3.2): `4✕ · 10`, or `+5` while staging ---------- */
+.g-rowpts {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
   gap: 3px;
+  align-self: center;
+  justify-self: stretch;
+  min-width: 0;
   padding: 2px 6px;
   border-radius: var(--r-pill);
   background: var(--row-tint);
   color: var(--row-ink);
-}
-.g-eq .g-score abbr {
-  color: var(--row-ink);
+  box-shadow: inset 0 0 0 1.5px var(--row-color);
+  font-size: 13px;
+  line-height: 1.2;
   font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.g-eq .g-penscore {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--danger);
-  color: var(--danger);
+.g-rowpts-x,
+.g-rowpts-sep {
+  font-weight: var(--fw-bold);
+  opacity: 0.85;
 }
-.g-pencount {
-  font-size: 10px;
-  letter-spacing: -1px;
+.g-rowpts.is-preview {
+  background: var(--row-color);
+  color: var(--row-on);
 }
-.g-op {
-  color: var(--ink-muted);
-  font-weight: var(--fw-heavy);
+
+/* Mid-size cards: a narrow column with just the points. */
+@container sheet (max-width: 519.98px) {
+  .g-sheet .g-row {
+    --pts-col: 30px;
+  }
+  .g-rowpts {
+    padding-inline: 2px;
+    font-size: 12px;
+  }
+  .g-rowpts-x,
+  .g-rowpts-sep {
+    display: none;
+  }
 }
-.g-eq .g-total {
-  margin-left: 0;
-  font-size: 1.15em;
-  font-weight: var(--fw-heavy);
+
+/* Phones (card < 400 px): no room for a 14th column with ≥ 26 px cells, so the points
+   sit under the lock box in the same end cell. */
+@container sheet (max-width: 399.98px) {
+  .g-sheet .g-row {
+    grid-template-columns: var(--rail-w, 18px) repeat(12, minmax(0, 1fr));
+  }
+  .g-rowpts {
+    grid-column: 13;
+    grid-row: 1;
+    align-self: end;
+    justify-self: center;
+    margin-bottom: 1px;
+    padding: 0 3px;
+    min-width: 20px;
+    font-size: 10.5px;
+    line-height: 13px;
+  }
+  .g-row .g-lockbox {
+    grid-column: 13;
+    grid-row: 1;
+    align-self: start;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+  }
+  .g-row .g-lockbox svg {
+    width: 12px;
+    height: 12px;
+  }
+  .g-row .g-lockbox:has(.g-pips) {
+    width: 100%;
+    height: auto;
+    background: none;
+  }
+  .g-row .g-lockbox:has(.g-pips) .g-pipcount {
+    display: none;
+  }
+  .g-row .g-lockbox.is-available:has(.g-pips) {
+    background: var(--row-color);
+  }
+  .g-pips {
+    grid-template-columns: repeat(3, 5px);
+    gap: 1px;
+    padding: 1px;
+  }
+  .g-pips i {
+    width: 5px;
+    height: 5px;
+    box-shadow: inset 0 0 0 1.5px var(--row-color);
+  }
 }
 
 /* Lock box: "3/5" plus five 6 px pips (solid = marked, 2 px ring = still needed). */

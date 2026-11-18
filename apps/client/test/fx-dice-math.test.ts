@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   anglesAt,
+  BOUNCE_MS,
   continueTo,
   FACE_NORMALS,
   type Face,
@@ -8,9 +9,11 @@ import {
   hashSeed,
   mod360,
   seededRandom,
+  settleBodyKeyframes,
   settleTransform,
   tumbleKeyframes,
 } from "../src/fx/dice-math";
+import { ROLL_TIMING } from "../src/fx/useRollAnimation";
 
 const FACES: Face[] = [1, 2, 3, 4, 5, 6];
 type V = [number, number, number];
@@ -115,5 +118,18 @@ describe("seededRandom / tumbleKeyframes", () => {
     expect(mod360(to.x)).toBeCloseTo(mod360(target.x), 6);
     expect(mod360(to.y)).toBeCloseTo(mod360(target.y), 6);
     expect(mod360(to.z)).toBeCloseTo(mod360(target.z), 6);
+  });
+});
+
+describe("settle bounce (K3.1)", () => {
+  it("lands then bounces within 120 ms, ending at rest", () => {
+    expect(BOUNCE_MS).toBeLessThanOrEqual(120);
+    const kf = settleBodyKeyframes({ tx: 0, ty: 0 }, ROLL_TIMING.settle);
+    const contact = kf[1]?.offset as number;
+    expect((1 - contact) * ROLL_TIMING.settle).toBeLessThanOrEqual(120);
+    expect(kf[1]?.transform).toBe("translate(0px,0px)");
+    expect(kf.at(-1)?.transform).toBe("translate(0px,0px)");
+    // The land sound and haptic fire at first contact.
+    expect(ROLL_TIMING.landAt).toBe(Math.round(contact * ROLL_TIMING.settle));
   });
 });

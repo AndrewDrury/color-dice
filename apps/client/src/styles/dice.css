@@ -3,8 +3,6 @@
 .tray {
   --die-gap: 6px;
   --tray-pad: var(--s3);
-  --die-ivory: #fbf8f1;
-  --die-ink: #1c2230;
   /* Die size follows the tray width: six dice + divider + gaps, never wrapping (320 px safe). */
   --die-size: clamp(
     36px,
@@ -41,14 +39,17 @@
   overflow: visible;
 }
 
-/* W W | R Y G B: a fixed six-die row with a thin divider after the white pair. */
+/* W W | R Y G B: a fixed six-die row with a thin divider after the white pair; a second,
+   fixed-height row holds the white sum under the white pair only (K3.1). */
 .tray__dice {
+  --sum-h: 30px;
   display: grid;
   grid-template-columns: repeat(2, var(--die-size)) 2px repeat(4, var(--die-size));
-  grid-auto-flow: column;
+  grid-template-rows: var(--die-size) var(--sum-h);
   align-items: center;
   justify-content: center;
-  gap: var(--die-gap);
+  column-gap: var(--die-gap);
+  row-gap: 6px;
 }
 
 .tray__divider {
@@ -58,28 +59,34 @@
   background: color-mix(in srgb, var(--ink) 18%, transparent);
 }
 
-/* Reserved slot: the sum badge appearing never moves the dice. */
-.tray__side {
+/* Reserved slot under the white pair: the sum appearing never moves the dice. */
+.tray__wsum {
+  grid-row: 2;
+  grid-column: 1 / span 2;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: var(--s2);
-  min-width: 96px;
-  min-height: 32px;
+  gap: 4px;
+  height: var(--sum-h);
+  min-width: 0;
 }
 
 .tray__sum {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  padding: 4px 12px;
-  line-height: 1.2;
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.4em;
+  height: 100%;
+  padding: 0 10px;
   border-radius: var(--r-pill);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: var(--e2);
+  background: var(--die-ivory);
+  color: var(--die-ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 -2px 0 rgb(0 0 0 / 0.08),
+    0 2px 6px rgb(0 0 0 / 0.18),
+    0 0 0 1px rgb(0 0 0 / 0.06);
   font-size: var(--fs-large);
+  line-height: 1;
   font-weight: var(--fw-heavy);
   font-variant-numeric: tabular-nums;
 }
@@ -104,18 +111,23 @@
 
 .tray__status,
 .tray__combo {
-  font-size: var(--fs-small);
+  font-size: 12px;
+  white-space: nowrap;
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
+.tray__combo {
+  font-weight: var(--fw-bold);
+}
+
 /* ---------- Die ---------- */
 
+/* Rounded-square bodies with a bevel (inner highlight + soft drop shadow) and inset pips. */
 .die {
   --half: calc(var(--die-size) / 2);
   --body: var(--die-ivory);
   --pip: var(--die-ink);
-  --edge: #e3ddd0;
   position: relative;
   width: var(--die-size);
   height: var(--die-size);
@@ -124,27 +136,23 @@
 }
 
 .die--red {
-  --body: var(--row-red);
-  --pip: #fff;
-  --edge: #b02a31;
+  --body: var(--die-red);
+  --pip: var(--die-red-pip);
 }
 
 .die--yellow {
-  --body: var(--row-yellow);
-  --pip: var(--die-ink);
-  --edge: #c99600;
+  --body: var(--die-yellow);
+  --pip: var(--die-yellow-pip);
 }
 
 .die--green {
-  --body: var(--row-green);
-  --pip: #fff;
-  --edge: #167a43;
+  --body: var(--die-green);
+  --pip: var(--die-green-pip);
 }
 
 .die--blue {
-  --body: var(--row-blue);
-  --pip: #fff;
-  --edge: #1b52ad;
+  --body: var(--die-blue);
+  --pip: var(--die-blue-pip);
 }
 
 .die__fx,
@@ -175,10 +183,11 @@
   backface-visibility: hidden;
 }
 
+/* The cube's inside: the body colour, a shade darker, so edges never show a gap. */
 .die__core {
   inset: 3%;
-  border-radius: 12%;
-  background: var(--edge);
+  border-radius: 14%;
+  background: color-mix(in srgb, var(--body) 82%, #000);
   backface-visibility: visible;
 }
 
@@ -193,13 +202,15 @@
 .die__face {
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  padding: 15%;
+  padding: 16%;
   background:
-    radial-gradient(90% 80% at 28% 22%, rgb(255 255 255 / 0.45), transparent 55%), var(--body);
+    radial-gradient(120% 90% at 30% 12%, rgb(255 255 255 / 0.42), transparent 58%),
+    linear-gradient(160deg, transparent 55%, rgb(0 0 0 / 0.1)), var(--body);
   box-shadow:
-    inset 0 0 0 1px rgb(0 0 0 / 0.06),
-    inset 0 -3px 5px rgb(0 0 0 / 0.14),
-    inset 0 3px 4px rgb(255 255 255 / 0.4);
+    inset 0 0 0 1px rgb(0 0 0 / 0.08),
+    inset 0 2px 1px rgb(255 255 255 / 0.55),
+    inset 0 -3px 4px rgb(0 0 0 / 0.16),
+    inset 0 0 6px rgb(0 0 0 / 0.06);
 }
 
 .die__face--1 {
@@ -221,13 +232,20 @@
   transform: rotateX(-90deg) translateZ(var(--half));
 }
 
+/* Inset round pips: a drilled look (dark top edge, light lower lip). */
 .pip {
-  width: 72%;
+  width: 68%;
   aspect-ratio: 1;
   place-self: center;
   border-radius: 50%;
   background: var(--pip);
-  box-shadow: inset 0 1px 1.5px rgb(0 0 0 / 0.35);
+  box-shadow:
+    inset 0 1.5px 1.5px rgb(0 0 0 / 0.45),
+    0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.die__face--1 .pip {
+  width: 82%;
 }
 
 .die.is-moving .die__body,
@@ -236,18 +254,28 @@
   will-change: transform;
 }
 
+/* Selectable / in-use dice (Action 2 helper): a clear accent ring with a soft glow. */
 .die.is-highlight::after {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -4px;
   border-radius: calc(var(--die-size) * 0.3);
-  box-shadow: 0 0 0 2px var(--accent);
+  box-shadow:
+    0 0 0 2.5px var(--accent),
+    0 0 12px 2px color-mix(in srgb, var(--accent) 55%, transparent);
   pointer-events: none;
+}
+
+/* While a combination is shown, the dice not in it step back. */
+.tray__dice.has-highlight .die:not(.is-highlight):not(.is-removed) .die__fx {
+  opacity: 0.55;
+  transition: opacity var(--t-fast) var(--ease-out);
 }
 
 .die.is-removed .die__fx {
   transform: scale(0.6);
   opacity: 0.3;
+  filter: saturate(0.4);
 }
 
 .die__lock {
@@ -284,11 +312,11 @@
   .tray__felt {
     gap: 2px;
   }
-  .tray__side {
-    min-height: 26px;
+  .tray__dice {
+    --sum-h: 24px;
+    row-gap: 4px;
   }
   .tray__sum {
-    padding-block: 1px;
     font-size: 17px;
   }
 }
@@ -334,7 +362,8 @@
   .tray__felt {
     gap: var(--s1);
   }
-  .tray__side {
-    min-height: 26px;
+  .tray__dice {
+    --sum-h: 24px;
+    row-gap: 4px;
   }
 }

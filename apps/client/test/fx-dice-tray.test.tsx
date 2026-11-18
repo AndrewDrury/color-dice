@@ -88,7 +88,26 @@ describe("DiceTray", () => {
     const ids = Array.from(row?.children ?? []).map(
       (c) => c.getAttribute("data-die") ?? (c.classList.contains("tray__divider") ? "|" : "?"),
     );
-    expect(ids).toEqual(["WHITE_1", "WHITE_2", "|", "RED", "YELLOW", "GREEN", "BLUE"]);
+    expect(ids).toEqual(["WHITE_1", "WHITE_2", "|", "RED", "YELLOW", "GREEN", "BLUE", "?"]);
+  });
+
+  it("puts the white sum in a fixed slot under the white pair only (K3.1)", async () => {
+    const view = render(<DiceTray {...props({ roll: null, canRoll: true })} />);
+    const slot = () => view.container.querySelectorAll(".tray__dice > .tray__wsum");
+    // The slot exists before any roll, so the sum appearing never moves the dice.
+    expect(slot()).toHaveLength(1);
+    expect(slot()[0]?.textContent).toBe("");
+    view.rerender(<DiceTray {...props({ roll: ROLL })} />);
+    await act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    const sums = view.container.querySelectorAll(".tray__sum");
+    expect(sums).toHaveLength(1);
+    expect(sums[0]?.closest(".tray__wsum")).toBe(slot()[0]);
+    expect(sums[0]?.textContent).toBe("8");
+    expect(sums[0]?.getAttribute("aria-label")).toBe("White sum 8");
+    // Nothing tray-wide any more.
+    expect(view.container.querySelector(".tray__side")).toBeNull();
   });
 
   it("never renders its own Roll button (the ActionBar owns the one Roll control)", () => {

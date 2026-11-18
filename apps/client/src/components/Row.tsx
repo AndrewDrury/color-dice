@@ -1,5 +1,13 @@
 /** One colour row: letter rail, 11 number boxes, the lock box. Memoised by its data. */
-import { boxStatus, type Color, LOCK_MIN_MARKS, numberAt } from "@cd/engine";
+import {
+  applyMark,
+  boxStatus,
+  type Color,
+  crossCount,
+  LOCK_MIN_MARKS,
+  numberAt,
+  rowScore,
+} from "@cd/engine";
 import type { ViewRow } from "@cd/protocol";
 import { memo } from "preact/compat";
 import { COLORS, cssColor, markCount } from "../game/model";
@@ -20,6 +28,51 @@ export interface RowProps {
   shake: boolean;
   glint: boolean;
   onPick: (color: Color, number: number) => void;
+}
+
+/** Points a mark on `n` would add to this row (the lock box counts when it locks). */
+export function markGain(color: Color, row: ViewRow, n: number): number {
+  const r = { color, marked: row.marked, lockCrossed: row.lockCrossed };
+  return rowScore(applyMark(r, n).row) - rowScore(r);
+}
+
+/** K3.2: the row's points at its right end, `4✕ · 10`, or the gain `+5` while staging. */
+function RowPoints(p: { color: Color; row: ViewRow; stagedNumber: number | null }) {
+  const r = { color: p.color, marked: p.row.marked, lockCrossed: p.row.lockCrossed };
+  const k = crossCount(r);
+  const pts = rowScore(r);
+  const gain = p.stagedNumber === null ? null : markGain(p.color, p.row, p.stagedNumber);
+  const color = colorName(p.color);
+  return (
+    <span
+      class={`g-rowpts${gain !== null ? " is-preview" : ""}`}
+      role="img"
+      data-points={pts}
+      data-crosses={k}
+      data-gain={gain ?? undefined}
+      aria-label={
+        gain !== null ? t("row.gain", { color, pts, gain }) : t("row.points", { color, k, pts })
+      }
+    >
+      {gain !== null ? (
+        <span class="num g-rowpts-gain" aria-hidden="true">
+          +{gain}
+        </span>
+      ) : (
+        <>
+          <span class="num g-rowpts-x" aria-hidden="true">
+            {k}✕
+          </span>
+          <span class="g-rowpts-sep" aria-hidden="true">
+            ·
+          </span>
+          <span class="num g-rowpts-pts" aria-hidden="true">
+            {pts}
+          </span>
+        </>
+      )}
+    </span>
+  );
 }
 
 function RowImpl(p: RowProps) {
@@ -84,6 +137,7 @@ function RowImpl(p: RowProps) {
           </span>
         ) : null}
       </span>
+      <RowPoints color={p.color} row={p.row} stagedNumber={p.stagedNumber} />
     </div>
   );
 }

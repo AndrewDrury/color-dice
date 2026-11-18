@@ -12,6 +12,7 @@ import {
   type Face,
   rotateCss,
   seededRandom,
+  settleBodyKeyframes,
   settleTransform,
   type TumblePlan,
   tumbleKeyframes,
@@ -184,18 +185,17 @@ export function Die(props: DieProps) {
     tumble.current = null;
     const rest = translate(p.tx, p.ty);
     const body = bounce
-      ? [
-          { transform: translate(p.tx, p.ty + HOVER) },
-          { transform: rest, offset: 0.45, easing: "ease-out" },
-          { transform: translate(p.tx, p.ty - 3), offset: 0.7, easing: "ease-in" },
-          { transform: rest },
-        ]
+      ? settleBodyKeyframes(p, duration, HOVER)
       : [{ transform: translate(0, HOVER) }, { transform: rest }];
     track(animate(bodyRef.current, body, { duration, easing: bounce ? "linear" : EASE_OUT }));
     const shadow = bounce
       ? [
           { transform: "scale(0.6)", opacity: 0.35 },
-          { transform: "scale(1.18, 0.9)", opacity: 0.95, offset: 0.45 },
+          {
+            transform: "scale(1.18, 0.9)",
+            opacity: 0.95,
+            offset: Math.min(0.95, ROLL_TIMING.landAt / duration),
+          },
           { transform: "scale(1)", opacity: 0.85 },
         ]
       : [

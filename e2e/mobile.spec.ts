@@ -83,7 +83,8 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
     await expectNoHScroll(a.page, "waiting room");
     await expectNoHScroll(b.page, "waiting room (guest)");
 
-    await queueDice(code, [6, ...rollFaces(7)]); // Mara starts; whites 6+1 = 7, colors all 1
+    // Simultaneous roll-off (spec §17 A-1): Mara 6, Milo 1 → Mara starts; whites 6+1 = 7, colors 1.
+    await queueDice(code, [6, 1, ...rollFaces(7)]);
     await startGame(a);
     expect(await waitForRoller(players)).toBe(a);
     for (const p of players) {
