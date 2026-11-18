@@ -21,8 +21,9 @@ export interface RowProps {
   lockedColors: readonly Color[];
   /** Numbers of this row that are legal right now (empty until the dice landed). */
   legal: readonly number[];
-  stagedNumber: number | null;
-  ghostNumber: number | null;
+  /** Staged numbers in the order they would be marked (step 1, then step 2). */
+  stagedNumbers: readonly number[];
+  ghostNumbers: readonly number[];
   flash: readonly number[];
   disabled: boolean;
   shake: boolean;
@@ -37,11 +38,23 @@ export function markGain(color: Color, row: ViewRow, n: number): number {
 }
 
 /** K3.2: the row's points at its right end, `4✕ · 10`, or the gain `+5` while staging. */
-function RowPoints(p: { color: Color; row: ViewRow; stagedNumber: number | null }) {
+/** Gain of marking `numbers` in order (the second mark sees the first). */
+export function stagedGain(color: Color, row: ViewRow, numbers: readonly number[]): number {
+  let r = { color, marked: row.marked, lockCrossed: row.lockCrossed };
+  let gain = 0;
+  for (const n of numbers) {
+    const next = applyMark(r, n).row;
+    gain += rowScore(next) - rowScore(r);
+    r = next;
+  }
+  return gain;
+}
+
+function RowPoints(p: { color: Color; row: ViewRow; stagedNumbers: readonly number[] }) {
   const r = { color: p.color, marked: p.row.marked, lockCrossed: p.row.lockCrossed };
   const k = crossCount(r);
   const pts = rowScore(r);
-  const gain = p.stagedNumber === null ? null : markGain(p.color, p.row, p.stagedNumber);
+  const gain = p.stagedNumbers.length === 0 ? null : stagedGain(p.color, p.row, p.stagedNumbers);
   const color = colorName(p.color);
   return (
     <span
@@ -88,6 +101,7 @@ function RowImpl(p: RowProps) {
     <div
       class={`g-row c-${cssColor(p.color)}${closed ? " is-closed" : ""}${p.glint ? " has-glint" : ""}`}
     >
+      <span class="g-lockseg" aria-hidden="true" />
       <span class={`g-rail${letter.length > 1 ? " is-two" : ""}`} title={cn} aria-hidden="true">
         {letter}
       </span>
@@ -100,11 +114,11 @@ function RowImpl(p: RowProps) {
             number={n}
             status={boxStatus(engineRow, i, p.lockedColors)}
             legal={p.legal.includes(n)}
-            staged={p.stagedNumber === n}
-            ghost={p.ghostNumber === n}
+            staged={p.stagedNumbers.includes(n)}
+            ghost={p.ghostNumbers.includes(n)}
             flash={p.flash.includes(i)}
             disabled={p.disabled}
-            shake={p.shake && p.stagedNumber === n}
+            shake={p.shake && p.stagedNumbers.includes(n)}
             onPick={() => p.onPick(p.color, n)}
           />
         );
@@ -137,7 +151,7 @@ function RowImpl(p: RowProps) {
           </span>
         ) : null}
       </span>
-      <RowPoints color={p.color} row={p.row} stagedNumber={p.stagedNumber} />
+      <RowPoints color={p.color} row={p.row} stagedNumbers={p.stagedNumbers} />
     </div>
   );
 }
@@ -152,8 +166,8 @@ export const Row = memo(
     a.lockedColors.join() === b.lockedColors.join() &&
     same(a.legal, b.legal) &&
     same(a.flash, b.flash) &&
-    a.stagedNumber === b.stagedNumber &&
-    a.ghostNumber === b.ghostNumber &&
+    a.stagedNumbers.join() === b.stagedNumbers.join() &&
+    a.ghostNumbers.join() === b.ghostNumbers.join() &&
     a.disabled === b.disabled &&
     a.shake === b.shake &&
     a.glint === b.glint &&

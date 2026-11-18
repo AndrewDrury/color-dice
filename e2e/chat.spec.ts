@@ -30,7 +30,7 @@ async function threeInAction1(
   });
   await joinGame(b!, code, "pw-chat");
   await joinGame(c!, code, "pw-chat");
-  await queueDice(code, [6, ...rollFaces(7)]);
+  await queueDice(code, [6, 1, 1, ...rollFaces(7)]);
   await startGame(a!);
   expect(await waitForRoller(players)).toBe(a);
   await roll(a!.page);
@@ -132,7 +132,7 @@ test("chat: longest names do not cause horizontal scroll at 375 px (home, waitin
     await noScroll(b); // public list shows the long room and host names
     await joinGame(b, code, "pw-long", LONG_ROOM);
     await noScroll(b);
-    await queueDice(code, [6]);
+    await queueDice(code, [6, 1]);
     await startGame(a);
     await expect(a.page.locator(".g-main")).toBeVisible();
     await noScroll(a);
@@ -155,7 +155,7 @@ test("chat: guest's board has no horizontal scroll with a 30-char host name at 3
   const { a, b, code } = await longNamesGame(browser);
   try {
     await joinGame(b, code, "pw-long", LONG_ROOM);
-    await queueDice(code, [6]);
+    await queueDice(code, [6, 1]);
     await startGame(a);
     await expect(b.page.locator(".g-main")).toBeVisible();
     await noScroll(b);

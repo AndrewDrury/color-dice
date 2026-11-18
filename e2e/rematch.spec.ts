@@ -18,7 +18,7 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
       max: 2,
     });
     await joinGame(b, code, "pw-rema");
-    await queueDice(code, [6]);
+    await queueDice(code, [6, 1]);
     await startGame(a);
     for (let turn = 1; turn <= 7; turn++) {
       const active = turn % 2 === 1 ? a : b;
@@ -38,7 +38,7 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
     }
     await expect(b.page.getByRole("button", { name: "Rematch" })).toHaveCount(0);
 
-    await queueDice(code, [6]); // Alma first again in game 2
+    await queueDice(code, [6, 1]); // Alma first again in game 2
     await a.page.getByRole("button", { name: "Rematch" }).click();
     await a.page
       .getByRole("dialog", { name: "Start a rematch?" })

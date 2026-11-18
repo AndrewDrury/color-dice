@@ -6,9 +6,11 @@ import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { DiceTray, type RollControls } from "../components/DiceTray";
+import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
+import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
+import { markRollOffPlayed, RollOff, rollOffKey, rollOffPlayed } from "../components/RollOff";
 import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
@@ -16,18 +18,22 @@ import { feedback } from "../fx/feedback";
 import { useGameKeys } from "../fx/keyboard";
 import { useTabAttention } from "../fx/tabAttention";
 import { useWakeLock } from "../fx/wakeLock";
-import { diffViews, type FeedbackEvent, isResync } from "../game/feedback";
+import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
+import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
-import { canPass, legalBoxes, passTakesPenalty } from "../game/staging";
+import { canPass, decidedMarks, legalBoxes } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
+import { useBackGuard } from "../game/useBackGuard";
+import { useAutoPass, useFlowEvents } from "../game/useFlow";
 import { useFx } from "../game/useFx";
 import { useGameSocket } from "../game/useGameSocket";
 import { useStaging } from "../game/useStaging";
 import { useViewport } from "../game/useViewport";
 import { errorText, t } from "../i18n";
 import { getPrefs, setPrefs } from "../prefs";
-import { navigate, resyncUrl } from "../router";
+import { navigate } from "../router";
 import { clearView, dismissToast, showToast, useAppState } from "../store";
+import "../styles/flow.css";
 import "../styles/game.css";
 import "../styles/scoring.css";
 import { GameHint } from "./GameHint";
@@ -41,6 +47,8 @@ interface Info {
   version: number;
   resync: boolean;
   events: FeedbackEvent[];
+  /** Raw log events that are new in this view (empty on a resync). */
+  fresh: ReturnType<typeof newEvents>;
   /** A roll that arrived live (animated): legal boxes wait for the landing. */
   liveRollKey: string | null;
   announce: string;
@@ -107,39 +115,6 @@ interface BoardProps {
   setLeaving: (v: boolean) => void;
 }
 
-/** Push one history entry so Back / swipe-back asks before leaving (H10). */
-function useBackGuard(onBack: () => void) {
-  const cb = useRef(onBack);
-  cb.current = onBack;
-  useEffect(() => {
-    const push = () => {
-      try {
-        globalThis.history.pushState({ cdGuard: true }, "");
-      } catch {
-        // No history (tests, sandboxed frames).
-      }
-    };
-    push();
-    const on = () => {
-      push();
-      cb.current();
-    };
-    globalThis.addEventListener("popstate", on);
-    return () => {
-      globalThis.removeEventListener("popstate", on);
-      // Pop our extra entry so Back works normally on Home, then restore the URL it exposes.
-      try {
-        if ((globalThis.history.state as { cdGuard?: boolean } | null)?.cdGuard) {
-          globalThis.addEventListener("popstate", resyncUrl, { once: true });
-          globalThis.history.back();
-        }
-      } catch {
-        // No history (tests, sandboxed frames).
-      }
-    };
-  }, []);
-}
-
 function Board({
   offlineSince,
   view,
@@ -177,6 +152,10 @@ function Board({
       version: view.version,
       resync,
       events,
+      fresh:
+        resync || !before?.game || !view.game
+          ? []
+          : newEvents(before.game.events, view.game.events),
       liveRollKey: newRoll && g?.turn ? `${view.code}:${g.turn.number}` : null,
       announce: announce.current,
     };
@@ -226,8 +205,17 @@ function Board({
 
   const me = youPlayer(view);
   const g = game as NonNullable<typeof game>;
-  const legal = landed && !st.sent ? legalBoxes(view) : new Set<string>();
-  const boxed = (s: typeof st.staged) => (s && s.kind === "MARK" ? s : null);
+  const legal = landed && !st.sent ? legalBoxes(view, st.s1) : new Set<string>();
+  const staged = [st.s1, st.s2].filter((m) => m !== null);
+  const ghost = [...(st.sent ? [st.sent.s1, st.sent.s2] : decidedMarks(view))].filter(
+    (m) => m !== null,
+  );
+  const noMove = useAutoPass(view, conn.send, landed);
+  const flow = useFlowEvents(view, cur.fresh, st.lastEarly);
+  const [rollOffDone, setRollOffDone] = useState(false);
+  const rollOff = rollOffEvent(view);
+  const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
+  const showRollOff = !!rollOff && !rollOffDone && !rollOffPlayed(rollOffId as string);
   const [localFail, setLocalFail] = useState(0);
   const onRoll = () => {
     if (!g.turn || conn.send({ type: "roll", turn: g.turn.number })) return;
@@ -245,9 +233,16 @@ function Board({
   useTabAttention(myMove);
   useGameKeys({
     canRoll: view.you.canRoll && panel === null && !leaving && !rematching && !gameOver,
-    canPass: canPass(view) && !view.you.canRoll && panel === null && !leaving && !gameOver,
+    canPass:
+      canPass(view, st.s1) &&
+      !noMove &&
+      !st.sent &&
+      !view.you.canRoll &&
+      panel === null &&
+      !leaving &&
+      !gameOver,
     roll: onRoll,
-    pass: st.stagePass,
+    pass: st.pass,
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
@@ -260,14 +255,14 @@ function Board({
       {hint}
       <ActionBar
         view={view}
-        status={statusText(view)}
+        status={statusText(view, st.s1 !== null)}
         announce={cur.announce}
-        staged={st.staged}
+        s1={st.s1}
+        s2={st.s2}
         sent={st.sent !== null}
         gated={!landed}
-        rollControls={rollControls}
-        rolling={rolling}
-        onPass={st.stagePass}
+        noMove={noMove}
+        onPass={st.pass}
         onConfirm={st.confirm}
       />
     </>
@@ -309,12 +304,11 @@ function Board({
               player={me}
               lockedColors={g.lockedColors}
               legal={legal}
-              staged={boxed(st.staged)}
-              ghost={boxed(st.sent)}
+              staged={staged}
+              ghost={ghost}
               disabled={st.sent !== null || !landed}
               fx={fx.sheet}
-              errorShake={st.shake > 0 && st.staged !== null}
-              warnPenalty={st.staged?.kind === "PASS" && passTakesPenalty(view)}
+              errorShake={st.shake > 0 && staged.length > 0}
               onPick={st.stageBox}
               onFloatDone={fx.dropFloat}
             />
@@ -322,19 +316,32 @@ function Board({
           <div class="g-guide-slot">
             {me ? <ScoreGuide rows={me.sheet.rows} collapsible={viewport === "phone"} /> : null}
           </div>
-          <DiceTray
-            roll={g.roll}
-            lockedColors={g.lockedColors}
-            canRoll={view.you.canRoll}
-            onRoll={onRoll}
-            turnKey={{ code: view.code, turnNumber: g.turn?.number ?? null }}
-            highlight={st.highlight}
-            rollFailed={rollFailed + localFail}
-            resync={cur.resync}
-            onLanded={() => markLanded(LAND_GLOW_DELAY_MS)}
-            controls={rollControls}
-            onBusyChange={setRolling}
-          />
+          <div class="g-dicegroup">
+            <DiceTray
+              roll={g.roll}
+              lockedColors={g.lockedColors}
+              canRoll={view.you.canRoll}
+              onRoll={onRoll}
+              turnKey={{ code: view.code, turnNumber: g.turn?.number ?? null }}
+              highlight={st.highlight}
+              rollFailed={rollFailed + localFail}
+              resync={cur.resync}
+              onLanded={() => markLanded(LAND_GLOW_DELAY_MS)}
+              controls={rollControls}
+              onBusyChange={setRolling}
+            />
+            {view.you.canRoll ? (
+              <div class="g-rollslot">
+                <RollButton
+                  controls={rollControls}
+                  class="btn btn-primary g-primary"
+                  disabled={rolling}
+                >
+                  {t("action.roll")}
+                </RollButton>
+              </div>
+            ) : null}
+          </div>
           {viewport === "desktop" ? actionBar : null}
         </div>
         {viewport !== "phone" ? (
@@ -347,6 +354,17 @@ function Board({
       {viewport !== "desktop" ? actionBar : null}
       <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
       {toast ? <div class="g-toast">{toast}</div> : null}
+      <LockPopup queue={flow.queue} shift={flow.shift} />
+      {showRollOff && rollOff ? (
+        <RollOff
+          view={view}
+          rounds={rollOff.rounds}
+          onDone={() => {
+            markRollOffPlayed(rollOffId as string);
+            setRollOffDone(true);
+          }}
+        />
+      ) : null}
       {gameOver ? (
         <GameOver
           view={view}

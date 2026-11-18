@@ -14,7 +14,7 @@ const rows = (over: Record<string, { marked: boolean[]; lockCrossed: boolean }> 
 const marks = (n: number) => Array.from({ length: 11 }, (_, i) => i < n);
 
 const fx = { flash: {}, glint: null, floats: [], shakeKey: 0 };
-function sheet(penalties: number, staged: SheetProps["staged"] = null) {
+function sheet(penalties: number, staged: SheetProps["staged"] = []) {
   const r = rows({ RED: { marked: marks(5), lockCrossed: false } });
   return (
     <Sheet
@@ -31,7 +31,7 @@ function sheet(penalties: number, staged: SheetProps["staged"] = null) {
       lockedColors={[]}
       legal={new Set()}
       staged={staged}
-      ghost={null}
+      ghost={[]}
       disabled
       fx={fx}
       onPick={() => {}}
@@ -110,16 +110,16 @@ describe("score card footer, round 3 (K3.2, K3.4)", () => {
     const red = () => view.container.querySelector(".g-row.c-red .g-rowpts");
     expect(red()?.textContent).toBe("5✕·15");
     // Red has 5 marks (2..6): marking 8 makes 6 crosses → 21 (+6).
-    view.rerender(sheet(0, { color: "RED", number: 8 }));
+    view.rerender(sheet(0, [{ color: "RED", number: 8 }]));
     expect(red()?.textContent).toBe("+6");
     expect(red()?.getAttribute("data-gain")).toBe("6");
     const total = view.container.querySelector(".g-total");
-    expect(total?.textContent).toBe("15→21");
+    expect(total?.textContent).toBe("15→21total");
     expect(total?.getAttribute("aria-label")).toBe("Total score 15, 21 after this mark");
     expect(total?.classList.contains("g-total--xl")).toBe(true);
     view.rerender(sheet(0));
     expect(red()?.textContent).toBe("5✕·15");
-    expect(view.container.querySelector(".g-total")?.textContent).toBe("15");
+    expect(view.container.querySelector(".g-total")?.textContent).toBe("15total");
   });
 
   it("counts the lock as a cross in the preview", () => {
@@ -129,8 +129,8 @@ describe("score card footer, round 3 (K3.2, K3.4)", () => {
         row={{ marked: marks(5), lockCrossed: false }}
         lockedColors={[]}
         legal={[12]}
-        stagedNumber={12}
-        ghostNumber={null}
+        stagedNumbers={[12]}
+        ghostNumbers={[]}
         flash={[]}
         disabled={false}
         shake={false}
@@ -160,8 +160,8 @@ describe("row points pill (K3.2)", () => {
         }
         lockedColors={[]}
         legal={new Set()}
-        staged={null}
-        ghost={null}
+        staged={[]}
+        ghost={[]}
         disabled
         fx={fx}
         onPick={() => {}}
@@ -224,8 +224,8 @@ describe("lock progress pips", () => {
         row={{ marked: marks(n), lockCrossed: false } as never}
         lockedColors={[]}
         legal={[]}
-        stagedNumber={null}
-        ghostNumber={null}
+        stagedNumbers={[]}
+        ghostNumbers={[]}
         flash={[]}
         disabled
         shake={false}

@@ -15,6 +15,8 @@ export interface Prefs {
   language: LanguagePref;
   lastName: string;
   seenHints: string[];
+  /** K4.6: never show the coaching hint card on this device. */
+  hintsOff: boolean;
 }
 
 export const PREFS_KEY = "colorDice:prefs";
@@ -31,6 +33,7 @@ export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   language: "auto",
   lastName: "",
   seenHints: [],
+  hintsOff: false,
 });
 
 type Listener = (p: Prefs) => void;
@@ -61,6 +64,7 @@ function sanitize(data: unknown): Prefs {
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
   if (THEMES.includes(d.theme as ThemePref)) out.theme = d.theme as ThemePref;
   if (LANGUAGES.includes(d.language as LanguagePref)) out.language = d.language as LanguagePref;
+  if (typeof d.hintsOff === "boolean") out.hintsOff = d.hintsOff;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);
   if (Array.isArray(d.seenHints)) {
     out.seenHints = d.seenHints

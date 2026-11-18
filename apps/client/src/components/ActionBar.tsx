@@ -1,65 +1,56 @@
-/** Sticky bottom bar (inline on desktop): status text, Pass and the one primary action. */
-import type { Color } from "@cd/engine";
+/** Bottom bar (inline on desktop): step text, one-click Pass / Skip and the Confirm button. */
 import type { ViewMessage } from "@cd/protocol";
-import { cssColor } from "../game/model";
-import { canPass, passLabel, passTakesPenalty, type Staged } from "../game/staging";
+import { cssColor, seatName } from "../game/model";
+import { canPass, type Mark, passLabel, passTakesPenalty } from "../game/staging";
 import { colorName, t, useT } from "../i18n";
-import { RollButton, type RollControls } from "./DiceTray";
 import { StatusBar } from "./StatusBar";
 
 export interface ActionBarProps {
   view: ViewMessage;
   status: string;
   announce: string;
-  staged: Staged | null;
+  /** Staged step-1 (white sum) and step-2 (white + colour die) marks. */
+  s1: Mark | null;
+  s2: Mark | null;
   /** Sent, waiting for the next view or an error. */
   sent: boolean;
   /** Dice still tumbling: no marking yet. */
   gated: boolean;
-  /** Roll press handlers from the tray (hold to shake, release to throw). */
-  rollControls: { current: RollControls | null };
-  /** The dice are tumbling: Roll is disabled. */
-  rolling?: boolean;
+  /** K4.9: passive player with no white-sum move (auto-passed). */
+  noMove: boolean;
   onPass: () => void;
   onConfirm: () => void;
 }
 
 export function ActionBar(p: ActionBarProps) {
   useT();
-  const { view, staged } = p;
-  const passStaged = staged?.kind === "PASS";
-  const markStaged: { color: Color; number: number } | null =
-    staged?.kind === "MARK" ? staged : null;
+  const { view, s1, s2 } = p;
   const disabled = p.sent || p.gated;
-  const penalty = passTakesPenalty(view);
+  const last = s2 ?? s1;
+  const showPass = canPass(view, s1) && !view.you.canRoll && !p.noMove;
+  const penalty = passTakesPenalty(view, s1);
 
-  let primary: preact.JSX.Element;
-  if (view.you.canRoll) {
+  let primary: preact.JSX.Element | null = null;
+  if (p.noMove) {
+    const active = view.game?.turn?.activeSeat ?? -1;
     primary = (
-      <RollButton controls={p.rollControls} class="btn btn-primary g-primary" disabled={p.rolling}>
-        {t("action.roll")}
-      </RollButton>
-    );
-  } else if (markStaged) {
-    primary = (
-      <button
-        type="button"
-        class={`btn g-primary g-mark c-${cssColor(markStaged.color)}`}
-        disabled={disabled}
-        onClick={p.onConfirm}
-      >
-        {t("action.mark", { color: colorName(markStaged.color), n: markStaged.number })}
+      <button type="button" class="btn g-primary g-nomove" disabled>
+        {t("action.noMove", { name: seatName(view, active) })}
       </button>
     );
-  } else if (passStaged) {
+  } else if (view.you.canRoll) {
+    primary = null;
+  } else if (last) {
     primary = (
       <button
         type="button"
-        class={`btn g-primary ${penalty ? "g-danger" : "btn-primary"}`}
+        class={`btn g-primary g-mark c-${cssColor(last.color)}`}
         disabled={disabled}
         onClick={p.onConfirm}
       >
-        {t("action.confirmPass")}
+        {s1 && s2
+          ? t("action.markBoth")
+          : t("action.mark", { color: colorName(last.color), n: last.number })}
       </button>
     );
   } else {
@@ -73,20 +64,21 @@ export function ActionBar(p: ActionBarProps) {
   return (
     <div class="g-actionbar">
       <StatusBar text={p.status} announce={p.announce} />
-      <div class="g-actions">
-        {canPass(view) && !view.you.canRoll ? (
-          <button
-            type="button"
-            class={`btn g-pass${passStaged ? (penalty ? " is-danger" : " is-staged") : ""}`}
-            aria-pressed={passStaged ? "true" : undefined}
-            disabled={disabled}
-            onClick={p.onPass}
-          >
-            {passLabel(view, passStaged)}
-          </button>
-        ) : null}
-        {primary}
-      </div>
+      {showPass || primary ? (
+        <div class="g-actions">
+          {showPass ? (
+            <button
+              type="button"
+              class={`btn g-pass${penalty ? " is-danger" : ""}`}
+              disabled={disabled}
+              onClick={p.onPass}
+            >
+              {passLabel(view, s1)}
+            </button>
+          ) : null}
+          {primary}
+        </div>
+      ) : null}
     </div>
   );
 }

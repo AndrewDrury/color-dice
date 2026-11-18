@@ -94,6 +94,12 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
 
     // One Roll control only (the ActionBar's), and the play loop needs no page scroll at 375x667.
     await expect(a.page.getByRole("button", { name: /roll/i })).toHaveCount(1);
+    // K4.3: the Roll button sits right under the dice tray.
+    const trayBox = await a.page.locator(".tray").boundingBox();
+    const rollBox = await a.page.getByRole("button", { name: /roll/i }).boundingBox();
+    expect(Math.abs((rollBox?.y ?? 0) - ((trayBox?.y ?? 0) + (trayBox?.height ?? 0)))).toBeLessThan(
+      24,
+    );
     await a.page.setViewportSize({ width: 375, height: 667 });
     await expect
       .poll(() =>
@@ -103,6 +109,7 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
     await a.page.setViewportSize({ width: 390, height: 844 });
 
     // Scripted dice: every die shows its scripted face within 1.5 s of tapping Roll.
+    for (const p of players) await expect(p.page.getByTestId("rolloff")).toHaveCount(0);
     const t0 = Date.now();
     await a.page.locator(".g-primary", { hasText: "Roll" }).tap();
     const expected = [6, 1, 1, 1, 1, 1];

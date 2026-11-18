@@ -8,7 +8,8 @@ import { Fragment } from "preact";
 import { COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
 import { colorLetter, colorLower, colorName, t, useT } from "../i18n";
-import { markGain, Row } from "./Row";
+import { LockIcon } from "./icons";
+import { Row, stagedGain } from "./Row";
 import { ScoreFloat } from "./ScoreFloat";
 
 export interface SheetFx {
@@ -23,8 +24,10 @@ export interface SheetProps {
   player: FullViewPlayer;
   lockedColors: readonly Color[];
   legal: ReadonlySet<string>;
-  staged: { color: Color; number: number } | null;
-  ghost: { color: Color; number: number } | null;
+  /** Staged marks in order (step 1, then step 2). */
+  staged: readonly { color: Color; number: number }[];
+  /** Sent / decided marks waiting for the reveal (50 % ✕). */
+  ghost: readonly { color: Color; number: number }[];
   disabled: boolean;
   fx: SheetFx;
   /** Read-only full sheet (opponent bottom sheet): no inputs, no effects. */
@@ -76,19 +79,22 @@ function Total(p: { total: number; next: number | null }) {
           : t("sheet.totalAria", { n: p.total })
       }
     >
-      <span class="num" data-total={p.total} aria-hidden="true">
-        {v}
+      <span class="g-total-main" aria-hidden="true">
+        <span class="num" data-total={p.total}>
+          {v}
+        </span>
+        {p.next !== null ? (
+          <>
+            <span class="g-arrow">→</span>
+            <span class="num g-next" data-next={p.next}>
+              {p.next}
+            </span>
+          </>
+        ) : null}
       </span>
-      {p.next !== null ? (
-        <>
-          <span class="g-arrow" aria-hidden="true">
-            →
-          </span>
-          <span class="num g-next" data-next={p.next} aria-hidden="true">
-            {p.next}
-          </span>
-        </>
-      ) : null}
+      <span class="g-total-cap" aria-hidden="true">
+        {t("sheet.totalCaption")}
+      </span>
     </span>
   );
 }
@@ -100,10 +106,20 @@ export function Sheet(p: SheetProps) {
     p.readOnly
       ? []
       : Array.from({ length: 11 }, (_, i) => i + 2).filter((n) => p.legal.has(`${c}:${n}`));
-  const gain = p.staged ? markGain(p.staged.color, sheet.rows[p.staged.color], p.staged.number) : 0;
+  const numbersOf = (list: SheetProps["staged"], c: Color) =>
+    list.filter((m) => m.color === c).map((m) => m.number);
+  const gain = COLORS.reduce(
+    (sum, c) => sum + stagedGain(c, sheet.rows[c], numbersOf(p.staged, c)),
+    0,
+  );
   const penaltyPoints = Math.abs(score.penalties);
   return (
     <div class={`sheet-card g-sheet${p.fx.shakeKey ? " is-shaking" : ""}`} key={p.fx.shakeKey}>
+      <div class="g-lockhead">
+        <span class="g-locktab" role="img" aria-label={t("sheet.lockColumn")}>
+          <LockIcon size={12} />
+        </span>
+      </div>
       {COLORS.map((c) => (
         <Row
           key={c}
@@ -111,8 +127,8 @@ export function Sheet(p: SheetProps) {
           row={sheet.rows[c]}
           lockedColors={p.lockedColors}
           legal={allLegal(c)}
-          stagedNumber={p.staged?.color === c ? p.staged.number : null}
-          ghostNumber={p.ghost?.color === c ? p.ghost.number : null}
+          stagedNumbers={numbersOf(p.staged, c)}
+          ghostNumbers={numbersOf(p.ghost, c)}
           flash={p.fx.flash[c] ?? []}
           disabled={p.disabled || !!p.readOnly}
           shake={!!p.errorShake}
@@ -136,7 +152,7 @@ export function Sheet(p: SheetProps) {
             <span class="g-pencap">{t("sheet.penaltiesCaption")}</span>
           </span>
           <span class="g-op">=</span>
-          <Total total={score.total} next={p.staged ? score.total + gain : null} />
+          <Total total={score.total} next={p.staged.length > 0 ? score.total + gain : null} />
         </span>
         <span
           class="g-pen"

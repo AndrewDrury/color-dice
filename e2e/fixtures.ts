@@ -120,10 +120,9 @@ export async function mark(page: Page, color: string, n: number) {
   await page.locator(".g-primary.g-mark").click();
 }
 
-/** Stage a pass and confirm it. */
+/** One-click pass / skip (K4.4): it sends at once. */
 export async function pass(page: Page) {
   await page.locator(".g-pass").click();
-  await page.locator(".g-primary").click();
 }
 
 /** Tap Roll and wait until every die has settled (has data-face). */

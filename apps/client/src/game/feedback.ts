@@ -38,7 +38,10 @@ export function isResync(prev: ViewMessage | null, next: ViewMessage): boolean {
 }
 
 /** Events in `next` that are not in `prev` (both are tails of the same log). */
-function newEvents(prev: readonly GameEvent[], next: readonly GameEvent[]): readonly GameEvent[] {
+export function newEvents(
+  prev: readonly GameEvent[],
+  next: readonly GameEvent[],
+): readonly GameEvent[] {
   for (let k = Math.min(prev.length, next.length); k > 0; k--) {
     const tail = prev.slice(-k);
     if (tail.every((e, i) => JSON.stringify(e) === JSON.stringify(next[i]))) return next.slice(k);

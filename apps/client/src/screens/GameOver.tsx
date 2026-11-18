@@ -156,8 +156,8 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
                 player={p}
                 lockedColors={g?.lockedColors ?? []}
                 legal={NO_LEGAL}
-                staged={null}
-                ghost={null}
+                staged={[]}
+                ghost={[]}
                 disabled
                 readOnly
                 fx={NO_FX}

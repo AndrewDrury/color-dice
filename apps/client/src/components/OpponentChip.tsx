@@ -71,6 +71,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
   const st = opponentState(view, player);
   const total = useTween(player.score.total);
   const strikes = Math.round(-player.score.penalties / 5);
+  const penText = strikes > 0 ? tn("opp.penaltiesPts", strikes, { pts: strikes * 5 }) : "";
   return (
     <div
       class={`g-chip${st.active ? " is-active" : ""}${flash ? " is-flash" : ""}`}
@@ -80,7 +81,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
       aria-label={t("opp.chip", {
         name,
         points: player.score.total,
-        strikes: tn("opp.penalties", strikes),
+        strikes: strikes > 0 ? penText : t("opp.none"),
       })}
     >
       <span class="g-chip-top">
@@ -91,7 +92,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
         </span>
       </span>
       <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
-        {strikes > 0 ? `✕ ${strikes}` : t("opp.none")}
+        {strikes > 0 ? penText : "\u00a0"}
       </span>
     </div>
   );

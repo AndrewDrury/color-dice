@@ -15,7 +15,7 @@ test("two players: game ends on the 4th penalty, scores match on both pages", as
       max: 2,
     });
     await joinGame(b, code, "pw-duel");
-    await queueDice(code, [6]); // roll-off: seat 0 (Alma) rolls a 6 and starts
+    await queueDice(code, [6, 1]); // roll-off: seat 0 (Alma) rolls a 6 and starts
     await startGame(a);
 
     // Alma, Boris, Alma, Boris ... every player passes everything.

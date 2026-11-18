@@ -1,0 +1,197 @@
+/* Turn flow (T-UX-12): Roll under the dice, hint tag, lock popup, roll-off overlay. */
+
+/* ---------- K4.3: dice tray + the one Roll button right under it ---------- */
+.g-dicegroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+.g-rollslot {
+  display: flex;
+  justify-content: center;
+}
+.g-rollslot .btn {
+  min-height: 48px;
+  min-width: 200px;
+  font-weight: var(--fw-heavy);
+}
+@media (min-width: 600px) and (max-height: 520px) {
+  .g-left > .g-dicegroup {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .g-rollslot .btn {
+    min-height: 44px;
+  }
+}
+
+/* One-click pass: the warning label is the only warning (K4.4); no-move state (K4.9). */
+.g-actions .g-nomove {
+  flex: 1;
+  opacity: 0.8;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* ---------- K4.5 / K4.6: hint card with a "Hint" tag set into its top edge ---------- */
+.g-hintline {
+  position: relative;
+  margin-top: 6px;
+  border: 1px solid var(--line, color-mix(in srgb, var(--ink) 25%, transparent));
+}
+.g-hint-tag {
+  position: absolute;
+  top: -7px;
+  left: 10px;
+  margin: 0;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent, var(--paper));
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: var(--fw-heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.g-hintline .g-hint-off {
+  background: none;
+  box-shadow: none;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  font-size: 12px;
+  padding: 0 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  flex: 0 1 6.5em;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+/* ---------- Opponent penalties in words (K4.7) ---------- */
+.g-chip-pen {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ---------- K4.2: lock popup ---------- */
+.lp-wrap {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 40;
+}
+.lp-card {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  max-width: min(90vw, 420px);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--row-color);
+  color: var(--row-on);
+  font-weight: var(--fw-heavy);
+  font-size: 18px;
+  box-shadow: var(--e2, 0 8px 24px rgb(0 0 0 / 0.3));
+  pointer-events: none;
+  animation: lp-pop 2200ms var(--ease-out) both;
+}
+@keyframes lp-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  12%,
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* ---------- K4.1: roll-off overlay ---------- */
+.ro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.55);
+  animation: ro-in 200ms var(--ease-out) both;
+}
+@keyframes ro-in {
+  from {
+    opacity: 0;
+  }
+}
+.ro-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  max-width: min(94vw, 460px);
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--paper);
+  box-shadow: var(--e2, 0 8px 24px rgb(0 0 0 / 0.3));
+}
+.ro-title {
+  margin: 0;
+  font-size: 18px;
+}
+.ro-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+}
+.ro-dice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s3);
+}
+.ro-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 64px;
+}
+.ro-name {
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+}
+.ro-caption {
+  margin: 0;
+  min-height: 1.3em;
+  text-align: center;
+  font-weight: var(--fw-bold);
+}
+.ro-hint {
+  min-height: 44px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-card {
+    animation: none;
+  }
+}
+:root[data-motion="reduced"] .lp-card {
+  animation: none;
+}

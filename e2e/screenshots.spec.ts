@@ -51,7 +51,7 @@ test.describe("screenshots @shots", () => {
 
           // Turn t: white sum S[t]; everyone marks Red S[t]. Turn 6 (sum 12) locks Red.
           const sums = [2, 3, 4, 5, 6, 12];
-          await queueDice(code, [6, ...sums.flatMap((s) => rollFaces(s))]);
+          await queueDice(code, [6, 1, ...sums.flatMap((s) => rollFaces(s))]);
           await startGame(a);
           expect(await waitForRoller(players)).toBe(a);
           await shot(a, "await-roll");

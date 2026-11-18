@@ -110,8 +110,7 @@ describe("reconnect", () => {
 
   it("clears a staged selection after reconnecting", () => {
     connect(makeGameView({ version: 5, phase: "ACTION_1", legal1: ["RED"], decision: false }));
-    const pass = screen.getAllByRole("button").find((b) => /pass/i.test(b.textContent ?? ""));
-    fireEvent.click(pass as HTMLElement);
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
     expect(document.querySelector("[aria-pressed='true'], .is-staged")).not.toBeNull();
     act(() => sock().drop());
     wait(2000);

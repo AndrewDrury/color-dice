@@ -68,7 +68,7 @@ test("375 px game screen in English, French and Spanish: nothing overflows", asy
       max: 2,
     });
     await joinGame(b, code, "pw-i18n");
-    await queueDice(code, [6, ...rollFaces(7)]);
+    await queueDice(code, [6, 1, ...rollFaces(7)]);
     await startGame(a);
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);

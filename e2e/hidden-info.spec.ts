@@ -41,7 +41,7 @@ test("hidden info: A receives neither B's nor C's Action 1 choice before the rev
     });
     await joinGame(b!, code, "pw-hide");
     await joinGame(c!, code, "pw-hide");
-    await queueDice(code, [6, ...rollFaces(7)]); // Ada starts; white sum 7
+    await queueDice(code, [6, 1, 1, ...rollFaces(7)]); // Ada starts; white sum 7
     await startGame(a!);
 
     expect(await waitForRoller(players)).toBe(a);
@@ -63,7 +63,7 @@ test("hidden info: A receives neither B's nor C's Action 1 choice before the rev
         return last?.game?.players.filter((p) => p.action1Submitted).length;
       })
       .toBe(2);
-    await expect(a!.page.getByText(/Waiting|Everyone/).first()).toBeVisible();
+    await expect(a!.page.getByText(/Step 1 of 2/).first()).toBeVisible();
 
     const before = frames.slice(start).map((f) => JSON.parse(f) as Frame);
     for (const f of before) {
@@ -118,7 +118,7 @@ test("hidden info: opponent cards are not rendered or sent before game over, all
       max: 2,
     });
     await joinGame(b, code, "pw-card");
-    await queueDice(code, [6]);
+    await queueDice(code, [6, 1]);
     await startGame(a);
     for (let turn = 1; turn <= 7; turn++) {
       const active = turn % 2 === 1 ? a : b;

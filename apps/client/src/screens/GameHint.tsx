@@ -49,6 +49,7 @@ export function pickHint(view: ViewMessage, seen: readonly string[]): Hint | nul
 export function GameHint({ view }: { view: ViewMessage }) {
   useT();
   const prefs = usePrefs();
+  if (prefs.hintsOff) return null;
   const hint = pickHint(view, prefs.seenHints);
   if (!hint) {
     // Desktop-only nudge next to the roll action.
@@ -59,7 +60,8 @@ export function GameHint({ view }: { view: ViewMessage }) {
     ) : null;
   }
   return (
-    <div class="g-hintline">
+    <section class="g-hintline" aria-label={t("hint.tag")}>
+      <h2 class="g-hint-tag">{t("hint.tag")}</h2>
       <p>{hint.text}</p>
       <button
         type="button"
@@ -68,6 +70,9 @@ export function GameHint({ view }: { view: ViewMessage }) {
       >
         {t("hint.gotIt")}
       </button>
-    </div>
+      <button type="button" class="btn g-hint-off" onClick={() => setPrefs({ hintsOff: true })}>
+        {t("hint.off")}
+      </button>
+    </section>
   );
 }

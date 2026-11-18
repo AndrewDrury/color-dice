@@ -27,47 +27,67 @@
   font-weight: var(--fw-heavy);
   font-size: 0.85em;
 }
-/* The red penalty term, with its "penalties" caption stacked under the number (K3.4). */
+/* The red penalty term (K3.5): its "penalties" caption hangs below the number, so the number
+   stays on the same line as the other equation numbers. */
+.g-eq {
+  align-items: baseline;
+}
 .g-eq .g-penscore {
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
+  position: relative;
   padding: 0;
   background: none;
   box-shadow: none;
   color: var(--danger);
   font-weight: var(--fw-heavy);
-  line-height: 1.05;
 }
 .g-pencap {
-  /* May hang a little under the "−" and "=" signs so long words (es) never cost a line. */
-  margin-inline: -0.9em;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 1px;
   font-size: 10px;
   line-height: 1;
   font-weight: var(--fw-bold);
   color: var(--ink-muted);
   white-space: nowrap;
 }
+.g-foot {
+  /* Room for the hanging caption (the row grows by the caption, not the numbers). */
+  padding-bottom: 8px;
+}
 .g-op {
   color: var(--ink-muted);
   font-weight: var(--fw-heavy);
 }
-/* The total: the most prominent thing on the line (≥ 1.5× the terms, high-contrast pill). */
+/* The total (K3.5): a compact pill, number on the equation line, "total" caption inside under it. */
 .g-total--xl {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.2em;
   margin-left: 0.1em;
-  padding: 0.05em 0.45em;
+  padding: 2px 8px;
   border-radius: var(--r-pill);
   background: var(--ink);
   color: var(--paper);
-  font-size: 1.6em;
-  line-height: 1.15;
+  font-size: 1.2em;
+  line-height: 1.1;
   font-weight: var(--fw-heavy);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   box-shadow: var(--e1);
+}
+.g-total-main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2em;
+}
+.g-total-cap {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: var(--fw-bold);
+  /* paper at 80 % on ink: well above 4.5:1 */
+  color: color-mix(in srgb, var(--paper) 80%, var(--ink));
 }
 .g-total--xl .g-arrow {
   font-size: 0.7em;
@@ -113,13 +133,9 @@
   .g-eq .g-score {
     padding-inline: 0.35em;
   }
-  .g-pencap {
-    letter-spacing: -0.02em;
-  }
   .g-total--xl {
-    font-size: 1.5em;
-    padding-inline: 0.35em;
-    gap: 0.12em;
+    font-size: 1.15em;
+    padding-inline: 6px;
   }
   .g-total--xl .g-arrow {
     font-size: 0.6em;
@@ -166,7 +182,8 @@
 
 /* Mid-size cards: a narrow column with just the points. */
 @container sheet (max-width: 519.98px) {
-  .g-sheet .g-row {
+  .g-sheet .g-row,
+  .g-sheet .g-lockhead {
     --pts-col: 30px;
   }
   .g-rowpts {
@@ -182,7 +199,8 @@
 /* Phones (card < 400 px): no room for a 14th column with ≥ 26 px cells, so the points
    sit under the lock box in the same end cell. */
 @container sheet (max-width: 399.98px) {
-  .g-sheet .g-row {
+  .g-sheet .g-row,
+  .g-sheet .g-lockhead {
     grid-template-columns: var(--rail-w, 18px) repeat(12, minmax(0, 1fr));
   }
   .g-rowpts {
@@ -317,4 +335,62 @@
 .g-guide-cap {
   margin: var(--s1) 0 0;
   color: var(--ink-muted);
+}
+
+/* ---------- Lock column (K4.8): an outline round the last number box and lock box of every row,
+   with a lock tab on top. The rows touch (no gap) so the side lines run unbroken. ---------- */
+.g-sheet.g-sheet {
+  gap: 0;
+}
+.g-sheet .g-row {
+  padding-block: 2px;
+}
+.g-sheet .g-lockhead {
+  display: grid;
+  grid-template-columns: var(--rail-w, 18px) repeat(12, minmax(0, 1fr)) var(--pts-col, 66px);
+  gap: 2px;
+  height: 0;
+  padding: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.g-locktab {
+  grid-column: 12 / 14;
+  grid-row: 1;
+  justify-self: center;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
+  z-index: 2;
+}
+.g-lockseg {
+  position: absolute;
+  grid-column: 12 / 14;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  right: -1px;
+  border: solid var(--ink);
+  border-width: 0 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+.g-lockhead + .g-row .g-lockseg {
+  border-top-width: 2px;
+  border-radius: var(--r-box) var(--r-box) 0 0;
+}
+.g-row:has(+ .g-foot) .g-lockseg {
+  border-bottom-width: 2px;
+  border-radius: 0 0 var(--r-box) var(--r-box);
+}
+@media (max-width: 599.98px) and (max-height: 699.98px) {
+  .g-sheet .g-row {
+    padding-block: 1.5px;
+  }
 }

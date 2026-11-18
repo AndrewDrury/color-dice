@@ -42,7 +42,7 @@ test("five players: a double lock in one Action 1 ends the game with 3 locked ro
     for (const p of ps.slice(1)) await joinGame(p, code, "pw-five");
 
     // Roll-off: seat 0 rolls a 6. Turns 1..11 roll 6 dice, turn 12 five (green is gone).
-    const dice = [6];
+    const dice = [6, 1, 1, 1, 1];
     for (const [i, s] of SUMS.entries()) dice.push(...rollFaces(s, i < 11 ? 4 : 3));
     await queueDice(code, dice);
     await startGame(ps[0]!);

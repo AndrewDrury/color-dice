@@ -92,7 +92,7 @@ describe("Game screen", () => {
       show(makeGameView({ phase: "AWAIT_ROLL", canRoll: true, active: 0 }));
       const { container } = mount();
       const kids = Array.from(container.querySelector(".g-left")?.children ?? []);
-      const order = ["g-sheet", "g-guide-slot", "tray"].map((c) =>
+      const order = ["g-sheet", "g-guide-slot", "g-dicegroup"].map((c) =>
         kids.findIndex((k) => k.classList.contains(c)),
       );
       expect(order.every((i) => i >= 0)).toBe(true);
@@ -105,7 +105,7 @@ describe("Game screen", () => {
   it("ACTION_1 before and after submitting", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
-    expect(status()).toBe("Everyone: use white 8 in one row, or pass");
+    expect(status()).toBe("Step 1 of 2 · Mark the white total 8 in any row, or skip.");
     act(() => {
       applyView(
         makeGameView({
@@ -142,17 +142,170 @@ describe("Game screen", () => {
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
   });
 
-  it("Pass is staged and shows the penalty wording", () => {
+  it("Pass sends at once (one click, one command) and shows the penalty wording", () => {
     const v = makeGameView({ phase: "ACTION_2" });
     show(v);
     mount();
     expect(passTakesPenalty(v)).toBe(true);
-    expect(passLabel(v, false)).toBe("Pass (take −5 penalty)");
-    fireEvent.click(screen.getByText("Pass (take −5 penalty)"));
-    expect(screen.getByText("Pass and take −5?")).toBeTruthy();
-    expect(sent).toHaveLength(0);
-    fireEvent.click(screen.getByText("Pass and take −5?"));
+    expect(passLabel(v)).toBe("Pass (−5 penalty)");
+    const btn = screen.getByText("Pass (−5 penalty)") as HTMLButtonElement;
+    fireEvent.click(btn);
+    fireEvent.click(btn);
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "PASS" }]);
+    expect(screen.queryByText("Pass and take −5?")).toBeNull();
+    expect(screen.queryByText("Tap again to pass")).toBeNull();
+    expect(btn.disabled).toBe(true);
+  });
+
+  it("the pass label is the penalty text exactly when passing would cost −5", () => {
+    // Step 2 after an Action 1 mark: plain Pass.
+    const marked = makeGameView({
+      phase: "ACTION_2",
+      events: [
+        { type: "TURN_STARTED", turnNumber: 9, activeSeat: 0 },
+        { type: "MARKED", playerId: "seat-0", action: 1, color: "RED", number: 8 },
+      ],
+    });
+    expect(passTakesPenalty(marked)).toBe(false);
+    expect(passLabel(marked)).toBe("Pass");
+    // Step 1 skip never costs on its own.
+    const step1 = makeGameView({ legal1: ["RED"] });
+    expect(passTakesPenalty(step1)).toBe(false);
+    expect(passLabel(step1)).toBe("Skip");
+    // Passive player: plain Pass.
+    const passive = makeGameView({ active: 1, legal1: ["RED"] });
+    expect(passLabel(passive)).toBe("Pass");
+    // Staged step-1 mark: step 2 pass is free.
+    const staged = { color: "RED" as const, number: 8 };
+    expect(passTakesPenalty(step1, staged)).toBe(false);
+    // Nothing marked and nothing staged at step 2 (ACTION_1 early): penalty.
+    const early = makeGameView({
+      decision: true,
+      pass2: true,
+      legal2: [],
+    });
+    early.you.legalAction2 = [{ kind: "PASS" }];
+    expect(passTakesPenalty(early)).toBe(true);
+  });
+
+  it("step texts: active step 1, active step 2, passive", () => {
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    expect(status()).toBe("Step 1 of 2 · Mark the white total 8 in any row, or skip.");
+    cleanup();
+    _resetStoreForTests();
+    show(makeGameView({ phase: "ACTION_2", version: 6 }));
+    mount();
+    expect(status()).toContain("Step 2 of 2 · Mark a white die + one colour die");
+    cleanup();
+    _resetStoreForTests();
+    show(makeGameView({ active: 1, legal1: ["RED"], version: 7 }));
+    mount();
+    expect(status()).toBe("Mark the white total 8 in any row, or pass (no penalty).");
+  });
+
+  it("early Action 2: step 1 then step 2 staged, one Confirm sends one turn command", () => {
+    // White 3 + 5 = 8, red 2: red 8 is the white sum; red 5 (3+2) is left of it.
+    // Green 6: 3+6 = 9, 5+6 = 11. Stage Red 8 (step 1), then Green 11 (step 2).
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    expect(status()).toContain("Step 2 of 2");
+    fireEvent.click(screen.getByLabelText("Green 11, can mark"));
+    expect(sent).toHaveLength(0);
+    fireEvent.click(screen.getByText("Confirm both marks"));
+    expect(sent).toEqual([
+      {
+        type: "turn",
+        turn: 9,
+        action1: { kind: "MARK", color: "RED" },
+        action2: { kind: "MARK", whiteDie: 1, color: "GREEN" },
+      },
+    ]);
+  });
+
+  it("early Action 2: a staged step 1 then Pass sends step 1 mark + step 2 pass together", () => {
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    fireEvent.click(screen.getByText("Pass"));
+    expect(sent).toEqual([
+      {
+        type: "turn",
+        turn: 9,
+        action1: { kind: "MARK", color: "RED" },
+        action2: { kind: "PASS" },
+      },
+    ]);
+  });
+
+  it("step 1 alone: tapping the staged box twice sends action1, and Skip sends action1 PASS once", () => {
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    expect(sent).toEqual([{ type: "action1", turn: 9, kind: "MARK", color: "RED" }]);
+    cleanup();
+    sent.length = 0;
+    _resetStoreForTests();
+    show(makeGameView({ legal1: ["RED"], version: 8 }));
+    mount();
+    const skip = screen.getByText("Skip");
+    fireEvent.click(skip);
+    fireEvent.click(skip);
+    expect(sent).toEqual([{ type: "action1", turn: 9, kind: "PASS" }]);
+  });
+
+  it("after step 1 the active player sees step 2 at once (early Action 2 options)", () => {
+    const v = makeGameView({ decision: true, pass1: false, version: 6 });
+    v.you.legalAction2 = [
+      { kind: "PASS" },
+      { kind: "MARK", whiteDie: 1, color: "GREEN", number: 11 },
+    ];
+    show(v);
+    mount();
+    expect(status()).toContain("Step 2 of 2");
+    fireEvent.click(screen.getByLabelText("Green 11, can mark"));
+    fireEvent.click(screen.getByLabelText("Green 11, can mark"));
+    expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
+  });
+
+  it("K4.9: a passive player with no white-sum move is auto-passed once and sees the disabled label", () => {
+    vi.useFakeTimers();
+    show(makeGameView({ active: 1, legal1: [] }));
+    mount();
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(sent).toEqual([{ type: "action1", turn: 9, kind: "PASS" }]);
+    const btn = screen.getByText("No white-sum move — waiting for Cleo") as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    act(() => {
+      applyView(makeGameView({ active: 1, legal1: [], version: 7 }));
+      vi.advanceTimersByTime(1000);
+    });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("K4.9: with legal options nothing is auto-sent", () => {
+    show(makeGameView({ active: 1, legal1: ["RED"] }));
+    mount();
+    expect(sent).toHaveLength(0);
+    expect(screen.queryByText(/No white-sum move/)).toBeNull();
+  });
+
+  it("K4.3: the one Roll button follows the dice tray", () => {
+    for (const w of [390, 1280]) {
+      setWidth(w);
+      show(makeGameView({ phase: "AWAIT_ROLL", canRoll: true, active: 0 }));
+      const { container } = mount();
+      const tray = container.querySelector(".tray") as Element;
+      const roll = screen.getByRole("button", { name: /roll/i });
+      expect(tray.nextElementSibling?.contains(roll)).toBe(true);
+      expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(false);
+      cleanup();
+      _resetStoreForTests();
+    }
   });
 
   it("legal boxes do not glow until the dice have landed", () => {

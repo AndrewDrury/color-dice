@@ -11,7 +11,7 @@ async function startTwo(browser: Parameters<typeof newPlayer>[0], tag: string) {
     max: 2,
   });
   await joinGame(b, code, "pw-resil");
-  await queueDice(code, [6, ...rollFaces(7)]); // Rhea starts; white sum 7
+  await queueDice(code, [6, 1, ...rollFaces(7)]); // Rhea starts; white sum 7
   await startGame(a);
   expect(await waitForRoller([a, b])).toBe(a);
   await roll(a.page);
@@ -31,7 +31,6 @@ test("reload mid-ACTION_1 restores the same seat and phase", async ({ browser })
     await expect(b.page.locator(".g-code")).toContainText("Turn 1");
     // Still Rory's seat: his pass is accepted.
     await b.page.locator(".g-pass").click();
-    await b.page.locator(".g-primary").click();
     await expect(b.page.getByText(/Waiting/).first()).toBeVisible();
   } finally {
     await closeAll([a, b]);
