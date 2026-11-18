@@ -2,9 +2,16 @@
 import type { ClientMessage, ErrorMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { navigate } from "../router";
-import { ENDED_TEXT, KICKED_TEXT } from "../screens/WaitingRoom";
+import { KICKED_TEXT } from "../screens/WaitingRoom";
 import { forgetSession, getSession } from "../session";
-import { applyView, clearView, getState, setStatus, showToast } from "../store";
+import {
+  applyView,
+  clearView,
+  SESSION_ENDED_TEXT as ENDED_TEXT,
+  getState,
+  setStatus,
+  showToast,
+} from "../store";
 import { type EndReason, GameSocket } from "../ws";
 
 export interface GameConnection {

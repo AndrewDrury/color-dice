@@ -69,9 +69,21 @@ abstract class ReconnectingSocket {
   protected abstract handleFrame(data: unknown): boolean;
   protected handleClosed(): void {}
 
+  /** Tab became visible: if the socket is down, retry now instead of waiting out the backoff. */
+  private readonly onVisible = (): void => {
+    if (this.stopped || this.ws || typeof document === "undefined") return;
+    if (document.visibilityState !== "visible") return;
+    if (this.retryTimer !== null) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    this.open();
+  };
+
   protected start(): void {
     this.stop(null);
     this.stopped = false;
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", this.onVisible);
+    }
     this.attempt = 0;
     this.hasConnected = false;
     this.open();
@@ -93,6 +105,9 @@ abstract class ReconnectingSocket {
   protected stop(reason: EndReason | null): void {
     const wasRunning = !this.stopped;
     this.stopped = true;
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", this.onVisible);
+    }
     if (this.retryTimer !== null) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     const ws = this.ws;

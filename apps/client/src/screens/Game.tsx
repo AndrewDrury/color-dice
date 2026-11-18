@@ -2,6 +2,7 @@
 import type { ErrorMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ActionBar } from "../components/ActionBar";
+import { AwayControls } from "../components/AwayControls";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray } from "../components/DiceTray";
 import { MoveLog } from "../components/MoveLog";
@@ -38,7 +39,7 @@ interface Info {
 export function Game({ code }: { code: string }) {
   const [rollFailed, setRollFailed] = useState(0);
   const [failSignal, setFailSignal] = useState(0);
-  const { view: storeView, status, toast } = useAppState();
+  const { view: storeView, status, toast, epoch, offlineSince } = useAppState();
   const view = storeView?.code === code ? storeView : null;
   const conn = useGameSocket(code, (e: ErrorMessage) => {
     showToast(errorText(e.code, e.reason), "error");
@@ -68,6 +69,8 @@ export function Game({ code }: { code: string }) {
   }
   return (
     <Board
+      key={epoch}
+      offlineSince={offlineSince}
       view={view}
       status={status}
       toast={toast?.kind === "error" ? toast.text : null}
@@ -79,6 +82,7 @@ export function Game({ code }: { code: string }) {
 }
 
 interface BoardProps {
+  offlineSince: Record<string, number>;
   view: ViewMessage;
   status: string;
   toast: string | null;
@@ -87,7 +91,7 @@ interface BoardProps {
   failSignal: number;
 }
 
-function Board({ view, status, toast, conn, rollFailed, failSignal }: BoardProps) {
+function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal }: BoardProps) {
   const game = view.game;
   const viewport = useViewport();
   const [leaving, setLeaving] = useState(false);
@@ -190,6 +194,7 @@ function Board({ view, status, toast, conn, rollFailed, failSignal }: BoardProps
           aria-label={status === "online" ? "online" : "reconnecting"}
         />
       </header>
+      <AwayControls view={view} offlineSince={offlineSince} send={conn.send} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
       ) : null}

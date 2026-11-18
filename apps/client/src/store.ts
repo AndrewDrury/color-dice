@@ -8,15 +8,21 @@ export interface Toast {
   kind: "info" | "error";
 }
 
+export const SESSION_ENDED_TEXT = "Your session ended (maybe you joined from another device).";
+
 export interface AppState {
   view: ViewMessage | null;
   status: SocketStatus;
   toast: Toast | null;
+  /** Bumped on every recovery from "reconnecting": the game board remounts (clears staging). */
+  epoch: number;
+  /** When (epoch ms, client clock) we first saw each seat offline. */
+  offlineSince: Record<string, number>;
 }
 
 type Listener = (state: AppState) => void;
 
-const initial: AppState = { view: null, status: "ended", toast: null };
+const initial: AppState = { view: null, status: "ended", toast: null, epoch: 0, offlineSince: {} };
 
 let state: AppState = initial;
 let toastSeq = 0;
@@ -42,17 +48,24 @@ export function subscribe(cb: Listener): () => void {
  */
 export function applyView(v: ViewMessage): boolean {
   if (state.view && v.version <= state.view.version) return false;
-  set({ view: v });
+  const offlineSince: Record<string, number> = {};
+  const now = Date.now();
+  for (const seat of v.seats) {
+    if (!seat.online) offlineSince[seat.seatId] = state.offlineSince[seat.seatId] ?? now;
+  }
+  set({ view: v, offlineSince });
   return true;
 }
 
 /** Forget the current view (leaving a game, switching to another code). */
 export function clearView(): void {
-  set({ view: null });
+  set({ view: null, offlineSince: {} });
 }
 
 export function setStatus(status: SocketStatus): void {
-  if (status !== state.status) set({ status });
+  if (status === state.status) return;
+  const recovered = state.status === "reconnecting" && status === "online";
+  set({ status, epoch: recovered ? state.epoch + 1 : state.epoch });
 }
 
 export function showToast(text: string, kind: Toast["kind"] = "info"): number {

@@ -1,3 +1,5 @@
+import { ConnectionBanner } from "./components/ConnectionBanner";
+import { Toast } from "./components/Toast";
 import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
 import { Game } from "./screens/Game";
@@ -9,7 +11,7 @@ import { useAppState } from "./store";
 
 export function App() {
   const route = useRoute();
-  const { status, toast } = useAppState();
+  const { status } = useAppState();
 
   let screen = null;
   switch (route.screen) {
@@ -36,9 +38,8 @@ export function App() {
   return (
     <div class="app">
       {screen}
-      <div class="sr-only" role="status" aria-live="polite">
-        {toast?.text ?? ""}
-      </div>
+      <ConnectionBanner />
+      <Toast />
     </div>
   );
 }
