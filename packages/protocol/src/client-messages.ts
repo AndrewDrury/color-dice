@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { REACTIONS } from "./chat";
 import { ColorSchema, SeatIdSchema, TokenSchema } from "./common";
+import { CHAT_RAW_MAX } from "./limits";
 
 /** Must equal the current engine `turnNumber` (else `E_STALE_TURN`). */
 const TurnSchema = z.number().int().min(1);
@@ -42,6 +44,15 @@ export const RematchMsgSchema = z.object({ type: z.literal("rematch") }).strict(
 
 export const PingMsgSchema = z.object({ type: z.literal("ping") }).strict();
 
+/** Raw text is capped here; the server cleans it and enforces CHAT_TEXT_MAX. */
+export const ChatMsgSchema = z
+  .object({ type: z.literal("chat"), text: z.string().max(CHAT_RAW_MAX) })
+  .strict();
+
+export const ReactMsgSchema = z
+  .object({ type: z.literal("react"), emoji: z.enum(REACTIONS) })
+  .strict();
+
 /** Every game-socket message a client may send. */
 export const ClientMessageSchema = z.discriminatedUnion("type", [
   AuthMsgSchema,
@@ -51,6 +62,8 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   SetAwayMsgSchema,
   RematchMsgSchema,
   PingMsgSchema,
+  ChatMsgSchema,
+  ReactMsgSchema,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 export type ClientMessageType = ClientMessage["type"];

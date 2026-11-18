@@ -9,6 +9,7 @@ import type {
   PlayerId,
 } from "@cd/engine";
 import { z } from "zod";
+import type { ChatEntry } from "./chat";
 import type { ClientMessageType } from "./client-messages";
 import {
   ColorSchema,
@@ -120,12 +121,22 @@ export interface PongMessage {
   type: "pong";
 }
 
+/** Sent to every authenticated socket in the room, including the sender. */
+export type ChatMessage = { type: "chat" } & ChatEntry;
+/** Sent once after `auth`, right after the first `view`: last text messages only. */
+export interface ChatHistoryMessage {
+  type: "chatHistory";
+  messages: ChatEntry[];
+}
+
 export type ServerMessage =
   | ViewMessage
   | ErrorMessage
   | KickedMessage
   | SessionEndedMessage
-  | PongMessage;
+  | PongMessage
+  | ChatMessage
+  | ChatHistoryMessage;
 
 /** Lobby socket: the only message it ever sends. */
 export interface LobbyMessage {

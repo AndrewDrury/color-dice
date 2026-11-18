@@ -69,3 +69,13 @@ export const CLOSE = {
   POLICY_VIOLATION: 4008,
 } as const;
 export type CloseCode = (typeof CLOSE)[keyof typeof CLOSE];
+
+export const CHAT_TEXT_MAX = 200;
+/** Raw (pre-cleaning) cap on chat text. */
+export const CHAT_RAW_MAX = 1000;
+export const CHAT_HISTORY_MAX = 30;
+/** Per-seat fixed-window limits (in memory on the room). */
+export const CHAT_RATE = {
+  text: { limit: 5, windowMs: 10_000 },
+  react: { limit: 10, windowMs: 10_000 },
+} as const;

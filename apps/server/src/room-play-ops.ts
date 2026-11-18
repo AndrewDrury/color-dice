@@ -24,6 +24,7 @@ import {
 import { autopass } from "./autopass";
 import { hashToken, tokenHashEquals } from "./crypto";
 import type { Env } from "./env";
+import { RoomChat } from "./room-chat-ops";
 import { isOnline, playerId } from "./room-lobby-ops";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 import { loadDice } from "./test-hooks";
@@ -140,7 +141,15 @@ export interface PlayDeps {
 type Loaded = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
 
 export class RoomPlay {
-  constructor(private readonly d: PlayDeps) {}
+  private readonly chat: RoomChat;
+
+  constructor(private readonly d: PlayDeps) {
+    this.chat = new RoomChat(
+      d.store,
+      () => d.sockets(),
+      () => d.now(),
+    );
+  }
 
   /** New socket: unauthenticated until a valid `auth`. */
   open(ws: WebSocket): void {
@@ -212,6 +221,13 @@ export class RoomPlay {
         return this.setAway(ws, att.seatId, msg.seatId, msg.away);
       case "rematch":
         return this.rematch(ws, att.seatId);
+      case "chat":
+      case "react": {
+        const r = await this.chat.handle(att.seatId, msg);
+        if (r === "gone") endSession(ws);
+        else if (r) sendError(ws, r.code, msg.type, r.reason);
+        return;
+      }
     }
   }
 
@@ -243,6 +259,7 @@ export class RoomPlay {
     ws.serializeAttachment({ ...att, seatId: me.seatId });
     // Presence only: no version/lastActivityAt bump, no persist (lastSeenAt is saved on close).
     await this.d.broadcast(meta, seats); // this socket gets its view, everyone presence
+    send(ws, { type: "chatHistory", messages: await this.chat.history() });
   }
 
   /** Loads meta + seats and this socket's seat; ends the session if it is gone. */

@@ -3,7 +3,7 @@
  * `commit` is the only way to record an accepted change: it bumps `version`
  * and `lastActivityAt` and writes the keys in one batch.
  */
-import type { MaxPlayers, RoomStatus } from "@cd/protocol";
+import type { ChatEntry, MaxPlayers, RoomStatus } from "@cd/protocol";
 import type { StoredPassword } from "./crypto";
 
 export interface RoomMeta {
@@ -38,6 +38,12 @@ export interface SeatRecord {
   lastSeenAt: number;
 }
 
+/** Storage key `"chat"`: persisted id counter + ring buffer of text messages. */
+export interface ChatState {
+  nextId: number;
+  messages: ChatEntry[];
+}
+
 export class RoomStore {
   constructor(private readonly storage: DurableObjectStorage) {}
 
@@ -52,6 +58,15 @@ export class RoomStore {
   /** Serialized engine state (`toJSON`), absent before start. */
   getState(): Promise<string | undefined> {
     return this.storage.get<string>("state");
+  }
+
+  async getChat(): Promise<ChatState> {
+    return (await this.storage.get<ChatState>("chat")) ?? { nextId: 1, messages: [] };
+  }
+
+  /** Chat never touches `meta.version` or `lastActivityAt`. */
+  putChat(chat: ChatState): Promise<void> {
+    return this.storage.put("chat", chat);
   }
 
   /** Writes `meta` without counting it as activity (e.g. failed-join counters). */

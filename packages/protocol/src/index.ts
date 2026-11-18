@@ -1,3 +1,4 @@
+export * from "./chat";
 export * from "./client-messages";
 export * from "./common";
 export * from "./errors";
