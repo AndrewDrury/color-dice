@@ -29,18 +29,67 @@ export function toJSON(state: GameState): string {
   return JSON.stringify(canonical(state));
 }
 
-/** Parse a state produced by `toJSON`. Throws on malformed input. */
+const COLOR_NAMES = ["RED", "YELLOW", "GREEN", "BLUE"];
+const PHASES = ["SETUP", "AWAIT_ROLL", "ACTION_1", "ACTION_2", "GAME_OVER"];
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === "object" && !Array.isArray(v);
+
+function corrupt(why: string): never {
+  throw new TypeError(`invalid GameState JSON: ${why}`);
+}
+
+function checkPlayer(p: unknown, index: number): void {
+  const at = `players[${index}]`;
+  if (!isObj(p)) corrupt(`${at} is not an object`);
+  if (typeof p.id !== "string" || typeof p.displayName !== "string") corrupt(`${at} id/name`);
+  if (p.seat !== index) corrupt(`${at}.seat must equal its index`);
+  const sheet = p.sheet;
+  if (!isObj(sheet) || !isObj(sheet.rows)) corrupt(`${at}.sheet`);
+  if (
+    !Number.isInteger(sheet.penalties) ||
+    (sheet.penalties as number) < 0 ||
+    (sheet.penalties as number) > 4
+  ) {
+    corrupt(`${at}.sheet.penalties`);
+  }
+  for (const color of COLOR_NAMES) {
+    const row = sheet.rows[color];
+    if (!isObj(row) || row.color !== color) corrupt(`${at}.sheet.rows.${color}`);
+    const marked = row.marked;
+    if (
+      !Array.isArray(marked) ||
+      marked.length !== 11 ||
+      marked.some((m) => typeof m !== "boolean")
+    ) {
+      corrupt(`${at}.sheet.rows.${color}.marked must be 11 booleans`);
+    }
+    if (typeof row.lockCrossed !== "boolean") corrupt(`${at}.sheet.rows.${color}.lockCrossed`);
+  }
+}
+
+/** Parse a state produced by `toJSON`. Throws a TypeError naming the problem on corrupt input. */
 export function fromJSON(text: string): GameState {
   const parsed: unknown = JSON.parse(text);
+  if (!isObj(parsed)) corrupt("not an object");
+  const { players, lockedColors, log, phase, turn } = parsed;
+  if (!Array.isArray(players) || players.length < 1) corrupt("players");
+  if (!Array.isArray(lockedColors)) corrupt("lockedColors");
+  if (!Array.isArray(log)) corrupt("log");
+  if (typeof phase !== "string" || !PHASES.includes(phase)) corrupt("phase");
+  players.forEach(checkPlayer);
   if (
-    parsed === null ||
-    typeof parsed !== "object" ||
-    !Array.isArray((parsed as GameState).players) ||
-    !Array.isArray((parsed as GameState).lockedColors) ||
-    !Array.isArray((parsed as GameState).log) ||
-    typeof (parsed as GameState).phase !== "string"
+    lockedColors.some((c) => typeof c !== "string" || !COLOR_NAMES.includes(c)) ||
+    new Set(lockedColors).size !== lockedColors.length
   ) {
-    throw new TypeError("invalid GameState JSON");
+    corrupt("lockedColors must be distinct colors");
   }
-  return parsed as GameState;
+  if (turn !== null && turn !== undefined) {
+    if (!isObj(turn)) corrupt("turn");
+    const seat = turn.activeSeat;
+    if (!Number.isInteger(seat) || (seat as number) < 0 || (seat as number) >= players.length) {
+      corrupt("turn.activeSeat out of range");
+    }
+  }
+  return parsed as unknown as GameState;
 }
