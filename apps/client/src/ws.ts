@@ -9,6 +9,7 @@ import {
   TokenSchema,
 } from "@cd/protocol";
 import { backoffDelay } from "./backoff";
+import { parseChatFrame } from "./chat/parse";
 import { WS_URL } from "./config";
 import { parseLobbyMessage, parseServerMessage } from "./messages";
 
@@ -213,7 +214,7 @@ export class GameSocket extends ReconnectingSocket {
   }
 
   protected handleFrame(data: unknown): boolean {
-    const msg = parseServerMessage(data);
+    const msg = parseChatFrame(data) ?? parseServerMessage(data);
     if (!msg) return false;
     for (const cb of this.messageListeners) cb(msg);
     return true;

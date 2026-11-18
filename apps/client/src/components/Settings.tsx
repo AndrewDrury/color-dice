@@ -92,6 +92,11 @@ export function Settings({
   return (
     <BottomSheet title="Settings" onClose={onClose}>
       <Toggle label="Sound" on={prefs.sound} onChange={(v) => setPrefs({ sound: v })} />
+      <Toggle
+        label="Show chat messages"
+        on={prefs.showChat}
+        onChange={(v) => setPrefs({ showChat: v })}
+      />
       {hapticsSupported() ? (
         <Toggle label="Haptics" on={prefs.haptics} onChange={(v) => setPrefs({ haptics: v })} />
       ) : null}

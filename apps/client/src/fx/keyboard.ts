@@ -10,6 +10,8 @@ export interface KeyActions {
   cancel: () => void;
   mute: () => void;
   help: () => void;
+  /** `/` or `c`: open the chat panel (I3). */
+  chat?: () => void;
 }
 
 export function isTyping(t: EventTarget | null): boolean {
@@ -102,6 +104,10 @@ export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
   }
   if (k === "m" || k === "M") {
     a.mute();
+    return done();
+  }
+  if ((k === "/" || k === "c" || k === "C") && a.chat) {
+    a.chat();
     return done();
   }
   if (k === "?") {

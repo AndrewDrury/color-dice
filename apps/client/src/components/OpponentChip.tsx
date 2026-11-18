@@ -71,6 +71,8 @@ export function OpponentChip({ view, player, flash, onOpen }: ChipProps) {
     <button
       type="button"
       class={`g-chip${st.active ? " is-active" : ""}${flash ? " is-flash" : ""}`}
+      title={name}
+      data-seat-id={seat?.seatId}
       aria-label={`${name}, ${player.score.total} points. Open full sheet`}
       onClick={onOpen}
     >

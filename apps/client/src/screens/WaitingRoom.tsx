@@ -1,7 +1,10 @@
+import type { ClientMessage } from "@cd/protocol";
 import { MIN_PLAYERS, type ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ApiError, kickSeat, leaveGame, startGame } from "../api";
+import { resetChat, routeChat, routeChatError } from "../chat/store";
 import { Button } from "../components/Button";
+import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { CopyButton } from "../components/CopyButton";
 import { Dialog } from "../components/Dialog";
 import { FieldError, requestErrorText } from "../components/Field";
@@ -52,6 +55,8 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const [error, setError] = useState<string | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const done = useRef(false);
+  const sock = useRef<GameSocket | null>(null);
+  const send = (m: ClientMessage) => sock.current?.send(m) ?? false;
   const seen = useRef<Set<string> | null>(null);
 
   /** Leave this screen for home for good (kicked, session ended, left). */
@@ -72,8 +77,10 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     }
     if (getState().view?.code !== code) clearView();
     const socket = new GameSocket();
+    sock.current = socket;
     const offMsg = socket.onMessage((msg) => {
       if (msg.type === "view") applyView(msg);
+      else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "kicked") exitHome(KICKED_TEXT);
       else if (msg.type === "sessionEnded") exitHome(ENDED_TEXT);
     });
@@ -85,6 +92,8 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     });
     socket.connect(code, session.token);
     return () => {
+      resetChat();
+      sock.current = null;
       offMsg();
       offStatus();
       socket.close();
@@ -164,8 +173,12 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         <h1 style={{ fontSize: "var(--fs-title)", overflowWrap: "anywhere" }}>
           {view?.room.name || session.roomName || "Waiting room"}
         </h1>
-        <Button onClick={() => setConfirm({ kind: "leave" })}>Leave</Button>
+        <span class="row">
+          {view ? <ChatControls send={send} /> : null}
+          <Button onClick={() => setConfirm({ kind: "leave" })}>Leave</Button>
+        </span>
       </div>
+      {view ? <ChatLayer send={send} /> : null}
 
       <section class="card stack" aria-label="Invite">
         <p class="muted">Game code</p>

@@ -1,6 +1,7 @@
 /** Game-socket lifecycle for the game screen: connect, feed the store, expose `send`. */
 import type { ClientMessage, ErrorMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
+import { resetChat, routeChat, routeChatError } from "../chat/store";
 import { navigate } from "../router";
 import { KICKED_TEXT } from "../screens/WaitingRoom";
 import { forgetSession, getSession } from "../session";
@@ -50,6 +51,7 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
     socket.current = s;
     const offMsg = s.onMessage((msg) => {
       if (msg.type === "view") applyView(msg);
+      else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "error") errRef.current(msg);
       else if (msg.type === "kicked") exitHome(KICKED_TEXT);
       else if (msg.type === "sessionEnded") exitHome(ENDED_TEXT);
@@ -64,6 +66,7 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
     s.connect(code, session.token);
     return () => {
       done = true;
+      resetChat();
       offMsg();
       offStatus();
       s.close();

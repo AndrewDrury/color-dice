@@ -1,0 +1,207 @@
+/* Reactions + chat (I3): glanceable, transient, never over the dice, action bar or your sheet. */
+
+.chat-controls {
+  display: inline-flex;
+  gap: var(--s1);
+}
+.rx-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.rx-btn,
+.chat-btn {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.chat-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  line-height: 18px;
+  text-align: center;
+}
+
+.rx-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 25;
+  display: flex;
+  gap: 2px;
+  padding: var(--s1);
+  border-radius: var(--r-button);
+  background: var(--paper);
+  box-shadow: var(--e2);
+}
+.rx-pick {
+  width: 40px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  border-radius: var(--r-button);
+  cursor: pointer;
+}
+.rx-pick:hover,
+.rx-pick:focus-visible {
+  background: rgb(0 0 0 / 0.08);
+}
+
+/* Floats: a fixed layer, positioned from the anchor's rect; never takes a tap. */
+.rx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  overflow: hidden;
+}
+.rx-float {
+  position: fixed;
+  font-size: 26px;
+  line-height: 1;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  animation: rx-rise 1.2s var(--ease-out) forwards;
+}
+.rx-float.is-static {
+  animation: none;
+  transform: translate(0, -50%);
+}
+@keyframes rx-rise {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -56px);
+  }
+}
+
+/* Toasts: below the status bar, one line each, max 70 % wide. */
+.chat-toasts {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 52px);
+  left: 50%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  width: 70%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.chat-toast {
+  max-width: 100%;
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Panel: half-height sheet on phones with the game visible above, popover on desktop. */
+.bs-backdrop:has(.chat-panel) {
+  background: transparent;
+}
+.bs-sheet:has(.chat-panel) {
+  max-height: 50dvh;
+  box-shadow:
+    var(--e2),
+    0 0 0 1px rgb(0 0 0 / 0.08);
+}
+@media (min-width: 1024px) {
+  .bs-sheet:has(.chat-panel) {
+    width: 320px;
+    max-height: min(70dvh, 520px);
+  }
+}
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-height: 0;
+}
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  max-height: 30dvh;
+  min-height: 80px;
+  overflow-y: auto;
+  user-select: text;
+}
+.chat-line {
+  overflow-wrap: anywhere;
+}
+.chat-line.is-mine {
+  text-align: right;
+}
+.chat-who {
+  font-weight: var(--fw-bold);
+  display: inline-block;
+  max-width: 10ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.chat-form {
+  display: flex;
+  gap: var(--s2);
+}
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  font-size: 16px;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--r-button);
+  background: var(--paper);
+  color: var(--ink);
+}
+.chat-status {
+  min-height: 1.2em;
+  font-size: var(--fs-small);
+}
+.chat-over {
+  display: flex;
+  justify-content: flex-end;
+}
+fieldset.rx-picker {
+  margin: 0;
+  min-width: 0;
+  border: 0;
+}
+
+/* Desktop: toasts sit in the header row (left of the buttons) so they never overlap the dice tray. */
+@media (min-width: 1024px) {
+  .chat-toasts {
+    top: 10px;
+    left: auto;
+    right: 230px;
+    width: 340px;
+    transform: none;
+    align-items: flex-end;
+  }
+}

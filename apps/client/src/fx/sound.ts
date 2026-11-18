@@ -18,7 +18,8 @@ export type SoundName =
   | "error"
   | "join"
   | "fanfare"
-  | "gameEnd";
+  | "gameEnd"
+  | "chat";
 
 export interface PlayOptions {
   /** Pitch shift in semitones (e.g. per die for `land`). */
@@ -228,6 +229,8 @@ const RECIPES: Record<SoundName, Recipe> = {
     tone(c, out, { freq: 1047 * k, at: 0.27, dur: 0.4, type: "triangle", gain: 0.18 });
   },
   gameEnd: (c, out, k) => notes(c, out, [659 * k, 523 * k], 0.16, 0.2),
+  /** Very quiet blip for incoming chat text (I3). */
+  chat: (c, out, k) => tone(c, out, { freq: 880 * k, dur: 0.05, gain: 0.05 }),
 };
 
 export function play(name: SoundName, opts: PlayOptions = {}): void {

@@ -56,3 +56,9 @@ export function errorText(code: string, reason?: string): string {
   if (has(CODE_TEXT, code)) return CODE_TEXT[code];
   return GENERIC_ERROR;
 }
+
+/** Friendly text for chat / reaction errors (I2); null when the error is not about chat. */
+export function chatErrorText(code: string): string {
+  if (code === "E_RATE_LIMITED") return "Slow down a little.";
+  return errorText(code);
+}

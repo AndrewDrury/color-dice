@@ -1,8 +1,9 @@
 /** Results card (H7) over the dimmed board: winners, reason, ranked table, Rematch / Back home. */
-import type { ViewMessage } from "@cd/protocol";
+import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import type { ComponentType } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Button } from "../components/Button";
+import { ChatControls } from "../components/ChatButton";
 import { CrownIcon } from "../components/icons";
 import { rankPlayers, ScoreTable } from "../components/ScoreTable";
 import { reducedMotion } from "../fx/motion";
@@ -12,6 +13,7 @@ import { endReasonText } from "../game/status";
 export interface GameOverProps {
   view: ViewMessage;
   rematchBusy: boolean;
+  send: (m: ClientMessage) => boolean;
   onRematch: () => void;
   onHome: () => void;
 }
@@ -64,7 +66,7 @@ function useConfetti(winner: boolean): ComponentType | null {
   return C;
 }
 
-export function GameOver({ view, rematchBusy, onRematch, onHome }: GameOverProps) {
+export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOverProps) {
   const g = view.game;
   const winnerSeats = (g?.winners ?? []).map((id) => seatOfPlayer(id, g));
   const names = winnerSeats.map(
@@ -91,6 +93,9 @@ export function GameOver({ view, rematchBusy, onRematch, onHome }: GameOverProps
         <p class="muted g-reason">{endReasonText(view)}</p>
         <div ref={tableRef}>
           <ScoreTable view={view} />
+        </div>
+        <div class="chat-over">
+          <ChatControls send={send} />
         </div>
         <div class="g-over-actions">
           {view.you.host ? (

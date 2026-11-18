@@ -1,8 +1,10 @@
 /** The game screen (D1 item 5, H3): top bar, opponents, dice tray, your sheet, action bar, log. */
 import type { ErrorMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { openPanel } from "../chat/store";
 import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
+import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray } from "../components/DiceTray";
 import { MoveLog } from "../components/MoveLog";
@@ -207,6 +209,7 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
+    chat: openPanel,
   });
 
   const hint = gameOver ? null : <GameHint view={view} />;
@@ -243,6 +246,7 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
             role="img"
             aria-label={status === "online" ? "online" : "reconnecting"}
           />
+          {gameOver ? null : <ChatControls send={conn.send} />}
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
@@ -288,11 +292,13 @@ function Board({ offlineSince, view, status, toast, conn, rollFailed, failSignal
         ) : null}
       </main>
       {viewport !== "desktop" ? actionBar : null}
+      <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
       {toast ? <div class="g-toast">{toast}</div> : null}
       {gameOver ? (
         <GameOver
           view={view}
           rematchBusy={rematchBusy}
+          send={conn.send}
           onRematch={() => setRematching(true)}
           onHome={() => {
             clearView();

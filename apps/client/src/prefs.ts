@@ -6,6 +6,8 @@ export type ThemePref = "system" | "light" | "dark";
 export interface Prefs {
   sound: boolean;
   haptics: boolean;
+  /** Show incoming chat toasts, unread badge and reaction floats (I3). */
+  showChat: boolean;
   motion: MotionPref;
   theme: ThemePref;
   lastName: string;
@@ -20,6 +22,7 @@ const MAX_HINTS = 50;
 export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   sound: true,
   haptics: true,
+  showChat: true,
   motion: "system",
   theme: "system",
   lastName: "",
@@ -49,6 +52,7 @@ function sanitize(data: unknown): Prefs {
   const d = data as Record<string, unknown>;
   if (typeof d.sound === "boolean") out.sound = d.sound;
   if (typeof d.haptics === "boolean") out.haptics = d.haptics;
+  if (typeof d.showChat === "boolean") out.showChat = d.showChat;
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
   if (THEMES.includes(d.theme as ThemePref)) out.theme = d.theme as ThemePref;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);
