@@ -3,12 +3,10 @@
  * Web Crypto only — no dependencies.
  */
 
-/** Production PBKDF2 iteration count (defaults.md). Mirrors `PBKDF2_ITERATIONS` in @cd/protocol limits. */
-export const DEFAULT_PBKDF2_ITERATIONS = 100_000;
-const SALT_BYTES = 16;
+import { PBKDF2_ITERATIONS, PBKDF2_SALT_BYTES, SEAT_ID_LENGTH, TOKEN_BYTES } from "@cd/protocol";
+
+const SALT_BYTES = PBKDF2_SALT_BYTES;
 const HASH_BITS = 256;
-const TOKEN_BYTES = 32;
-const SEAT_ID_LENGTH = 8;
 const BASE32 = "abcdefghijklmnopqrstuvwxyz234567";
 
 export interface StoredPassword {
@@ -114,5 +112,5 @@ export function newSeatId(): string {
 /** `PBKDF2_ITERATIONS` from env (tests/dev only); production leaves it unset → 100,000. */
 export function iterationsFromEnv(env: { PBKDF2_ITERATIONS?: string }): number {
   const n = Number(env.PBKDF2_ITERATIONS);
-  return Number.isInteger(n) && n > 0 ? n : DEFAULT_PBKDF2_ITERATIONS;
+  return Number.isInteger(n) && n > 0 ? n : PBKDF2_ITERATIONS;
 }

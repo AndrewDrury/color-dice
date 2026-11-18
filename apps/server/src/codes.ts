@@ -1,4 +1,4 @@
-import { CODE_ALPHABET, CODE_LENGTH } from "./router";
+import { CODE_ALPHABET, CODE_LENGTH } from "@cd/protocol";
 
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`);
 /** Largest multiple of the alphabet size that fits in a byte; bytes at or above it are rejected. */

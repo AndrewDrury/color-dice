@@ -1,3 +1,4 @@
+import type { ErrorCode } from "@cd/protocol";
 /** Minimal structural schema type; zod schemas satisfy it. */
 export interface Schema<T> {
   safeParse(input: unknown): { success: true; data: T } | { success: false };
@@ -11,7 +12,7 @@ export function json(body: unknown, status = 200): Response {
 }
 
 /** Error body is always `{ code, reason? }` (C5). */
-export function error(code: string, status: number, reason?: string): Response {
+export function error(code: ErrorCode, status: number, reason?: string): Response {
   return json(reason === undefined ? { code } : { code, reason }, status);
 }
 

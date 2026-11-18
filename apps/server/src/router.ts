@@ -13,8 +13,7 @@ import { bearer, error, json, readJson } from "./http";
 import type { OpResult } from "./room-lobby-ops";
 import { rateLimit } from "./router-lobby";
 
-// Re-exported (not redefined) so codes.ts can import them without a cycle hazard.
-/** Game code alphabet (defaults.md): 5 chars, no 0/O/1/I/L. */
+// Re-exported from @cd/protocol for existing importers (test/codes.test.ts).
 export { CODE_ALPHABET, CODE_LENGTH };
 
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{${CODE_LENGTH}}$`);

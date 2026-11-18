@@ -65,6 +65,12 @@ describe("origin and CORS", () => {
     expect(res.headers.get("vary")).toBe("Origin");
     expect(res.headers.get("access-control-allow-headers")).toBe("content-type, authorization");
     expect(res.headers.get("access-control-allow-methods")).toBe("GET,POST,PATCH,OPTIONS");
+    expect(res.headers.get("access-control-expose-headers")).toBe("Retry-After");
+  });
+
+  it("actual responses from an allowed origin expose Retry-After", async () => {
+    const res = await call("/health", { headers: { origin: GOOD } });
+    expect(res.headers.get("access-control-expose-headers")).toBe("Retry-After");
   });
 
   it("preflight from a disallowed origin gets no ACAO header", async () => {

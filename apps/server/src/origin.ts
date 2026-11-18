@@ -19,6 +19,7 @@ export function corsHeaders(origin: string): Record<string, string> {
     Vary: "Origin",
     "Access-Control-Allow-Headers": "content-type, authorization",
     "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+    "Access-Control-Expose-Headers": "Retry-After",
   };
 }
 
