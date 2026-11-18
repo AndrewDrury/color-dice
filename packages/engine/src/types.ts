@@ -122,3 +122,14 @@ export interface EngineError {
   code: ErrorCode;
   reason?: IllegalReason;
 }
+
+/** Outcome of every engine command: the new state and the events it produced, or an error. */
+export type Result =
+  | { ok: true; state: GameState; events: GameEvent[] }
+  | { ok: false; error: EngineError };
+
+/** A command as the server receives it (spec §16). */
+export type Command =
+  | { type: "ROLL"; playerId: PlayerId }
+  | { type: "ACTION1"; playerId: PlayerId; decision: Action1Decision }
+  | { type: "ACTION2"; playerId: PlayerId; decision: Action2Decision };
