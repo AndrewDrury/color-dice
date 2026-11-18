@@ -70,7 +70,7 @@ test("host marks an offline player away; the game goes on with their penalties",
     await pass(b!.page);
 
     // Cleo's auto-pass of Action 2 costs her a penalty: -5, seen by Hera.
-    const cleo = a!.page.locator('.g-mini[aria-label^="Cleo"] .num[data-total]');
+    const cleo = a!.page.locator('.g-chip[aria-label^="Cleo"] .num[data-total]');
     await expect(cleo).toHaveAttribute("data-total", "-5");
     await expect(a!.page.locator(".g-code")).toContainText("Turn 4");
   } finally {

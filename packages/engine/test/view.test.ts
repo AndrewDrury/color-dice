@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { submitAction1 } from "../src/engine";
 import type { Action1Decision, Color, GameState } from "../src/types";
-import { VIEW_EVENT_COUNT, viewFor } from "../src/view";
+import { type EngineViewPlayer, VIEW_EVENT_COUNT, viewFor } from "../src/view";
 import { makeState } from "./helpers/builders";
 import { allAction1, mark1, newGame, ok, PASS, playTurn, rollWith } from "./helpers/game";
 
@@ -18,6 +18,13 @@ const CHOICES: Record<string, Color> = {
 function must<T>(x: T | undefined): T {
   if (x === undefined) throw new Error("missing");
   return x;
+}
+
+function sheetOf(p: {
+  sheet: NonNullable<unknown> | null;
+}): NonNullable<EngineViewPlayer["sheet"]> {
+  if (p.sheet === null) throw new Error("sheet hidden");
+  return p.sheet as NonNullable<EngineViewPlayer["sheet"]>;
 }
 
 const decisionText = (color: Color) => `"kind":"MARK","color":"${color}"`;
@@ -106,9 +113,10 @@ describe("viewFor privacy (I-3)", () => {
       expect(json).not.toContain("action1Decisions");
       expect(view.you.action1Decision).toBeNull();
       expect(view.game.players.every((p) => !p.action1Submitted)).toBe(true);
-      for (let seat = 1; seat < 5; seat++) {
+      // Opponent sheets are hidden (J1); only the viewer's own card shows the mark.
+      if (v >= 1) {
         expect(
-          must(view.game.players[seat]).sheet.rows[must(CHOICES[`seat-${seat}`])].marked,
+          sheetOf(must(view.game.players[v])).rows[must(CHOICES[`seat-${v}`])]?.marked,
         ).toContain(true);
       }
     }
@@ -202,7 +210,7 @@ describe("viewFor shape", () => {
     expect(Object.keys(must(view.game.players[0])).sort()).toEqual(
       ["action1Submitted", "score", "seat", "sheet"].sort(),
     );
-    expect(Object.keys(must(view.game.players[0]).sheet.rows.RED).sort()).toEqual([
+    expect(Object.keys(sheetOf(must(view.game.players[0])).rows.RED).sort()).toEqual([
       "lockCrossed",
       "marked",
     ]);
@@ -233,13 +241,13 @@ describe("viewFor shape", () => {
     must(s.players[0]).sheet.rows.RED.marked[0] = true;
     must(s.players[0]).sheet.rows.RED.marked[1] = true;
     must(s.players[0]).sheet.penalties = 1;
-    const view = viewFor(s, 1);
+    const view = viewFor(s, 0); // own card (opponents' are redacted)
     expect(must(view.game.players[0]).score).toEqual({
       rows: { RED: 3, YELLOW: 0, GREEN: 0, BLUE: 0 },
       penalties: -5,
       total: -2,
     });
-    must(view.game.players[0]).sheet.rows.RED.marked[5] = true;
+    sheetOf(must(view.game.players[0])).rows.RED.marked[5] = true;
     expect(must(s.players[0]).sheet.rows.RED.marked[5]).toBe(false);
   });
 
@@ -254,5 +262,63 @@ describe("viewFor shape", () => {
       expect(json1).not.toContain(decisionText("BLUE"));
       expect(json1).not.toContain(decisionText("RED"));
     }
+  });
+});
+
+describe("viewFor hidden opponent sheets (J1)", () => {
+  function over(): GameState {
+    let s = newGame(["seat-0", "seat-1"]);
+    for (let i = 0; i < 40 && s.phase !== "GAME_OVER"; i++)
+      s = playTurn(s, [1, 1, 1, 1, 1, 1]).state;
+    return s;
+  }
+
+  it("redacts other seats' sheet and score rows in every non-GAME_OVER phase", () => {
+    const states = [
+      newGame(IDS),
+      hiddenState(),
+      ok(submitAction1(hiddenState(), "seat-0", PASS)).state,
+    ];
+    expect(states.map((s) => s.phase)).toEqual(["AWAIT_ROLL", "ACTION_1", "ACTION_2"]);
+    for (const s of states) {
+      for (let v = 0; v < 5; v++) {
+        for (const p of viewFor(s, v).game.players) {
+          if (p.seat === v) {
+            expect(p.sheet).not.toBeNull();
+            expect(p.score.rows).not.toBeNull();
+          } else {
+            expect(p.sheet).toBeNull();
+            expect(p.score.rows).toBeNull();
+            expect(typeof p.score.total).toBe("number");
+            expect(typeof p.score.penalties).toBe("number");
+          }
+        }
+      }
+    }
+  });
+
+  it("keeps public total and penalties for opponents", () => {
+    const s = playTurn(newGame(["seat-0", "seat-1"]), [1, 1, 1, 1, 1, 1]).state;
+    const opp = must(viewFor(s, 1).game.players[0]);
+    expect(opp.sheet).toBeNull();
+    expect(opp.score.penalties).toBe(-5);
+    expect(opp.score.total).toBe(-5);
+  });
+
+  it("reveals every card to everyone at GAME_OVER", () => {
+    const s = over();
+    expect(s.phase).toBe("GAME_OVER");
+    for (let v = 0; v < 2; v++) {
+      for (const p of viewFor(s, v).game.players) {
+        expect(p.sheet).not.toBeNull();
+        expect(p.score.rows).not.toBeNull();
+      }
+    }
+  });
+
+  it("hides opponents again in a fresh game (rematch reset)", () => {
+    expect(over().phase).toBe("GAME_OVER");
+    const fresh = newGame(["seat-0", "seat-1"]);
+    expect(must(viewFor(fresh, 0).game.players[1]).sheet).toBeNull();
   });
 });

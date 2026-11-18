@@ -1,6 +1,6 @@
-/** Phone opponent chip (H3): name, total, status glyph, four progress bars. Tap opens the sheet. */
+/** Phone opponent chip (H3): name, total, status glyph, status glyph, penalties. */
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
-import { COLORS, cssColor, markCount, seatInfo } from "../game/model";
+import { seatInfo } from "../game/model";
 import { useTween } from "../game/useTween";
 import { CheckIcon, DotsIcon, WarningIcon } from "./icons";
 
@@ -59,37 +59,33 @@ export interface ChipProps {
   view: ViewMessage;
   player: ViewPlayer;
   flash: boolean;
-  onOpen: () => void;
 }
 
-export function OpponentChip({ view, player, flash, onOpen }: ChipProps) {
+/** Opponent chip: name, status glyph, total and penalty count. Their card stays hidden until game over. */
+export function OpponentChip({ view, player, flash }: ChipProps) {
   const seat = seatInfo(view, player);
   const name = seat?.name ?? `Player ${player.seat + 1}`;
   const st = opponentState(view, player);
   const total = useTween(player.score.total);
+  const strikes = Math.round(-player.score.penalties / 5);
   return (
-    <button
-      type="button"
+    <div
       class={`g-chip${st.active ? " is-active" : ""}${flash ? " is-flash" : ""}`}
       title={name}
       data-seat-id={seat?.seatId}
-      aria-label={`${name}, ${player.score.total} points. Open full sheet`}
-      onClick={onOpen}
+      role="img"
+      aria-label={`${name}, ${player.score.total} points, ${strikes} ${strikes === 1 ? "penalty" : "penalties"}`}
     >
       <span class="g-chip-top">
         <span class="g-name">{name}</span>
+        <StatusGlyph state={st} />
         <span class="num" data-total={player.score.total}>
           {total}
         </span>
-        <StatusGlyph state={st} />
       </span>
-      <span class="g-bars" aria-hidden="true">
-        {COLORS.map((c) => (
-          <span key={c} class={`g-bar c-${cssColor(c)}`}>
-            <span style={{ width: `${(markCount(player.sheet.rows[c]) / 11) * 100}%` }} />
-          </span>
-        ))}
+      <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
+        {strikes > 0 ? `✕ ${strikes}` : "No penalties"}
       </span>
-    </button>
+    </div>
   );
 }

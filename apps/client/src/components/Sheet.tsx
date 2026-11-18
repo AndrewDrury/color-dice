@@ -1,6 +1,6 @@
 /** Your big score sheet: four rows, penalties and the row-score line. */
 import type { Color } from "@cd/engine";
-import type { ViewPlayer } from "@cd/protocol";
+import type { FullViewPlayer } from "@cd/protocol";
 import { COLOR_LETTER, COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
 import { Row } from "./Row";
@@ -15,7 +15,7 @@ export interface SheetFx {
 }
 
 export interface SheetProps {
-  player: ViewPlayer;
+  player: FullViewPlayer;
   lockedColors: readonly Color[];
   legal: ReadonlySet<string>;
   staged: { color: Color; number: number } | null;

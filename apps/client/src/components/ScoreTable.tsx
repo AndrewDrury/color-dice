@@ -48,7 +48,7 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
               </th>
               {COLORS.map((c) => (
                 <td key={c}>
-                  <Count value={p.score.rows[c]} />
+                  <Count value={p.score.rows?.[c] ?? 0} />
                 </td>
               ))}
               <td>

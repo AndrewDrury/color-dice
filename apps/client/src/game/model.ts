@@ -1,6 +1,13 @@
 /** Small view-derived helpers shared by the game screen components. */
 import type { Color } from "@cd/engine";
-import type { ViewGame, ViewMessage, ViewPlayer, ViewRow, ViewSeat } from "@cd/protocol";
+import type {
+  FullViewPlayer,
+  ViewGame,
+  ViewMessage,
+  ViewPlayer,
+  ViewRow,
+  ViewSeat,
+} from "@cd/protocol";
 
 export const COLORS: readonly Color[] = ["RED", "YELLOW", "GREEN", "BLUE"];
 export const COLOR_NAME: Readonly<Record<Color, string>> = {
@@ -38,9 +45,15 @@ export function seatInfo(view: ViewMessage, p: ViewPlayer): ViewSeat | undefined
   return view.seats.find((s) => s.seatId === p.seatId);
 }
 
-export function youPlayer(view: ViewMessage): ViewPlayer | null {
+/** A player entry whose card was sent (yours, or anyone's at GAME_OVER). */
+export function hasCard(p: ViewPlayer): p is FullViewPlayer {
+  return p.sheet !== null && p.score.rows !== null;
+}
+
+export function youPlayer(view: ViewMessage): FullViewPlayer | null {
   const seat = view.you.seat;
-  return view.game?.players.find((p) => p.seat === seat) ?? null;
+  const p = view.game?.players.find((x) => x.seat === seat);
+  return p && hasCard(p) ? p : null;
 }
 
 export function opponents(view: ViewMessage): ViewPlayer[] {

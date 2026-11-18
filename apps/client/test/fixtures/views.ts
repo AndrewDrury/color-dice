@@ -1,5 +1,5 @@
 import type { Color } from "@cd/engine";
-import type { ViewMessage, ViewPlayer, ViewRow } from "@cd/protocol";
+import type { FullViewPlayer, ViewMessage, ViewPlayer, ViewRow } from "@cd/protocol";
 
 export const CODE = "K7QF2";
 const NAMES = ["Andrew", "Cleo", "Dev", "Ria", "Sam"];
@@ -7,7 +7,7 @@ export const seatIdOf = (i: number) => `seat${String(i).padStart(4, "0")}`.slice
 
 const emptyRow = (): ViewRow => ({ marked: Array(11).fill(false), lockCrossed: false });
 
-export function player(seat: number, over: Partial<ViewPlayer> = {}): ViewPlayer {
+export function player(seat: number, over: Partial<FullViewPlayer> = {}): FullViewPlayer {
   const rows = { RED: emptyRow(), YELLOW: emptyRow(), GREEN: emptyRow(), BLUE: emptyRow() };
   return {
     seat,
@@ -19,7 +19,12 @@ export function player(seat: number, over: Partial<ViewPlayer> = {}): ViewPlayer
   };
 }
 
-export function mark(p: ViewPlayer, color: Color, index: number): ViewPlayer {
+/** What the server sends for another seat before GAME_OVER (J1). */
+export function hide(p: ViewPlayer): ViewPlayer {
+  return { ...p, sheet: null, score: { ...p.score, rows: null } };
+}
+
+export function mark(p: FullViewPlayer, color: Color, index: number): FullViewPlayer {
   const rows = { ...p.sheet.rows, [color]: { ...p.sheet.rows[color] } };
   rows[color].marked = rows[color].marked.map((v, i) => v || i === index);
   const n = rows[color].marked.filter(Boolean).length;
@@ -36,7 +41,8 @@ export interface Opts {
   active?: number;
   you?: number;
   roll?: boolean;
-  gamePlayers?: ViewPlayer[];
+  /** Full cards; opponents are redacted before GAME_OVER like the server does. */
+  gamePlayers?: FullViewPlayer[];
   legal1?: Color[];
   legal2?: { whiteDie: 0 | 1; color: Color; number: number }[];
   pass1?: boolean;
@@ -54,7 +60,8 @@ export function makeGameView(o: Opts = {}): ViewMessage {
   const n = o.players ?? 3;
   const you = o.you ?? 0;
   const phase = o.phase ?? "ACTION_1";
-  const players = o.gamePlayers ?? Array.from({ length: n }, (_, i) => player(i));
+  const full = o.gamePlayers ?? Array.from({ length: n }, (_, i) => player(i));
+  const players = full.map((p) => (phase === "GAME_OVER" || p.seat === you ? p : hide(p)));
   const roll =
     o.roll === false || phase === "AWAIT_ROLL"
       ? null

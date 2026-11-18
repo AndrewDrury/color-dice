@@ -297,8 +297,10 @@ describe("away and rematch", () => {
     }
     const v = c0.view() as ViewMessage;
     expect(turnOf(v)).toBeGreaterThanOrEqual(3);
-    const sheet1 = v.game?.players.find((p) => p.seat === 1)?.sheet as { penalties: number };
-    expect(sheet1.penalties).toBeGreaterThanOrEqual(1);
+    // Seat 1's card is hidden from seat 0; its penalty points stay public (-5 each).
+    const p1 = v.game?.players.find((p) => p.seat === 1);
+    expect(p1?.sheet).toBeNull();
+    expect(p1?.score.penalties).toBeLessThanOrEqual(-5);
   });
 
   it("rematch resets the game and keeps the seats", async () => {

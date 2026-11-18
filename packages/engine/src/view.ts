@@ -32,8 +32,10 @@ export interface EngineViewRow {
 
 export interface EngineViewPlayer {
   seat: number;
-  sheet: { rows: Record<Color, EngineViewRow>; penalties: number };
-  score: { rows: Record<Color, number>; penalties: number; total: number };
+  /** `null` for other seats until GAME_OVER (hidden information, J1). */
+  sheet: { rows: Record<Color, EngineViewRow>; penalties: number } | null;
+  /** `rows` is `null` for other seats until GAME_OVER; penalties and total stay public. */
+  score: { rows: Record<Color, number> | null; penalties: number; total: number };
   /** Boolean only, never the choice. */
   action1Submitted: boolean;
 }
@@ -155,7 +157,7 @@ export function copyEvent(e: GameEvent): GameEvent {
   }
 }
 
-function viewPlayer(state: GameState, p: Player): EngineViewPlayer {
+function viewPlayer(state: GameState, p: Player, reveal: boolean): EngineViewPlayer {
   const rows = {} as Record<Color, EngineViewRow>;
   for (const color of COLORS) {
     const row = p.sheet.rows[color];
@@ -168,8 +170,8 @@ function viewPlayer(state: GameState, p: Player): EngineViewPlayer {
   const submitted = state.phase === "ACTION_1" && turn !== null && !!getDecision(turn, p.id);
   return {
     seat: p.seat,
-    sheet: { rows, penalties: p.sheet.penalties },
-    score: { rows: scoreRows, penalties: s.penalties, total: s.total },
+    sheet: reveal ? { rows, penalties: p.sheet.penalties } : null,
+    score: { rows: reveal ? scoreRows : null, penalties: s.penalties, total: s.total },
     action1Submitted: submitted,
   };
 }
@@ -197,7 +199,9 @@ export function viewFor(state: GameState, seatIndex: number): EngineView {
         }
       : null,
     lockedColors: [...state.lockedColors],
-    players: [...state.players].sort((a, b) => a.seat - b.seat).map((p) => viewPlayer(state, p)),
+    players: [...state.players]
+      .sort((a, b) => a.seat - b.seat)
+      .map((p) => viewPlayer(state, p, over || p.seat === me.seat)),
     events: state.log.slice(-VIEW_EVENT_COUNT).map(copyEvent),
     endReason: over && state.endReason ? copyEndReason(state.endReason) : null,
     winners: over ? winners(state) : null,

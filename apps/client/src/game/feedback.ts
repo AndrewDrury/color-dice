@@ -1,5 +1,5 @@
 /** Diff two consecutive views into H6 feedback moments (and the data the visual effects need). */
-import type { Color } from "@cd/engine";
+import type { Color, GameEvent } from "@cd/engine";
 import type { ViewMessage } from "@cd/protocol";
 import { feedback, type Moment } from "../fx/feedback";
 import { COLORS, seatOfPlayer } from "./model";
@@ -37,6 +37,15 @@ export function isResync(prev: ViewMessage | null, next: ViewMessage): boolean {
   );
 }
 
+/** Events in `next` that are not in `prev` (both are tails of the same log). */
+function newEvents(prev: readonly GameEvent[], next: readonly GameEvent[]): readonly GameEvent[] {
+  for (let k = Math.min(prev.length, next.length); k > 0; k--) {
+    const tail = prev.slice(-k);
+    if (tail.every((e, i) => JSON.stringify(e) === JSON.stringify(next[i]))) return next.slice(k);
+  }
+  return next;
+}
+
 export function diffViews(prev: ViewMessage | null, next: ViewMessage): FeedbackEvent[] {
   if (!prev || isResync(prev, next)) return [];
   const pg = prev.game;
@@ -52,26 +61,38 @@ export function diffViews(prev: ViewMessage | null, next: ViewMessage): Feedback
     out.push({ kind: "reveal", moment: "reveal" });
   }
 
-  for (const np of ng.players) {
-    const pp = pg.players.find((p) => p.seat === np.seat);
-    if (!pp) continue;
+  // Your own card: diff the sheet (it is always sent to you).
+  const mineNow = ng.players.find((p) => p.seat === me);
+  const minePrev = pg.players.find((p) => p.seat === me);
+  if (mineNow?.sheet && mineNow.score.rows && minePrev?.sheet && minePrev.score.rows) {
     for (const c of COLORS) {
-      const before = pp.sheet.rows[c].marked;
-      np.sheet.rows[c].marked.forEach((on, i) => {
+      const before = minePrev.sheet.rows[c].marked;
+      mineNow.sheet.rows[c].marked.forEach((on, i) => {
         if (!on || before[i]) return;
-        const mine = np.seat === me;
         out.push({
-          kind: mine ? "mark" : "opponentMark",
-          moment: mine ? "mark" : null,
-          seat: np.seat,
+          kind: "mark",
+          moment: "mark",
+          seat: mineNow.seat,
           color: c,
           index: i,
-          delta: mine ? np.score.rows[c] - pp.score.rows[c] : undefined,
+          delta: (mineNow.score.rows?.[c] ?? 0) - (minePrev.score.rows?.[c] ?? 0),
         });
       });
     }
-    if (np.sheet.penalties > pp.sheet.penalties) {
-      out.push({ kind: "penalty", moment: "penalty", seat: np.seat });
+    if (mineNow.sheet.penalties > minePrev.sheet.penalties) {
+      out.push({ kind: "penalty", moment: "penalty", seat: mineNow.seat });
+    }
+  }
+  // Opponents' cards are hidden: react to the public log events instead.
+  for (const e of newEvents(pg.events, ng.events)) {
+    if (e.type === "MARKED") {
+      const seat = seatOfPlayer(e.playerId, ng);
+      if (seat === me || seat < 0) continue;
+      out.push({ kind: "opponentMark", moment: null, seat, color: e.color, index: e.index });
+    } else if (e.type === "PENALTY") {
+      const seat = seatOfPlayer(e.playerId, ng);
+      if (seat === me || seat < 0) continue;
+      out.push({ kind: "penalty", moment: "penalty", seat });
     }
   }
   for (const c of ng.lockedColors) {

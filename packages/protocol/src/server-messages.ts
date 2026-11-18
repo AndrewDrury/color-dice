@@ -54,11 +54,18 @@ export interface ViewRow {
 export interface ViewPlayer {
   seat: number;
   seatId: string;
-  sheet: { rows: Record<Color, ViewRow>; penalties: number };
-  score: { rows: Record<Color, number>; penalties: number; total: number };
+  /** `null` for other seats until GAME_OVER (hidden information). */
+  sheet: { rows: Record<Color, ViewRow>; penalties: number } | null;
+  score: { rows: Record<Color, number> | null; penalties: number; total: number };
   /** Boolean only — never the choice. */
   action1Submitted: boolean;
 }
+
+/** A player entry whose card is visible (your own, or anyone's at GAME_OVER). */
+export type FullViewPlayer = ViewPlayer & {
+  sheet: NonNullable<ViewPlayer["sheet"]>;
+  score: ViewPlayer["score"] & { rows: NonNullable<ViewPlayer["score"]["rows"]> };
+};
 
 export interface ViewGame {
   phase: Phase;
@@ -199,10 +206,11 @@ const ViewPlayerSchema = z
     seatId: SeatIdSchema,
     sheet: z
       .object({ rows: perColor(RowSchema), penalties: z.number().int().min(0).max(4) })
-      .strict(),
+      .strict()
+      .nullable(),
     score: z
       .object({
-        rows: perColor(z.number().int()),
+        rows: perColor(z.number().int()).nullable(),
         penalties: z.number().int(),
         total: z.number().int(),
       })

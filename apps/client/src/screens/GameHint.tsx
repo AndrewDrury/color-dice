@@ -14,7 +14,7 @@ export function pickHint(view: ViewMessage, seen: readonly string[]): Hint | nul
   if (!g || g.phase === "GAME_OVER") return null;
   const me = g.players.find((p) => p.seat === view.you.seat);
   if (!me) return null;
-  const marks = Object.values(me.sheet.rows).reduce(
+  const marks = Object.values(me.sheet?.rows ?? {}).reduce(
     (n, r) => n + r.marked.filter(Boolean).length,
     0,
   );
@@ -38,7 +38,7 @@ export function pickHint(view: ViewMessage, seen: readonly string[]): Hint | nul
     {
       id: "lock",
       text: "Mark 5 in a row to unlock its lock box.",
-      when: Object.values(me.sheet.rows).some((r) => r.marked.filter(Boolean).length >= 4),
+      when: Object.values(me.sheet?.rows ?? {}).some((r) => r.marked.filter(Boolean).length >= 4),
     },
   ];
   const hit = candidates.find((c) => c.when && !seen.includes(c.id));

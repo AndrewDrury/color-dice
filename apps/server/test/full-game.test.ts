@@ -31,6 +31,7 @@ async function settled(conns: Conn[]): Promise<ViewMessage[]> {
 function expectScoresMatch(views: ViewMessage[]): void {
   for (const v of views) {
     for (const p of v.game?.players ?? []) {
+      if (!p.sheet) throw new Error("expectScoresMatch needs revealed cards (GAME_OVER)");
       const sheet = {
         penalties: p.sheet.penalties,
         rows: Object.fromEntries(
@@ -87,6 +88,62 @@ describe("full games over sockets", () => {
     expect(room.players).toHaveLength(5);
   });
 
+  it("5 players: opponent cards are never sent before GAME_OVER, all are after, null again after rematch", async () => {
+    const plan: PlannedTurn[] = doubleLockPlan();
+    const { room, conns } = await begin(5, planFaces(plan));
+    for (const t of plan) await playTurn(conns, t);
+    await settled(conns);
+
+    const hiddenOk = (v: ViewMessage, seat: number | null) => {
+      for (const p of v.game?.players ?? []) {
+        if (p.seat === seat) {
+          expect(p.sheet).not.toBeNull();
+          expect(p.score.rows).not.toBeNull();
+        } else {
+          expect(p.sheet).toBeNull();
+          expect(p.score.rows).toBeNull();
+        }
+      }
+    };
+    let preFrames = 0;
+    let overFrames = 0;
+    for (const c of conns) {
+      const seat = c.view().you.seat;
+      for (const f of c.frames) {
+        if (f.type !== "view") continue;
+        const v = f as unknown as ViewMessage;
+        if (!v.game) continue;
+        if (v.game.phase === "GAME_OVER") {
+          overFrames++;
+          for (const p of v.game.players) {
+            expect(p.sheet).not.toBeNull();
+            expect(p.score.rows).not.toBeNull();
+          }
+        } else {
+          preFrames++;
+          hiddenOk(v, seat);
+        }
+      }
+    }
+    expect(preFrames).toBeGreaterThan(50);
+    expect(overFrames).toBeGreaterThanOrEqual(5);
+
+    // Rematch: null again for every seat.
+    const c0 = conns[0] as Conn;
+    const mark = c0.frames.length;
+    c0.send({ type: "rematch" });
+    await c0.until(() => c0.view().game?.phase === "AWAIT_ROLL");
+    const after = await settled(conns);
+    const fresh = c0.frames.slice(mark).filter((f) => f.type === "view");
+    expect(fresh.length).toBeGreaterThan(0);
+    for (const f of fresh) {
+      const v = f as unknown as ViewMessage;
+      if (v.game && v.game.phase !== "GAME_OVER") hiddenOk(v, v.you.seat);
+    }
+    for (const v of after) hiddenOk(v, v.you.seat);
+    expect(room.players).toHaveLength(5);
+  });
+
   it("2 players: the 4th penalty ends the game (EC-13), then rematch keeps seats", async () => {
     // Turns alternate seat 0 / seat 1; seat 0 takes its 4th penalty on turn 7.
     const { room, conns } = await begin(2, Array(7 * 6).fill(1));
@@ -100,7 +157,7 @@ describe("full games over sockets", () => {
     expect(g?.phase).toBe("GAME_OVER");
     expect(g?.endReason).toEqual({ kind: "PENALTIES", playerIds: [pid(0)] });
     const sheet0 = g?.players.find((p) => p.seat === 0)?.sheet;
-    expect(sheet0?.penalties).toBe(4);
+    expect(sheet0?.penalties).toBe(4); // revealed at GAME_OVER
     expect(g?.winners).toEqual([pid(1)]);
     expect(new Set(views.map((v) => v.version)).size).toBe(1);
     expectScoresMatch(views);
@@ -117,7 +174,9 @@ describe("full games over sockets", () => {
     expect(after.seats.map((s) => s.seatId)).toEqual(before.seats.map((s) => s.seatId));
     expect(after.room.status).toBe("playing");
     expect(after.game?.turn?.number).toBe(1);
-    expect(after.game?.players.every((p) => p.sheet.penalties === 0)).toBe(true);
+    expect(after.game?.players.every((p) => p.score.penalties === 0)).toBe(true);
+    // Hidden again after the rematch: only your own card is sent.
+    expect(after.game?.players.map((p) => p.sheet === null)).toEqual([false, true]);
     expect(room.players).toHaveLength(2);
   });
 });

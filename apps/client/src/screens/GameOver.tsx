@@ -6,9 +6,15 @@ import { Button } from "../components/Button";
 import { ChatControls } from "../components/ChatButton";
 import { CrownIcon } from "../components/icons";
 import { rankPlayers, ScoreTable } from "../components/ScoreTable";
+import { Sheet } from "../components/Sheet";
 import { reducedMotion } from "../fx/motion";
-import { joinNames, seatOfPlayer } from "../game/model";
+import { hasCard, joinNames, seatInfo, seatOfPlayer } from "../game/model";
 import { endReasonText } from "../game/status";
+import "../styles/opponents.css";
+
+const NO_FX = { flash: {}, glint: null, floats: [], shakeKey: 0 };
+const NO_LEGAL: ReadonlySet<string> = new Set();
+const noop = () => {};
 
 export interface GameOverProps {
   view: ViewMessage;
@@ -94,6 +100,34 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         <div ref={tableRef}>
           <ScoreTable view={view} />
         </div>
+        <section class="g-final-cards" aria-label="Final score cards">
+          {rankPlayers(view)
+            .filter(hasCard)
+            .map((p, i) => (
+              <article
+                key={p.seat}
+                class="g-final-card"
+                data-seat-id={seatInfo(view, p)?.seatId}
+                aria-label={`${seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}'s card`}
+              >
+                <h3 class="g-final-head">
+                  <span class="num">{i + 1}.</span>{" "}
+                  <span class="g-name">{seatInfo(view, p)?.name ?? `Player ${p.seat + 1}`}</span>
+                </h3>
+                <Sheet
+                  player={p}
+                  lockedColors={g?.lockedColors ?? []}
+                  legal={NO_LEGAL}
+                  staged={null}
+                  ghost={null}
+                  disabled
+                  readOnly
+                  fx={NO_FX}
+                  onPick={noop}
+                />
+              </article>
+            ))}
+        </section>
         <div class="chat-over">
           <ChatControls send={send} />
         </div>

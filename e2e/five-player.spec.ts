@@ -64,7 +64,7 @@ test("five players: a double lock in one Action 1 ends the game with 3 locked ro
       await expectGameOver(p.page);
       await expect(p.page.locator(".g-reason")).toContainText(/lock/i);
       // The board behind the dialog: 3 locked rows (red, yellow, green).
-      await expect(p.page.locator(".g-row.is-closed")).toHaveCount(3);
+      await expect(p.page.locator(".g-main .g-row.is-closed")).toHaveCount(3);
     }
   } finally {
     await closeAll(ps);

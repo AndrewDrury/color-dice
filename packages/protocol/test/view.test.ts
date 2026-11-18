@@ -79,6 +79,25 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(lobby).success).toBe(true);
   });
 
+  it("parses hidden opponent cards (sheet and score.rows null)", () => {
+    const g = fixture.game;
+    const mine = g?.players[0];
+    if (!g || !mine) throw new Error("fixture");
+    const opp = {
+      seat: 1,
+      seatId: "e5f6g7h8",
+      sheet: null,
+      score: { rows: null, penalties: -5, total: -2 },
+      action1Submitted: false,
+    };
+    const hidden = { ...fixture, game: { ...g, players: [mine, opp] } };
+    expect(ViewMessageSchema.safeParse(hidden).success).toBe(true);
+    // The schema is not the guard: a full opponent card still parses (the server never sends it).
+    const full = { ...opp, sheet: mine.sheet, score: mine.score };
+    const open = { ...fixture, game: { ...g, players: [mine, full] } };
+    expect(ViewMessageSchema.safeParse(open).success).toBe(true);
+  });
+
   it("rejects extra fields and bad shapes", () => {
     expect(ViewMessageSchema.safeParse({ ...fixture, secret: 1 }).success).toBe(false);
     const g = fixture.game;

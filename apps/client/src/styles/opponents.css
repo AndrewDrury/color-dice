@@ -1,0 +1,32 @@
+/* Opponent chips (J0.7): hidden cards, so chips are the only opponent UI. */
+.g-opp.is-tablet,
+.g-opp.is-desktop {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+.g-opp .g-chip {
+  cursor: default;
+}
+.g-chip-pen {
+  font-size: var(--fs-small, 12px);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* Game over: every player's full card, ranked, scrolling inside the results panel. */
+.g-final-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.g-final-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.g-final-head {
+  font-size: var(--fs-body, 1rem);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}

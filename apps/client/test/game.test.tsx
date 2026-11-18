@@ -155,16 +155,41 @@ describe("Game screen", () => {
     );
   });
 
-  it("5 players: 4 chips at 390 px, 4 mini sheets at 1280 px", () => {
+  it("5 players: 4 opponent chips (no grids, no bars) at 390 px and at 1280 px", () => {
     show(makeGameView({ players: 5 }));
     const { container } = mount();
     expect(container.querySelectorAll(".g-chip")).toHaveLength(4);
-    expect(container.querySelectorAll(".g-mini")).toHaveLength(0);
     cleanup();
     setWidth(1280);
     const r = mount();
-    expect(r.container.querySelectorAll(".g-mini")).toHaveLength(4);
-    expect(r.container.querySelectorAll(".g-chip")).toHaveLength(0);
+    expect(r.container.querySelectorAll(".g-chip")).toHaveLength(4);
+    for (const root of [r.container]) {
+      expect(root.querySelectorAll(".g-mini, .g-mini-cell, .g-bars, .g-bar")).toHaveLength(0);
+      // Only your own card is on screen: one sheet, four rows.
+      expect(root.querySelectorAll(".g-sheet")).toHaveLength(1);
+      expect(root.querySelectorAll(".g-row")).toHaveLength(4);
+      // Chips are not buttons and open nothing.
+      expect(root.querySelectorAll("button.g-chip")).toHaveLength(0);
+    }
+  });
+
+  it("chips show name, total and penalty count", () => {
+    show(
+      makeGameView({
+        gamePlayers: [
+          player(0),
+          player(1, {
+            score: { rows: { RED: 3, YELLOW: 0, GREEN: 0, BLUE: 0 }, penalties: -10, total: -7 },
+          }),
+          player(2),
+        ],
+      }),
+    );
+    const { container } = mount();
+    const chip = container.querySelector(`.g-chip[data-seat-id="${seatIdOf(1)}"]`);
+    expect(chip?.textContent).toContain("Cleo");
+    expect(chip?.querySelector(".num")?.getAttribute("data-total")).toBe("-7");
+    expect(chip?.querySelector(".g-chip-pen")?.getAttribute("data-penalties")).toBe("2");
   });
 
   it("GAME_OVER with a tie", () => {
@@ -188,6 +213,8 @@ describe("Game screen", () => {
     expect(screen.getByText(/Tied winners/)).toBeTruthy();
     expect(screen.getByText("Two rows locked")).toBeTruthy();
     expect(document.querySelectorAll("tr[data-winner]")).toHaveLength(2);
+    // Every player's full read-only card is revealed.
+    expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
     expect(screen.getByText("Rematch")).toBeTruthy();
     expect(screen.getByText("Back to home")).toBeTruthy();
   });
@@ -216,18 +243,60 @@ describe("diffViews", () => {
     expect(diffViews(null, next)).toEqual([]);
   });
 
-  it("penalty diff emits penalty", () => {
+  it("opponent penalty comes from the log, not their (hidden) sheet", () => {
     const next = makeGameView({
       version: 6,
       phase: "AWAIT_ROLL",
       active: 1,
+      events: [{ type: "PENALTY", playerId: "seat-1", total: -5 }],
+    });
+    const evs = diffViews(makeGameView({ version: 5, phase: "ACTION_2" }), next);
+    expect(evs.find((e) => e.kind === "penalty")?.seat).toBe(1);
+  });
+
+  it("your own penalty still comes from your sheet", () => {
+    const next = makeGameView({
+      version: 6,
+      phase: "AWAIT_ROLL",
       gamePlayers: [
-        player(0),
-        player(1, { sheet: { ...player(1).sheet, penalties: 1 } }),
+        player(0, { sheet: { ...player(0).sheet, penalties: 1 } }),
+        player(1),
         player(2),
       ],
     });
     const evs = diffViews(makeGameView({ version: 5, phase: "ACTION_2" }), next);
-    expect(evs.find((e) => e.kind === "penalty")?.seat).toBe(1);
+    expect(evs.find((e) => e.kind === "penalty")?.seat).toBe(0);
+  });
+
+  it("opponent marks flash from new MARKED log events only", () => {
+    const m = {
+      type: "MARKED",
+      playerId: "seat-1",
+      action: "ACTION_1",
+      color: "GREEN",
+      number: 7,
+      index: 5,
+      lockedNow: false,
+    };
+    const old = { type: "TURN_STARTED", turnNumber: 9, activeSeat: 0 };
+    const prev = makeGameView({ version: 5, phase: "ACTION_2", events: [old] });
+    const next = makeGameView({ version: 6, phase: "ACTION_2", events: [old, m] });
+    const evs = diffViews(prev, next).filter((e) => e.kind === "opponentMark");
+    expect(evs).toEqual([
+      { kind: "opponentMark", moment: null, seat: 1, color: "GREEN", index: 5 },
+    ]);
+    // Same window again: nothing new.
+    expect(
+      diffViews(next, makeGameView({ version: 7, phase: "ACTION_2", events: [old, m] })),
+    ).toEqual([]);
+    // A full 30-event window that slid by one still yields just the new event.
+    const win = Array.from({ length: 29 }, (_, i) => ({
+      type: "TURN_STARTED",
+      turnNumber: i,
+      activeSeat: 0,
+    }));
+    const a = makeGameView({ version: 8, phase: "ACTION_2", events: [...win, old] });
+    const b = makeGameView({ version: 9, phase: "ACTION_2", events: [...win.slice(1), old, m] });
+    expect(diffViews(a, b).filter((e) => e.kind === "opponentMark")).toHaveLength(1);
   });
 });
