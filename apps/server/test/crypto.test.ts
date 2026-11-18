@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   hashPassword,
   hashToken,
+  inviteKeyEquals,
   iterationsFromEnv,
+  newInviteKey,
   newSeatId,
   newToken,
   tokenHashEquals,
@@ -85,6 +87,27 @@ describe("session tokens", () => {
     expect(tokenHashEquals(h, h)).toBe(true);
     expect(tokenHashEquals(h, await hashToken("y"))).toBe(false);
     expect(tokenHashEquals(h, h.slice(1))).toBe(false);
+  });
+});
+
+describe("invite keys", () => {
+  it("newInviteKey is 43 chars of base64url and unique", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 500; i++) {
+      const k = newInviteKey();
+      expect(k).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      seen.add(k);
+    }
+    expect(seen.size).toBe(500);
+  });
+
+  it("inviteKeyEquals matches exactly, any length, and never matches an empty stored key", async () => {
+    const k = newInviteKey();
+    expect(await inviteKeyEquals(k, k)).toBe(true);
+    expect(await inviteKeyEquals(newInviteKey(), k)).toBe(false);
+    expect(await inviteKeyEquals(k.slice(1), k)).toBe(false);
+    expect(await inviteKeyEquals(`${k}x`, k)).toBe(false);
+    expect(await inviteKeyEquals("", "")).toBe(false);
   });
 });
 

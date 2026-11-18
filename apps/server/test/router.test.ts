@@ -40,6 +40,24 @@ describe("router", () => {
     expect(matchRoute("GET", "/api/games/ABCDE/constructor")).toBeNull();
   });
 
+  it("matches the invite routes (K2.1) and nothing else with five segments", () => {
+    expect(matchRoute("GET", "/api/games/ABCDE/invite")).toEqual({
+      kind: "game",
+      code: "ABCDE",
+      action: "invite",
+    });
+    expect(matchRoute("POST", "/api/games/ABCDE/invite/reset")).toEqual({
+      kind: "game",
+      code: "ABCDE",
+      action: "inviteReset",
+    });
+    expect(matchRoute("POST", "/api/games/ABCDE/invite")).toBeNull();
+    expect(matchRoute("GET", "/api/games/ABCDE/invite/reset")).toBeNull();
+    expect(matchRoute("POST", "/api/games/ABCDE/invite/x")).toBeNull();
+    expect(matchRoute("POST", "/api/games/ABCDE/join/reset")).toBeNull();
+    expect(matchRoute("POST", "/api/games/ABCDE/invite/reset/x")).toBeNull();
+  });
+
   it("normalizes codes", () => {
     expect(normalizeCode("x2y3z")).toBe("X2Y3Z");
     expect(normalizeCode("ABCD0")).toBeNull();

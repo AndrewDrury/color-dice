@@ -23,6 +23,9 @@ export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 /** Session token: 32 random bytes, base64url (43 chars, no padding). */
 export const TOKEN_BYTES = 32;
 export const TOKEN_LENGTH = 43;
+/** Invite key (K2.1): 32 random bytes, base64url (43 chars). A bearer secret: never listed or logged. */
+export const INVITE_KEY_BYTES = 32;
+export const INVITE_KEY_LENGTH = 43;
 /** Random seat id, public within a room. */
 export const SEAT_ID_LENGTH = 8;
 
@@ -43,6 +46,8 @@ export const PUBLIC_LIST_IDLE_MS = 30 * 60_000;
 
 export const IDLE_ROOM_TTL_MS = 7 * 24 * 60 * 60_000;
 export const FINISHED_ROOM_TTL_MS = 24 * 60 * 60_000;
+/** K2.2: a room with no authenticated socket for this long is deleted. */
+export const ABANDONED_ROOM_MS = 30 * 60_000;
 
 export const AWAY_AFTER_OFFLINE_MS = 2 * 60_000;
 export const AUTOPASS_LOOP_GUARD = 20;

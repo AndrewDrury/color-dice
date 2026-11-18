@@ -2,6 +2,7 @@ import {
   type AuthRes,
   AuthResSchema,
   type CreateGameReq,
+  CreateGameResSchema,
   ErrorBodySchema,
   GameCodeSchema,
   type JoinReq,
@@ -118,9 +119,9 @@ export async function listGames(): Promise<PublicGame[]> {
   return json(await request("/api/games"), GamesSchema);
 }
 
-/** `POST /api/games` */
+/** `POST /api/games` (the response also carries `inviteKey`, K2.1; typed as AuthRes until T-UX-15). */
 export async function createGame(body: CreateGameReq): Promise<AuthRes> {
-  return json(await request("/api/games", { method: "POST", body }), AuthResSchema);
+  return json(await request("/api/games", { method: "POST", body }), CreateGameResSchema);
 }
 
 /** `POST /api/games/:code/join` */

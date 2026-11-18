@@ -3,6 +3,7 @@
  * host transfer, presence, alarm times. No storage or I/O here.
  */
 import {
+  ABANDONED_ROOM_MS,
   type ErrorCode,
   FINISHED_ROOM_TTL_MS,
   IDLE_ROOM_TTL_MS,
@@ -68,6 +69,27 @@ export function removeSeat(seats: SeatRecord[], seatId: string): SeatRecord[] {
   return rest;
 }
 
+/**
+ * In-game leave (K2.2): the seat is marked left + away (auto-passed) and its token
+ * stops working. A leaving host hands the flag to the next present seat by joinOrder.
+ * Mutates `seats`; returns true when every seat has now left.
+ */
+export function markLeft(seats: SeatRecord[], seatId: string): boolean {
+  const me = seats.find((s) => s.seatId === seatId);
+  if (!me) return false;
+  me.left = true;
+  me.away = true;
+  me.tokenHash = "";
+  if (me.host) {
+    const next = byJoinOrder(seats).find((s) => !s.left);
+    if (next) {
+      me.host = false;
+      next.host = true;
+    }
+  }
+  return seats.every((s) => s.left);
+}
+
 export function seatIdOf(ws: WebSocket): string | null {
   try {
     const a = ws.deserializeAttachment() as SocketAttachment | null;
@@ -82,15 +104,23 @@ export function isOnline(sockets: WebSocket[], seatId: string): boolean {
   return sockets.some((ws) => ws.readyState === WebSocket.OPEN && seatIdOf(ws) === seatId);
 }
 
-/** Explicit allow-list (C2): null when the room must not be listed. */
+/** True while any open socket is bound to a seat. */
+export function hasAuthedSocket(sockets: WebSocket[]): boolean {
+  return sockets.some((ws) => ws.readyState === WebSocket.OPEN && seatIdOf(ws) !== null);
+}
+
+/** K2.2: last sign of life (HTTP change or a seat's last socket) + 30 min. */
+export function abandonedAt(meta: RoomMeta, seats: SeatRecord[]): number {
+  return Math.max(meta.lastActivityAt, ...seats.map((s) => s.lastSeenAt)) + ABANDONED_ROOM_MS;
+}
+
+/** Explicit allow-list (C2): null when the room must not be listed. No player names (K2.3). */
 export function publicEntry(meta: RoomMeta, seats: SeatRecord[]): PublicGame | null {
   if (!meta.listed || meta.status !== "lobby" || seats.length >= meta.maxPlayers) return null;
-  const host = seats.find((s) => s.host);
-  if (!host) return null;
+  if (seats.length === 0) return null;
   return {
     code: meta.code,
     roomName: meta.roomName,
-    hostName: host.name,
     players: seats.length,
     maxPlayers: meta.maxPlayers,
     createdAt: meta.createdAt,

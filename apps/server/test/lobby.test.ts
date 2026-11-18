@@ -25,7 +25,6 @@ function game(i: number, createdAt = 1_000 + i): PublicGame {
   return {
     code: code(i),
     roomName: `Room ${i}`,
-    hostName: `Host${i}`,
     players: 1,
     maxPlayers: 4,
     createdAt,
@@ -48,7 +47,7 @@ describe("Lobby RPC", () => {
     expect(list[0]).toEqual(game(2, 300));
     for (const g of list) {
       expect(Object.keys(g).sort()).toEqual(
-        ["code", "createdAt", "hostName", "maxPlayers", "players", "roomName"].sort(),
+        ["code", "createdAt", "maxPlayers", "players", "roomName"].sort(),
       );
     }
     expect(JSON.stringify(list)).not.toMatch(SECRET_RE);

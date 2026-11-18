@@ -52,6 +52,34 @@ export async function loadDice(
   };
 }
 
+/** Dice for `start`: an explicit scripted override (hooks only), else `loadDice`. */
+export async function startDice(
+  env: { ALLOW_TEST_HOOKS?: string },
+  storage: DurableObjectStorage,
+  override?: number[],
+): Promise<RoomDice> {
+  if (hooksEnabled(env) && override?.every(isFace)) {
+    return { dice: new QueuedDice([...override]), save: async () => {} };
+  }
+  return loadDice(env, storage);
+}
+
+/** Stores a hook's effect; returns the new clock offset. Callers check `hooksEnabled` first. */
+export async function applyTestHook(
+  storage: DurableObjectStorage,
+  input: TestHookInput,
+  clockOffsetMs: number,
+): Promise<number> {
+  if (input.kind === "dice") {
+    const queued = (await storage.get<number[]>(DICE_KEY)) ?? [];
+    await storage.put(DICE_KEY, [...queued, ...input.faces].slice(-MAX_TEST_FACES));
+    return clockOffsetMs;
+  }
+  const next = clockOffsetMs + input.advanceMs;
+  await storage.put(CLOCK_KEY, next);
+  return next;
+}
+
 /** Body of `POST /api/games/:code/__test/dice` and `/__test/clock`. */
 export type TestHookInput = { kind: "dice"; faces: Face[] } | { kind: "clock"; advanceMs: number };
 

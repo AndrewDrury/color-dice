@@ -151,7 +151,6 @@ describe("LobbySocket", () => {
     const game = {
       code: CODE,
       roomName: "Friday dice",
-      hostName: "Andrew",
       players: 1,
       maxPlayers: 4,
       createdAt: 1,

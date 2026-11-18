@@ -59,7 +59,6 @@ function game(code: string, roomName: string, extra: Partial<PublicGame> = {}): 
   return {
     code,
     roomName,
-    hostName: "Andrew",
     players: 2,
     maxPlayers: 5,
     createdAt: Date.now() - 3 * 60_000,
@@ -91,10 +90,9 @@ describe("Home", () => {
   it("renders live rows from a games message, names as literal text", () => {
     const { container } = render(<Home route={{ screen: "home", code: null }} />);
     expect(screen.getByText("Looking for open games…")).toBeTruthy();
-    emit([game("K7QF2", "Friday dice"), game("ABCDE", XSS, { hostName: XSS })]);
+    emit([game("K7QF2", "Friday dice"), game("ABCDE", XSS)]);
     expect(screen.getByText("Friday dice")).toBeTruthy();
     expect(screen.getByText(XSS)).toBeTruthy();
-    expect(screen.getByText(`host ${XSS}`)).toBeTruthy();
     expect(container.querySelectorAll("img")).toHaveLength(0);
     expect(screen.getAllByText("3 min ago")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Create game" }).className).toContain("btn-primary");

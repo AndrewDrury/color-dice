@@ -10,6 +10,7 @@ import {
 import { newGameCode } from "./codes";
 import type { Env } from "./env";
 import { bearer, error, json, readJson } from "./http";
+import { credentialOf } from "./room-access";
 import type { OpResult } from "./room-lobby-ops";
 import { rateLimit } from "./router-lobby";
 
@@ -27,7 +28,16 @@ export type Route =
   | {
       kind: "game";
       code: string;
-      action: "join" | "reclaim" | "me" | "start" | "leave" | "kick" | "update";
+      action:
+        | "join"
+        | "reclaim"
+        | "me"
+        | "start"
+        | "leave"
+        | "kick"
+        | "update"
+        | "invite"
+        | "inviteReset";
     };
 
 /** Upper-cases and validates a game code; returns null if invalid. */
@@ -52,13 +62,17 @@ const GAME_ACTIONS: Record<
   start: { method: "POST", action: "start" },
   leave: { method: "POST", action: "leave" },
   kick: { method: "POST", action: "kick" },
+  invite: { method: "GET", action: "invite" },
+  "invite/reset": { method: "POST", action: "inviteReset" },
 };
 
 /** Matches C5/C6 routes. Returns null for anything else (→ 404). */
 export function matchRoute(method: string, pathname: string): Route | null {
   const parts = pathname.split("/").filter((p) => p !== "");
-  const [a, b, c, d, ...rest] = parts;
+  const [a, b, c, d, e, ...rest] = parts;
   if (rest.length > 0) return null;
+  // Only `/api/games/:code/invite/reset` has five segments.
+  if (e !== undefined && (d !== "invite" || e !== "reset")) return null;
 
   if (a === "health" && parts.length === 1) return method === "GET" ? { kind: "health" } : null;
 
@@ -81,7 +95,9 @@ export function matchRoute(method: string, pathname: string): Route | null {
   if (!code) return null;
   if (parts.length === 3)
     return method === "PATCH" ? { kind: "game", code, action: "update" } : null;
-  const entry = d !== undefined && Object.hasOwn(GAME_ACTIONS, d) ? GAME_ACTIONS[d] : undefined;
+  const key = e === undefined ? d : `${d}/${e}`;
+  const entry =
+    key !== undefined && Object.hasOwn(GAME_ACTIONS, key) ? GAME_ACTIONS[key] : undefined;
   if (!entry || entry.method !== method) return null;
   return { kind: "game", code, action: entry.action };
 }
@@ -127,10 +143,11 @@ export async function gameApiHandler(
     if (limited) return limited;
     const body = await readJson(req, route.action === "join" ? JoinReqSchema : ReclaimReqSchema);
     if (!body.ok) return body.response;
-    const { name, password } = body.value;
+    // The secret (password or invite) is passed on, never echoed or logged.
+    const cred = credentialOf(body.value);
     return route.action === "join"
-      ? respond(await stub.join(name, password), 201)
-      : respond(await stub.reclaim(name, password), 200);
+      ? respond(await stub.join(body.value.name, cred), 201)
+      : respond(await stub.reclaim(body.value.name, cred), 200);
   }
   const token = bearer(req);
   if (!token) return error("E_NOT_AUTHED", 401);
@@ -141,6 +158,10 @@ export async function gameApiHandler(
       return respond(await stub.start(token), 204);
     case "leave":
       return respond(await stub.leave(token), 204);
+    case "invite":
+      return respond(await stub.invite(token), 200);
+    case "inviteReset":
+      return respond(await stub.resetInvite(token), 200);
     case "kick": {
       const body = await readJson(req, KickReqSchema);
       if (!body.ok) return body.response;

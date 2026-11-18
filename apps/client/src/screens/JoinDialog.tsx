@@ -100,7 +100,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
           code: res.code,
           name: parsed.data.name,
           ...(roomName ? { roomName } : {}),
-          password: parsed.data.password,
+          password: parsed.data.password ?? password,
         },
         remember,
       );

@@ -38,7 +38,8 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("api", () => {
   it("creates a game and validates the response", async () => {
-    mockFetch(jsonRes(201, { code: CODE, token: TOKEN, seatId: SEAT }));
+    const inviteKey = "k".repeat(43);
+    mockFetch(jsonRes(201, { code: CODE, token: TOKEN, seatId: SEAT, inviteKey }));
     const body = {
       roomName: "Fri",
       name: "A",
@@ -46,7 +47,12 @@ describe("api", () => {
       maxPlayers: 4 as const,
       listed: true,
     };
-    await expect(createGame(body)).resolves.toEqual({ code: CODE, token: TOKEN, seatId: SEAT });
+    await expect(createGame(body)).resolves.toEqual({
+      code: CODE,
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey,
+    });
     expect(calls[0]?.url).toBe("http://srv/api/games");
     expect(calls[0]?.init.method).toBe("POST");
     expect(JSON.parse(String(calls[0]?.init.body))).toEqual(body);

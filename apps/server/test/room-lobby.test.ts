@@ -99,11 +99,13 @@ describe("create / join / me", () => {
     const entry = (await lobbyList()).find((g) => g.code === host.code);
     expect(entry).toMatchObject({
       roomName: "Friday dice",
-      hostName: "Alice",
       players: 2,
       maxPlayers: 4,
     });
-    expect(JSON.stringify(entry)).not.toMatch(/pwd|hash|salt|token|Bob/i);
+    expect(Object.keys(entry ?? {}).sort()).toEqual(
+      ["code", "createdAt", "maxPlayers", "players", "roomName"].sort(),
+    );
+    expect(JSON.stringify(entry)).not.toMatch(/pwd|hash|salt|token|invite|Alice|Bob/i);
   });
 
   it("unlisted rooms never reach the lobby", async () => {
@@ -330,7 +332,7 @@ describe("leave", () => {
     expect((await me(host.code, host.token)).status).toBe(401);
     expect(((await (await me(host.code, bob.token)).json()) as MeRes).host).toBe(true);
     expect(((await (await me(host.code, carol.token)).json()) as MeRes).host).toBe(false);
-    expect((await lobbyList()).find((g) => g.code === host.code)?.hostName).toBe("Bob");
+    expect((await lobbyList()).find((g) => g.code === host.code)?.players).toBe(2);
 
     await api("POST", `/api/games/${host.code}/leave`, { token: bob.token });
     await api("POST", `/api/games/${host.code}/leave`, { token: carol.token });
@@ -362,6 +364,8 @@ describe("storage secrecy", () => {
 describe("alarm", () => {
   it("deletes an idle room and removes it from the lobby", async () => {
     const host = await create();
+    // A connected seat: only the 7-day idle TTL applies (not the 30-min abandoned rule).
+    const conn = await connect(host.code, host.token);
     expect((await lobbyList()).some((g) => g.code === host.code)).toBe(true);
     await setClock(host.code, { now: Date.now() + 6 * 24 * 3_600_000 });
     expect(await runDurableObjectAlarm(roomStub(host.code))).toBe(true);
@@ -378,6 +382,7 @@ describe("alarm", () => {
     );
     expect((await lobbyList()).some((g) => g.code === host.code)).toBe(false);
     expect((await me(host.code, host.token)).status).toBe(401);
+    conn.close();
   });
 });
 
@@ -410,6 +415,7 @@ describe("pure helpers", () => {
       maxPlayers: 4,
       status: "lobby",
       pwd: { saltB64: "s", hashB64: "h", iterations: 1 },
+      inviteKey: "k".repeat(43),
       failedJoins: 0,
       joinLockedUntil: null,
       createdAt: 5,
@@ -420,7 +426,6 @@ describe("pure helpers", () => {
     expect(publicEntry(meta, [seat("a", 1, true)])).toEqual({
       code: "ABCDE",
       roomName: "Room",
-      hostName: "a",
       players: 1,
       maxPlayers: 4,
       createdAt: 5,

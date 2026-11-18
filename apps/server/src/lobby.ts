@@ -20,12 +20,11 @@ export const LOBBY_PRUNE_MS = 10 * 60_000;
 /** Hard cap on stored entries so the single storage value stays small. */
 const MAX_ENTRIES = 1000;
 
-/** Explicit allow-list: only these fields ever leave the lobby (C2, G-security). */
+/** Explicit allow-list: only these fields ever leave the lobby (C2, G-security). No player names (K2.3). */
 function toPublic(e: PublicGame): PublicGame {
   return {
     code: e.code,
     roomName: e.roomName,
-    hostName: e.hostName,
     players: e.players,
     maxPlayers: e.maxPlayers,
     createdAt: e.createdAt,

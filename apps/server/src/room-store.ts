@@ -14,6 +14,11 @@ export interface RoomMeta {
   status: RoomStatus;
   /** PBKDF2-SHA256; never returned or logged. */
   pwd: StoredPassword;
+  /**
+   * Invite link secret (K2.1). Stored as-is (a random room-scoped secret that seated
+   * players can read back). Never in the lobby list, views, logs or error bodies.
+   */
+  inviteKey: string;
   failedJoins: number;
   /** Epoch ms. */
   joinLockedUntil: number | null;
@@ -35,6 +40,8 @@ export interface SeatRecord {
   /** SHA-256(token) hex; the token itself is never stored. */
   tokenHash: string;
   away: boolean;
+  /** Left during play (K2.2): token invalidated, auto-passed like away, never reclaimable. */
+  left?: boolean;
   lastSeenAt: number;
   /** Win/loss tally across rematches (J5). Absent = 0-0. Dies with the seat. */
   record?: { wins: number; ties: number; losses: number };

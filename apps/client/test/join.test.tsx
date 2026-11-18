@@ -40,7 +40,6 @@ const CODE = "ABCDE";
 const ROOM: PublicGame = {
   code: CODE,
   roomName: "Lunch break",
-  hostName: "Sam",
   players: 1,
   maxPlayers: 2,
   createdAt: 0,

@@ -44,7 +44,7 @@ export interface GameRowProps {
   onJoin: (game: PublicGame) => void;
 }
 
-/** One open game. Room and host names are user-supplied: rendered as text nodes only. */
+/** One open game (no player names, K2.3). The room name is user-supplied: rendered as text only. */
 export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
   useT();
   const ref = useRef<HTMLLIElement>(null);
@@ -73,9 +73,6 @@ export function GameRow({ game, now, leaving = false, onJoin }: GameRowProps) {
       </span>
       <span class="stack" style={{ gap: 0, flex: "1 1 10rem", minWidth: 0 }}>
         <strong style={{ overflowWrap: "anywhere" }}>{game.roomName}</strong>
-        <span class="muted" style={{ fontSize: "var(--fs-small)", overflowWrap: "anywhere" }}>
-          {t("home.host", { name: game.hostName })}
-        </span>
       </span>
       <span class="num">
         {game.players} / {game.maxPlayers}

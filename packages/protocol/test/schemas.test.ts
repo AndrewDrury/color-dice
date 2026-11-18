@@ -119,7 +119,6 @@ describe("HTTP response schemas", () => {
     const pg = {
       code: "K7QF2",
       roomName: "Fri",
-      hostName: "A",
       players: 1,
       maxPlayers: 4,
       createdAt: 1,
@@ -228,7 +227,8 @@ describe("constants", () => {
   it("request types are the schema inputs", () => {
     expectTypeOf<z.input<typeof JoinReqSchema>>().toEqualTypeOf<{
       name: string;
-      password: string;
+      password?: string | undefined;
+      invite?: string | undefined;
     }>();
   });
 });

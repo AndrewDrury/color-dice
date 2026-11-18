@@ -1,10 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
-import { createGame, fromJSON, isFace, toJSON } from "@cd/engine";
+import { createGame, fromJSON, toJSON } from "@cd/engine";
 import {
   type AuthRes,
   CLOSE,
-  LOCKOUT_FAILED_ATTEMPTS,
-  LOCKOUT_MS,
+  type CreateGameRes,
+  type InviteRes,
   type MaxPlayers,
   type MeRes,
   MIN_PLAYERS,
@@ -14,22 +14,25 @@ import {
   hashPassword,
   hashToken,
   iterationsFromEnv,
-  newSeatId,
+  newInviteKey,
   newToken,
   tokenHashEquals,
-  verifyPassword,
 } from "./crypto";
 import type { Env } from "./env";
 import { error } from "./http";
 import { isWebSocketUpgrade } from "./origin";
+import { type Credential, checkCredentials, newSeat } from "./room-access";
 import {
+  abandonedAt,
   BAD_CREDENTIALS,
   expiresAt,
   fail,
   findByName,
+  hasAuthedSocket,
   isOnline,
   LOBBY_NAME,
   type LobbySync,
+  markLeft,
   NOT_AUTHED,
   NOT_HOST,
   NOT_IN_LOBBY,
@@ -40,15 +43,13 @@ import {
   removeSeat,
   seatIdOf,
 } from "./room-lobby-ops";
-import { closeWith, RoomPlay } from "./room-play-ops";
+import { endSocket, RoomPlay } from "./room-play-ops";
 import { type RoomMeta, RoomStore, type SeatRecord } from "./room-store";
 import {
+  applyTestHook,
   CLOCK_KEY,
-  DICE_KEY,
   hooksEnabled,
-  loadDice,
-  QueuedDice,
-  type RoomDice,
+  startDice,
   type TestHookInput,
 } from "./test-hooks";
 import { broadcastViews } from "./views";
@@ -67,9 +68,6 @@ export interface PatchInput {
   listed?: boolean;
   password?: string;
 }
-
-/** Fixed salt for the dummy PBKDF2 run that equalizes failure timing (never matches). */
-const DUMMY_SALT_B64 = "AAAAAAAAAAAAAAAAAAAAAA==";
 
 type Authed = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
 
@@ -129,10 +127,7 @@ export class GameRoom extends DurableObject<Env> {
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server);
     this.play.open(server);
-    await this.serial(async () => {
-      const meta = await this.store.getMeta();
-      await this.store.setAlarm(this.alarmAt(meta));
-    });
+    await this.serial(() => this.rearm());
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -141,11 +136,11 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   override async webSocketClose(ws: WebSocket): Promise<void> {
-    await this.serial(() => this.play.close(ws));
+    await this.serial(() => this.socketGone(ws));
   }
 
   override async webSocketError(ws: WebSocket): Promise<void> {
-    await this.serial(() => this.play.close(ws));
+    await this.serial(() => this.socketGone(ws));
   }
 
   /* ---------------- RPC ---------------- */
@@ -155,7 +150,7 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /** Creates the room with the creator as host. Refuses if the code is taken. */
-  init(input: InitInput): Promise<OpResult<AuthRes>> {
+  init(input: InitInput): Promise<OpResult<CreateGameRes>> {
     return this.serial(async () => {
       if (await this.store.getMeta()) return fail(409, "E_INVALID_COMMAND", "code taken");
       const now = this.now();
@@ -167,6 +162,7 @@ export class GameRoom extends DurableObject<Env> {
         maxPlayers: input.maxPlayers,
         status: "lobby",
         pwd,
+        inviteKey: newInviteKey(),
         failedJoins: 0,
         joinLockedUntil: null,
         createdAt: now,
@@ -175,15 +171,15 @@ export class GameRoom extends DurableObject<Env> {
         version: 0,
       };
       const token = newToken();
-      const seat = await this.newSeat(input.name, 1, true, token, now);
+      const seat = await newSeat(input.name, 1, true, token, now);
       await this.commit(meta, [seat]);
-      return ok({ code: meta.code, token, seatId: seat.seatId });
+      return ok({ code: meta.code, token, seatId: seat.seatId, inviteKey: meta.inviteKey });
     });
   }
 
-  join(name: string, password: string): Promise<OpResult<AuthRes>> {
+  join(name: string, cred: Credential): Promise<OpResult<AuthRes>> {
     return this.serial(async () => {
-      const meta = await this.checkCredentials(password);
+      const meta = await this.checkCredentials(cred);
       if (!meta) return BAD_CREDENTIALS;
       const seats = await this.store.getSeats();
       if (meta.status !== "lobby") return NOT_IN_LOBBY;
@@ -191,21 +187,22 @@ export class GameRoom extends DurableObject<Env> {
       if (findByName(seats, name)) return fail(409, "E_NAME_TAKEN");
       const token = newToken();
       const order = Math.max(0, ...seats.map((s) => s.joinOrder)) + 1;
-      const seat = await this.newSeat(name, order, false, token, this.now());
+      const seat = await newSeat(name, order, false, token, this.now());
       await this.commit(meta, [...seats, seat]);
       return ok({ code: meta.code, token, seatId: seat.seatId });
     });
   }
 
-  /** code + password + name of an offline seat → new token; old sessions end. */
-  reclaim(name: string, password: string): Promise<OpResult<AuthRes>> {
+  /** code + password/invite + name of an offline seat → new token; old sessions end. */
+  reclaim(name: string, cred: Credential): Promise<OpResult<AuthRes>> {
     return this.serial(async () => {
-      const meta = await this.checkCredentials(password);
+      const meta = await this.checkCredentials(cred);
       if (!meta) return BAD_CREDENTIALS;
       const seats = await this.store.getSeats();
       const seat = findByName(seats, name);
       const sockets = this.ctx.getWebSockets();
-      if (!seat || isOnline(sockets, seat.seatId)) return fail(409, "E_SEAT_ONLINE");
+      // A seat that left the game (K2.2) is gone for good: same answer as no such seat.
+      if (!seat || seat.left || isOnline(sockets, seat.seatId)) return fail(409, "E_SEAT_ONLINE");
       const token = newToken();
       seat.tokenHash = await hashToken(token);
       seat.lastSeenAt = this.now();
@@ -224,17 +221,46 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
 
+  /**
+   * Lobby: the seat is removed. In play / finished (K2.2): the seat becomes LEFT and is
+   * auto-passed. Either way its sessions end, and the room is deleted once nobody is left.
+   */
   leave(token: string): Promise<OpResult<null>> {
     return this.serial(async () => {
       const a = await this.auth(token);
       if (!a.ok) return a;
       const { meta, seats, me } = a.value;
-      if (meta.status !== "lobby") return NOT_IN_LOBBY;
-      const rest = removeSeat(seats, me.seatId);
       this.closeSeat(me.seatId, CLOSE.SESSION_ENDED, "sessionEnded");
-      if (rest.length === 0) await this.destroy(meta.code);
-      else await this.commit(meta, rest);
+      if (meta.status === "lobby") {
+        const rest = removeSeat(seats, me.seatId);
+        if (rest.length === 0) await this.destroy(meta.code);
+        else await this.commit(meta, rest);
+        return ok(null);
+      }
+      if (markLeft(seats, me.seatId)) await this.destroy(meta.code);
+      else await this.play.resave(meta, seats);
       return ok(null);
+    });
+  }
+
+  /** `GET …/invite` (K2.1): any seated player reads the room's invite key. */
+  invite(token: string): Promise<OpResult<InviteRes>> {
+    return this.serial(async () => {
+      const a = await this.auth(token);
+      if (!a.ok) return a;
+      return ok({ inviteKey: a.value.meta.inviteKey });
+    });
+  }
+
+  /** `POST …/invite/reset` (K2.1, host): a new key; the old one stops working at once. */
+  resetInvite(token: string): Promise<OpResult<InviteRes>> {
+    return this.serial(async () => {
+      const a = await this.host(token);
+      if (!a.ok) return a;
+      const { meta } = a.value;
+      meta.inviteKey = newInviteKey();
+      await this.store.putMetaQuiet(meta);
+      return ok({ inviteKey: meta.inviteKey });
     });
   }
 
@@ -263,6 +289,8 @@ export class GameRoom extends DurableObject<Env> {
       if (input.listed !== undefined) meta.listed = input.listed;
       if (input.password !== undefined) {
         meta.pwd = await hashPassword(input.password, iterationsFromEnv(this.env));
+        // K2.1: changing the password also rotates the invite link.
+        meta.inviteKey = newInviteKey();
         meta.failedJoins = 0;
         meta.joinLockedUntil = null;
       }
@@ -285,7 +313,7 @@ export class GameRoom extends DurableObject<Env> {
       ordered.forEach((s, i) => {
         s.seatIndex = i;
       });
-      const dice = await this.startDice(diceOverride);
+      const dice = await startDice(this.env, this.ctx.storage, diceOverride);
       const res = createGame(
         ordered.map((s) => ({ id: playerId(s.seatIndex as number), displayName: s.name })),
         { dice: dice.dice },
@@ -300,7 +328,8 @@ export class GameRoom extends DurableObject<Env> {
 
   /**
    * Closes unauthenticated sockets older than 10 s, deletes the room once idle
-   * 7 d or finished 24 h; otherwise re-arms.
+   * 7 d, finished 24 h, or with no authenticated socket for 30 min (K2.2);
+   * otherwise re-arms.
    */
   override async alarm(): Promise<void> {
     await this.serial(async () => {
@@ -311,8 +340,9 @@ export class GameRoom extends DurableObject<Env> {
         if (authDeadline !== null) await this.store.setAlarm(authDeadline);
         return;
       }
-      if (this.now() >= expiresAt(meta)) await this.destroy(meta.code);
-      else await this.store.setAlarm(this.alarmAt(meta));
+      const seats = await this.store.getSeats();
+      if (this.now() >= this.deleteAt(meta, seats)) await this.destroy(meta.code);
+      else await this.store.setAlarm(this.alarmAt(meta, seats));
     });
   }
 
@@ -321,31 +351,37 @@ export class GameRoom extends DurableObject<Env> {
     return this.serial(async () => {
       if (!hooksEnabled(this.env)) return fail(404, "E_INVALID_COMMAND", "not found");
       if (!(await this.store.getMeta())) return fail(404, "E_INVALID_COMMAND", "not found");
-      if (input.kind === "dice") {
-        const queued = (await this.ctx.storage.get<number[]>(DICE_KEY)) ?? [];
-        await this.ctx.storage.put(DICE_KEY, [...queued, ...input.faces].slice(-500));
-      } else {
-        this.clockOffsetMs += input.advanceMs;
-        await this.ctx.storage.put(CLOCK_KEY, this.clockOffsetMs);
-      }
+      this.clockOffsetMs = await applyTestHook(this.ctx.storage, input, this.clockOffsetMs);
       return ok(null);
     });
   }
 
   /* ---------------- internals ---------------- */
 
-  /** Scripted faces for `start`, only when test hooks are enabled. */
-  private async startDice(diceOverride?: number[]): Promise<RoomDice> {
-    if (hooksEnabled(this.env) && diceOverride && diceOverride.every(isFace)) {
-      return { dice: new QueuedDice([...diceOverride]), save: async () => {} };
-    }
-    return loadDice(this.env, this.ctx.storage);
+  /** Room expiry: TTLs, plus the 30-min abandoned deadline while no seat is connected. */
+  private deleteAt(meta: RoomMeta, seats: SeatRecord[]): number {
+    const ttl = expiresAt(meta);
+    return hasAuthedSocket(this.ctx.getWebSockets())
+      ? ttl
+      : Math.min(ttl, abandonedAt(meta, seats));
   }
 
   /** Earliest of the room expiry and the next unauthenticated-socket deadline. */
-  private alarmAt(meta: RoomMeta | undefined): number {
+  private alarmAt(meta: RoomMeta | undefined, seats: SeatRecord[]): number {
     const sweep = this.play.sweepUnauthed() ?? Number.POSITIVE_INFINITY;
-    return Math.min(meta ? expiresAt(meta) : this.now() + 60_000, sweep);
+    return Math.min(meta ? this.deleteAt(meta, seats) : this.now() + 60_000, sweep);
+  }
+
+  private async rearm(): Promise<void> {
+    const meta = await this.store.getMeta();
+    await this.store.setAlarm(this.alarmAt(meta, meta ? await this.store.getSeats() : []));
+  }
+
+  /** Presence update, then re-arm: the last socket closing starts the 30-min clock. */
+  private async socketGone(ws: WebSocket): Promise<void> {
+    await this.play.close(ws);
+    // A deleted room stays deleted (its sockets close after `destroy`).
+    if (await this.store.getMeta()) await this.rearm();
   }
 
   private serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -354,42 +390,17 @@ export class GameRoom extends DurableObject<Env> {
     return run;
   }
 
-  /**
-   * C4 order: no meta / lockout / wrong password → null (caller sends 401).
-   * Wrong passwords count toward the lockout; success resets it.
-   */
-  private async checkCredentials(password: string): Promise<RoomMeta | null> {
-    const meta = await this.store.getMeta();
-    const now = this.now();
-    const locked = meta?.joinLockedUntil != null && now < meta.joinLockedUntil;
-    if (!meta || locked) {
-      // Same PBKDF2 cost as a real check, so failures are indistinguishable by timing.
-      const iterations = meta?.pwd.iterations ?? iterationsFromEnv(this.env);
-      await verifyPassword(password, { saltB64: DUMMY_SALT_B64, hashB64: "", iterations });
-      return null;
-    }
-    if (!(await verifyPassword(password, meta.pwd))) {
-      meta.failedJoins += 1;
-      if (meta.failedJoins >= LOCKOUT_FAILED_ATTEMPTS) {
-        meta.joinLockedUntil = now + LOCKOUT_MS;
-        meta.failedJoins = 0;
-        // Clients drop views whose version is not strictly higher, so bump it for this event
-        // (lastActivityAt untouched: a lockout is not activity).
-        meta.version += 1;
-        await this.store.putMetaQuiet(meta);
+  private checkCredentials(cred: Credential): Promise<RoomMeta | null> {
+    return checkCredentials(
+      {
+        store: this.store,
+        now: () => this.now(),
+        iterations: () => iterationsFromEnv(this.env),
         // Lock state is visible to the host (C7): tell them.
-        await this.broadcast(meta, await this.store.getSeats());
-      } else {
-        await this.store.putMetaQuiet(meta);
-      }
-      return null;
-    }
-    if (meta.failedJoins !== 0 || meta.joinLockedUntil !== null) {
-      meta.failedJoins = 0;
-      meta.joinLockedUntil = null;
-      await this.store.putMetaQuiet(meta);
-    }
-    return meta;
+        onLocked: async (meta) => this.broadcast(meta, await this.store.getSeats()),
+      },
+      cred,
+    );
   }
 
   private async auth(token: string): Promise<OpResult<Authed>> {
@@ -409,30 +420,11 @@ export class GameRoom extends DurableObject<Env> {
     return a;
   }
 
-  private async newSeat(
-    name: string,
-    joinOrder: number,
-    host: boolean,
-    token: string,
-    now: number,
-  ): Promise<SeatRecord> {
-    return {
-      seatId: newSeatId(),
-      name,
-      joinOrder,
-      host,
-      seatIndex: null,
-      tokenHash: await hashToken(token),
-      away: false,
-      lastSeenAt: now,
-    };
-  }
-
   /** Persist an accepted change, re-arm the alarm, sync the lobby, broadcast. */
   private async commit(meta: RoomMeta, seats?: SeatRecord[], state?: string): Promise<void> {
     await this.store.commit(meta, this.now(), seats, state);
-    await this.store.setAlarm(this.alarmAt(meta));
     const all = seats ?? (await this.store.getSeats());
+    await this.store.setAlarm(this.alarmAt(meta, all));
     await this.syncLobby(meta, all);
     await this.broadcast(meta, all, state);
   }
@@ -453,8 +445,7 @@ export class GameRoom extends DurableObject<Env> {
 
   /** Ends the room: sockets closed with 4004, lobby entry removed, storage wiped. */
   private async destroy(code: string): Promise<void> {
-    for (const ws of this.ctx.getWebSockets())
-      this.closeSocket(ws, CLOSE.SESSION_ENDED, "sessionEnded");
+    for (const ws of this.ctx.getWebSockets()) endSocket(ws, CLOSE.SESSION_ENDED, "sessionEnded");
     this.lastSynced = undefined;
     try {
       await this.lobby().remove(code);
@@ -466,16 +457,7 @@ export class GameRoom extends DurableObject<Env> {
 
   private closeSeat(seatId: string, code: number, type: "kicked" | "sessionEnded"): void {
     for (const ws of this.ctx.getWebSockets()) {
-      if (seatIdOf(ws) === seatId) this.closeSocket(ws, code, type);
+      if (seatIdOf(ws) === seatId) endSocket(ws, code, type);
     }
-  }
-
-  private closeSocket(ws: WebSocket, code: number, type: "kicked" | "sessionEnded"): void {
-    try {
-      ws.send(JSON.stringify({ type }));
-    } catch {
-      // already closed
-    }
-    closeWith(ws, code, type);
   }
 }

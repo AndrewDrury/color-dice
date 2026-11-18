@@ -10,7 +10,12 @@ import {
   TokenSchema,
 } from "./common";
 import { ErrorCodeSchema } from "./errors";
-import { PLAYER_NAME_MAX, ROOM_NAME_MAX } from "./limits";
+import { INVITE_KEY_LENGTH, PLAYER_NAME_MAX, ROOM_NAME_MAX } from "./limits";
+
+/** Invite key (K2.1): base64url, 43 chars. Travels only in the URL fragment and request bodies. */
+export const InviteKeySchema = z
+  .string()
+  .regex(new RegExp(`^[A-Za-z0-9_-]{${INVITE_KEY_LENGTH}}$`), "invalid invite");
 
 /* ---------- Request bodies (validated by the server) ---------- */
 
@@ -26,16 +31,26 @@ export const CreateGameReqSchema = z
   .strict();
 export type CreateGameReq = z.input<typeof CreateGameReqSchema>;
 
+/** Exactly one of `password` or `invite` (K2.1); both or neither → 400. */
+function credentialBody() {
+  return z
+    .object({
+      name: PlayerNameSchema,
+      password: PasswordSchema.optional(),
+      invite: InviteKeySchema.optional(),
+    })
+    .strict()
+    .refine((b) => (b.password === undefined) !== (b.invite === undefined), {
+      message: "exactly one of password or invite",
+    });
+}
+
 /** `POST /api/games/:code/join` */
-export const JoinReqSchema = z
-  .object({ name: PlayerNameSchema, password: PasswordSchema })
-  .strict();
+export const JoinReqSchema = credentialBody();
 export type JoinReq = z.input<typeof JoinReqSchema>;
 
 /** `POST /api/games/:code/reclaim` */
-export const ReclaimReqSchema = z
-  .object({ name: PlayerNameSchema, password: PasswordSchema })
-  .strict();
+export const ReclaimReqSchema = credentialBody();
 export type ReclaimReq = z.input<typeof ReclaimReqSchema>;
 
 /** `PATCH /api/games/:code` — at least one field. */
@@ -63,6 +78,21 @@ export const AuthResSchema = z
   .strict();
 export type AuthRes = z.infer<typeof AuthResSchema>;
 
+/** `POST /api/games` (201): the auth result plus the room's invite key (K2.1). */
+export const CreateGameResSchema = z
+  .object({
+    code: GameCodeSchema,
+    token: TokenSchema,
+    seatId: SeatIdSchema,
+    inviteKey: InviteKeySchema,
+  })
+  .strict();
+export type CreateGameRes = z.infer<typeof CreateGameResSchema>;
+
+/** `GET /api/games/:code/invite` and `POST /api/games/:code/invite/reset` (K2.1). */
+export const InviteResSchema = z.object({ inviteKey: InviteKeySchema }).strict();
+export type InviteRes = z.infer<typeof InviteResSchema>;
+
 /** `GET /api/games/:code/me` */
 export const MeResSchema = z
   .object({
@@ -74,12 +104,11 @@ export const MeResSchema = z
   .strict();
 export type MeRes = z.infer<typeof MeResSchema>;
 
-/** Public lobby entry. These fields only (C2). */
+/** Public lobby entry. These fields only (C2); no player names (K2.3). */
 export const PublicGameSchema = z
   .object({
     code: GameCodeSchema,
     roomName: z.string().max(ROOM_NAME_MAX),
-    hostName: z.string().max(PLAYER_NAME_MAX),
     players: z.number().int().min(0),
     maxPlayers: MaxPlayersSchema,
     createdAt: z.number().int().min(0),

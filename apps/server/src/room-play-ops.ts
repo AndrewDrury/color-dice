@@ -91,9 +91,14 @@ export function closeWith(ws: WebSocket, code: number, reason: string): void {
   }
 }
 
+/** Tells the socket why (`kicked` / `sessionEnded`), then closes it with `code`. */
+export function endSocket(ws: WebSocket, code: number, type: "kicked" | "sessionEnded"): void {
+  send(ws, { type });
+  closeWith(ws, code, type);
+}
+
 function endSession(ws: WebSocket): void {
-  send(ws, { type: "sessionEnded" });
-  closeWith(ws, CLOSE.SESSION_ENDED, "sessionEnded");
+  endSocket(ws, CLOSE.SESSION_ENDED, "sessionEnded");
 }
 
 type PlayMsg = Extract<ClientMessage, { type: "roll" | "action1" | "action2" | "turn" }>;
@@ -368,12 +373,18 @@ export class RoomPlay {
     } else if (!l.me.host && l.me.seatId !== seat.seatId) {
       return sendError(ws, "E_NOT_HOST", "setAway");
     }
+    if (seat.left) return sendError(ws, "E_INVALID_COMMAND", "setAway", "seat left");
     if (seat.away === away) return;
     seat.away = away;
+    await this.resave(l.meta, l.seats);
+  }
+
+  /** Commits a seat change; during play away seats are auto-passed first (K2.2 leave, D3). */
+  async resave(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
     const state = await this.loadState();
-    if (!state) return this.d.commit(l.meta, l.seats);
+    if (!state) return this.d.commit(meta, seats);
     const dice = await loadDice(this.d.env(), this.d.storage);
-    await this.save(l.meta, l.seats, state, dice);
+    await this.save(meta, seats, state, dice);
   }
 
   /** Host only, at GAME_OVER: a new game with the same seats and seat indexes. */

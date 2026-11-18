@@ -3,7 +3,13 @@
  * Web Crypto only — no dependencies.
  */
 
-import { PBKDF2_ITERATIONS, PBKDF2_SALT_BYTES, SEAT_ID_LENGTH, TOKEN_BYTES } from "@cd/protocol";
+import {
+  INVITE_KEY_BYTES,
+  PBKDF2_ITERATIONS,
+  PBKDF2_SALT_BYTES,
+  SEAT_ID_LENGTH,
+  TOKEN_BYTES,
+} from "@cd/protocol";
 
 const SALT_BYTES = PBKDF2_SALT_BYTES;
 const HASH_BITS = 256;
@@ -82,6 +88,24 @@ export async function verifyPassword(pw: string, stored: StoredPassword): Promis
 /** Session token: 32 random bytes, base64url, no padding (43 chars). */
 export function newToken(): string {
   return toBase64Url(randomBytes(TOKEN_BYTES));
+}
+
+/** Invite key (K2.1): 32 random bytes, base64url, no padding (43 chars). */
+export function newInviteKey(): string {
+  return toBase64Url(randomBytes(INVITE_KEY_BYTES));
+}
+
+async function sha256(s: string): Promise<Uint8Array> {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(s)));
+}
+
+/**
+ * Constant-time invite check: both sides are hashed to 32-byte SHA-256 digests
+ * first, so the compare is equal-length and leaks neither length nor prefix.
+ */
+export async function inviteKeyEquals(given: string, stored: string): Promise<boolean> {
+  const [a, b] = await Promise.all([sha256(given), sha256(stored)]);
+  return crypto.subtle.timingSafeEqual(a, b) && stored.length > 0;
 }
 
 /** SHA-256 of the token as lower-case hex. Only this is stored. */
