@@ -32,11 +32,11 @@ describe("health and routing", () => {
     expect(await res.json()).toEqual({ code: "E_NOT_IMPLEMENTED" });
   });
 
-  it("routes GET /api/games to the stub Lobby (501) with CORS for allowed origin", async () => {
+  it("routes GET /api/games to the Lobby (200, empty list) with CORS for allowed origin", async () => {
     const res = await call("/api/games", { headers: { origin: GOOD } });
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBe(GOOD);
-    await res.body?.cancel();
+    expect(await res.json()).toEqual([]);
   });
 });
 
