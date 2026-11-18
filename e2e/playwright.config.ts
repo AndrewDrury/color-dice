@@ -12,6 +12,7 @@ const { defaultBrowserType: _ignored, ...iphone } = devices["iPhone 13"];
 export default defineConfig({
   testDir: ".",
   testMatch: "**/*.spec.ts",
+  testIgnore: "**/prod-smoke.spec.ts",
   outputDir: "test-results",
   reporter: "list",
   workers: 1,
