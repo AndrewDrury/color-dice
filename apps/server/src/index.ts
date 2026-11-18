@@ -2,6 +2,7 @@ import type { Env } from "./env";
 import { error } from "./http";
 import { checkOrigin, parseAllowedOrigins, withCors } from "./origin";
 import { createGameHandler, gameApiHandler, matchRoute } from "./router";
+import { gameSocketHandler, testHookHandler } from "./router-game";
 
 export { GameRoom } from "./game-room";
 export { Lobby } from "./lobby";
@@ -10,6 +11,8 @@ export { RateLimiter } from "./rate-limiter";
 const LOBBY_NAME = "main";
 
 async function route(req: Request, env: Env): Promise<Response> {
+  const hook = await testHookHandler(req, env);
+  if (hook) return hook;
   const url = new URL(req.url);
   const match = matchRoute(req.method, url.pathname);
   if (!match) return error("E_NOT_FOUND", 404);
@@ -24,7 +27,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     case "game":
       return gameApiHandler(req, env, match);
     case "gameSocket":
-      return env.GAME_ROOM.get(env.GAME_ROOM.idFromName(match.code)).fetch(req);
+      return gameSocketHandler(req, env, match.code);
   }
 }
 

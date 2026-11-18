@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { CryptoDice, createGame, type DiceSource, ScriptedDice, toJSON } from "@cd/engine";
+import { createGame, fromJSON, isFace, toJSON } from "@cd/engine";
 import {
   type AuthRes,
   CLOSE,
@@ -21,6 +21,7 @@ import {
 } from "./crypto";
 import type { Env } from "./env";
 import { error } from "./http";
+import { isWebSocketUpgrade } from "./origin";
 import {
   BAD_CREDENTIALS,
   expiresAt,
@@ -39,7 +40,18 @@ import {
   removeSeat,
   seatIdOf,
 } from "./room-lobby-ops";
+import { closeWith, RoomPlay } from "./room-play-ops";
 import { type RoomMeta, RoomStore, type SeatRecord } from "./room-store";
+import {
+  CLOCK_KEY,
+  DICE_KEY,
+  hooksEnabled,
+  loadDice,
+  QueuedDice,
+  type RoomDice,
+  type TestHookInput,
+} from "./test-hooks";
+import { broadcastViews } from "./views";
 
 export interface InitInput {
   code: string;
@@ -63,21 +75,38 @@ type Authed = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
 
 /**
  * One instance per game code. The Worker calls the public async methods via RPC
- * (rooms, passwords, sessions, start); gameplay sockets arrive in T11.
+ * (rooms, passwords, sessions, start); gameplay runs over hibernating sockets
+ * (`fetch` upgrade → RoomPlay), serialized with the RPC operations.
  */
 export class GameRoom extends DurableObject<Env> {
   private readonly store: RoomStore;
   /** Serializes operations: PBKDF2 awaits are not storage ops, so input gates don't cover them. */
   private queue: Promise<unknown> = Promise.resolve();
+  private readonly play: RoomPlay;
+  /** Test-hook clock offset (always 0 unless ALLOW_TEST_HOOKS === "1"). */
+  private clockOffsetMs = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.store = new RoomStore(ctx.storage);
+    this.play = new RoomPlay({
+      env: () => this.env,
+      storage: ctx.storage,
+      store: this.store,
+      sockets: () => this.ctx.getWebSockets(),
+      now: () => this.now(),
+      commit: (meta, seats, state) => this.commit(meta, seats, state),
+    });
+    if (hooksEnabled(env)) {
+      void ctx.blockConcurrencyWhile(async () => {
+        this.clockOffsetMs = (await ctx.storage.get<number>(CLOCK_KEY)) ?? 0;
+      });
+    }
   }
 
-  /** Test seam: the clock. */
+  /** Test seam: the clock (offset only via the test hook). */
   protected now(): number {
-    return Date.now();
+    return Date.now() + this.clockOffsetMs;
   }
 
   /** Test seam: the lobby. */
@@ -85,12 +114,35 @@ export class GameRoom extends DurableObject<Env> {
     return this.env.LOBBY.get(this.env.LOBBY.idFromName(LOBBY_NAME));
   }
 
-  /** Hook for T11: send per-seat views to sockets. No-op for now. */
-  protected broadcast(): void {}
+  /** Sends every authenticated socket the view for its own seat. */
+  protected async broadcast(meta: RoomMeta, seats: SeatRecord[], state?: string): Promise<void> {
+    const raw = state ?? (await this.store.getState());
+    broadcastViews(this.ctx.getWebSockets(), meta, seats, raw === undefined ? null : fromJSON(raw));
+  }
 
-  override async fetch(_request: Request): Promise<Response> {
-    // Game sockets are implemented in T11.
-    return error("E_NOT_IMPLEMENTED", 501);
+  /** `GET /ws/game/:code` (Origin and rate limit checked by the Worker). */
+  override async fetch(request: Request): Promise<Response> {
+    if (!isWebSocketUpgrade(request)) return error("E_NOT_FOUND", 404);
+    const { 0: client, 1: server } = new WebSocketPair();
+    this.ctx.acceptWebSocket(server);
+    this.play.open(server);
+    await this.serial(async () => {
+      const meta = await this.store.getMeta();
+      await this.store.setAlarm(this.alarmAt(meta));
+    });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    await this.serial(() => this.play.message(ws, message));
+  }
+
+  override async webSocketClose(ws: WebSocket): Promise<void> {
+    await this.serial(() => this.play.close(ws));
+  }
+
+  override async webSocketError(ws: WebSocket): Promise<void> {
+    await this.serial(() => this.play.close(ws));
   }
 
   /* ---------------- RPC ---------------- */
@@ -214,7 +266,7 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
 
-  /** Host only, lobby only, 2..max seats. `diceOverride` is for tests (T11 hooks). */
+  /** Host only, lobby only, 2..max seats. `diceOverride` is honoured only with test hooks. */
   start(token: string, diceOverride?: number[]): Promise<OpResult<null>> {
     return this.serial(async () => {
       const a = await this.host(token);
@@ -228,33 +280,68 @@ export class GameRoom extends DurableObject<Env> {
       ordered.forEach((s, i) => {
         s.seatIndex = i;
       });
-      const dice: DiceSource = diceOverride ? new ScriptedDice(diceOverride) : new CryptoDice();
+      const dice = await this.startDice(diceOverride);
       const res = createGame(
         ordered.map((s) => ({ id: playerId(s.seatIndex as number), displayName: s.name })),
-        { dice },
+        { dice: dice.dice },
       );
       if (!res.ok) return fail(422, res.error.code);
       meta.status = "playing";
+      await dice.save();
       await this.commit(meta, ordered, toJSON(res.state));
       return ok(null);
     });
   }
 
-  /** Deletes the room once idle 7 d or finished 24 h; otherwise re-arms. */
+  /**
+   * Closes unauthenticated sockets older than 10 s, deletes the room once idle
+   * 7 d or finished 24 h; otherwise re-arms.
+   */
   override async alarm(): Promise<void> {
     await this.serial(async () => {
       const meta = await this.store.getMeta();
+      const authDeadline = this.play.sweepUnauthed();
       if (!meta) {
         await this.store.destroy();
+        if (authDeadline !== null) await this.store.setAlarm(authDeadline);
         return;
       }
-      const at = expiresAt(meta);
-      if (this.now() >= at) await this.destroy(meta.code);
-      else await this.store.setAlarm(at);
+      if (this.now() >= expiresAt(meta)) await this.destroy(meta.code);
+      else await this.store.setAlarm(this.alarmAt(meta));
+    });
+  }
+
+  /** Test hooks: queue scripted dice faces or advance the clock. 404 unless enabled. */
+  testHook(input: TestHookInput): Promise<OpResult<null>> {
+    return this.serial(async () => {
+      if (!hooksEnabled(this.env)) return fail(404, "E_INVALID_COMMAND", "not found");
+      if (!(await this.store.getMeta())) return fail(404, "E_INVALID_COMMAND", "not found");
+      if (input.kind === "dice") {
+        const queued = (await this.ctx.storage.get<number[]>(DICE_KEY)) ?? [];
+        await this.ctx.storage.put(DICE_KEY, [...queued, ...input.faces].slice(-500));
+      } else {
+        this.clockOffsetMs += input.advanceMs;
+        await this.ctx.storage.put(CLOCK_KEY, this.clockOffsetMs);
+      }
+      return ok(null);
     });
   }
 
   /* ---------------- internals ---------------- */
+
+  /** Scripted faces for `start`, only when test hooks are enabled. */
+  private async startDice(diceOverride?: number[]): Promise<RoomDice> {
+    if (hooksEnabled(this.env) && diceOverride && diceOverride.every(isFace)) {
+      return { dice: new QueuedDice([...diceOverride]), save: async () => {} };
+    }
+    return loadDice(this.env, this.ctx.storage);
+  }
+
+  /** Earliest of the room expiry and the next unauthenticated-socket deadline. */
+  private alarmAt(meta: RoomMeta | undefined): number {
+    const sweep = this.play.sweepUnauthed() ?? Number.POSITIVE_INFINITY;
+    return Math.min(meta ? expiresAt(meta) : this.now() + 60_000, sweep);
+  }
 
   private serial<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn);
@@ -335,9 +422,10 @@ export class GameRoom extends DurableObject<Env> {
   /** Persist an accepted change, re-arm the alarm, sync the lobby, broadcast. */
   private async commit(meta: RoomMeta, seats?: SeatRecord[], state?: string): Promise<void> {
     await this.store.commit(meta, this.now(), seats, state);
-    await this.store.setAlarm(expiresAt(meta));
-    await this.syncLobby(meta, seats ?? (await this.store.getSeats()));
-    this.broadcast();
+    await this.store.setAlarm(this.alarmAt(meta));
+    const all = seats ?? (await this.store.getSeats());
+    await this.syncLobby(meta, all);
+    await this.broadcast(meta, all, state);
   }
 
   private async syncLobby(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
@@ -372,9 +460,9 @@ export class GameRoom extends DurableObject<Env> {
   private closeSocket(ws: WebSocket, code: number, type: "kicked" | "sessionEnded"): void {
     try {
       ws.send(JSON.stringify({ type }));
-      ws.close(code, type);
     } catch {
       // already closed
     }
+    closeWith(ws, code, type);
   }
 }
