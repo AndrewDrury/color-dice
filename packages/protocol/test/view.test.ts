@@ -1,4 +1,4 @@
-import type { GameEvent } from "@cd/engine";
+import { CryptoDice, createGame, type GameEvent, viewFor } from "@cd/engine";
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 import { type ViewMessage, ViewMessageSchema } from "../src";
@@ -89,5 +89,39 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(badRow).success).toBe(false);
     const badEvent = { ...fixture, game: { ...g, events: [{ type: "NOPE" }] } };
     expect(ViewMessageSchema.safeParse(badEvent).success).toBe(false);
+  });
+});
+
+describe("ViewMessage built from the engine's viewFor", () => {
+  it("parses a wrapped engine view", () => {
+    const created = createGame(
+      [
+        { id: "seat-0", displayName: "A" },
+        { id: "seat-1", displayName: "B" },
+      ],
+      { dice: new CryptoDice() },
+    );
+    if (!created.ok) throw new Error("createGame failed");
+    const state = created.state;
+    const ev = viewFor(state, 0);
+    const seatIds = ["a1b2c3d4", "e5f6g7h8"];
+    const msg = {
+      type: "view",
+      version: 1,
+      code: "K7QF2",
+      room: { name: "Room", listed: true, maxPlayers: 4, status: "playing", joinLockedUntil: null },
+      seats: [
+        { seatId: "a1b2c3d4", name: "A", host: true, online: true, away: false },
+        { seatId: "e5f6g7h8", name: "B", host: false, online: true, away: false },
+      ],
+      game: {
+        ...ev.game,
+        players: ev.game.players.map((p) => ({ ...p, seatId: seatIds[p.seat] })),
+      },
+      you: { seatId: "a1b2c3d4", host: true, ...ev.you },
+    };
+    const r = ViewMessageSchema.safeParse(msg);
+    expect(r.error?.issues).toBeUndefined();
+    expect(r.success).toBe(true);
   });
 });

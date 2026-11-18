@@ -14,6 +14,9 @@ export const PROTOCOL_ERROR_CODES = [
   "E_NOT_AUTHED",
   "E_SEAT_ONLINE",
   "E_TOO_SOON",
+  "E_NOT_FOUND",
+  "E_FORBIDDEN_ORIGIN",
+  "E_NOT_IMPLEMENTED",
 ] as const;
 
 export type ErrorCode = (typeof ENGINE_ERROR_CODES)[number] | (typeof PROTOCOL_ERROR_CODES)[number];

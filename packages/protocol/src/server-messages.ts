@@ -20,8 +20,8 @@ import {
   SeatIdSchema,
 } from "./common";
 import { type ErrorCode, ErrorCodeSchema } from "./errors";
-import type { PublicGame } from "./http";
-import { PLAYER_NAME_MAX, ROOM_NAME_MAX, VIEW_EVENTS } from "./limits";
+import { type PublicGame, PublicGameSchema } from "./http";
+import { PLAYER_NAME_MAX, PUBLIC_LIST_MAX, ROOM_NAME_MAX, VIEW_EVENTS } from "./limits";
 
 /* ---------- The per-player view (C7) ---------- */
 
@@ -280,4 +280,11 @@ export const ErrorMessageSchema = z
       .enum(["auth", "roll", "action1", "action2", "setAway", "rematch", "ping"])
       .nullable(),
   })
+  .strict();
+
+export const KickedMessageSchema = z.object({ type: z.literal("kicked") }).strict();
+export const SessionEndedMessageSchema = z.object({ type: z.literal("sessionEnded") }).strict();
+export const PongMessageSchema = z.object({ type: z.literal("pong") }).strict();
+export const LobbyMessageSchema = z
+  .object({ type: z.literal("games"), games: z.array(PublicGameSchema).max(PUBLIC_LIST_MAX) })
   .strict();

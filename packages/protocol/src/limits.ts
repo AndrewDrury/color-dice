@@ -1,3 +1,5 @@
+import { VIEW_EVENT_COUNT } from "@cd/engine";
+
 /**
  * Every fixed number from `.plan/ref/defaults.md` ("Limits and numbers") plus the
  * game-code alphabet and WebSocket close codes. Server and client both import these.
@@ -45,7 +47,8 @@ export const FINISHED_ROOM_TTL_MS = 24 * 60 * 60_000;
 export const AWAY_AFTER_OFFLINE_MS = 2 * 60_000;
 export const AUTOPASS_LOOP_GUARD = 20;
 
-export const VIEW_EVENTS = 30;
+/** Single source: the engine decides how many events a view carries. */
+export const VIEW_EVENTS = VIEW_EVENT_COUNT;
 
 export const HEARTBEAT_MS = 25_000;
 
