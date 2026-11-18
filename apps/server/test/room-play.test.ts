@@ -208,22 +208,35 @@ describe("commands", () => {
     hooks(false);
     expect(dice.status).toBe(204);
     const [c0, c1, c2, c3, c4] = r.clients as [Client, Client, Client, Client, Client];
+    const all = [c0, c1, c2, c3, c4];
     const t = turnOf(c0.view() as ViewMessage);
     c0.send({ type: "roll", turn: t });
     await c0.until(() => c0.view()?.game?.phase === "ACTION_1");
     const mark = { type: "action1", turn: t, kind: "MARK", color: "RED" };
-    // Seat 4 marks; the others pass. Frames are only inspected before the 5th decision.
+    // Seat 4 marks, seats 0-2 pass; seat 3 submits last (the 5th decision reveals).
     c4.send(mark);
     await c4.until(() => c4.view()?.you.action1Decision);
-    const cut = [c0, c1, c2, c3].map((c) => c.raw.length);
     for (const c of [c0, c1, c2]) c.send({ type: "action1", turn: t, kind: "PASS" });
-    await c0.until(() => c0.view()?.game?.players.filter((p) => p.action1Submitted).length === 4);
+    for (const c of all)
+      await c.until(() => c.view()?.game?.players.filter((p) => p.action1Submitted).length === 4);
     // 4 decisions in: still ACTION_1 everywhere, 4 flagged submitted.
-    for (const c of [c0, c1, c2, c3, c4]) expect(c.view()?.game?.phase).toBe("ACTION_1");
-    const ownerless = [c0, c1, c2, c3].map((c, i) => c.raw.slice(cut[i]).join("\n"));
-    for (const s of ownerless) expect(s).not.toMatch(/"action1Decision":\{"kind":"MARK"/);
-    const before = [c0, c1, c2, c3].map((c) => c.raw.join("\n"));
-    for (const s of before) expect(s).not.toMatch(/"action1Decision":\{"kind":"MARK"/);
+    for (const c of all) expect(c.view()?.game?.phase).toBe("ACTION_1");
+    const cut = all.map((c) => c.frames.length);
+    // Every frame each socket received so far (all frames before the last submit).
+    for (const [i, c] of all.entries()) {
+      for (const f of c.frames.slice(0, cut[i])) {
+        expect(JSON.stringify(f)).not.toContain("ACTION1_REVEALED");
+        if (f.type !== "view") continue;
+        const d = (f as unknown as ViewMessage).you.action1Decision;
+        // Seat 4 sees only its own MARK; seats 0-2 only their own PASS; seat 3 has not submitted.
+        if (i === 4) expect(d === null || d.kind === "MARK").toBe(true);
+        else if (i === 3) expect(d).toBeNull();
+        else expect(d === null || d.kind === "PASS").toBe(true);
+      }
+    }
+    // The owner's MARK never appears as a decision in any non-owner frame.
+    for (const c of [c0, c1, c2, c3])
+      expect(c.raw.join("\n")).not.toMatch(/"action1Decision":\{"kind":"MARK"/);
     // Each seat only ever saw its own decision (seats 0-2 passed; none saw a MARK).
     c3.send({ type: "action1", turn: t, kind: "PASS" });
     await c0.until(() => c0.view()?.game?.phase === "ACTION_2");

@@ -1,13 +1,16 @@
 // Public-repo hygiene scan. Fails (exit 1) on secrets, private info, forbidden files, AI attribution.
 //   node scripts/secret-scan.mjs             scan tracked (and untracked, non-ignored) files
 //   node scripts/secret-scan.mjs --history   also scan every blob of every commit + commit metadata
+//   node scripts/secret-scan.mjs --dist     also scan the built client (apps/client/dist) if it exists;
+//                                            run after `npm run build` (not part of `npm run check`)
 // Matches are always masked (first 4 chars only); a secret is never printed in full.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const HISTORY = process.argv.includes("--history");
+const DIST = process.argv.includes("--dist");
 const SELF = /^scripts\/secret-scan(\.test)?\.mjs$/;
 
 const git = (args, opts = {}) =>
@@ -120,6 +123,25 @@ for (const path of new Set(files)) {
   }
   if (!isBinary(buf) && !/(^|\/)package-lock\.json$/.test(path))
     scanText(path, path, buf.toString("utf8"));
+}
+
+// ---- built client (--dist) ----
+if (DIST) {
+  const dist = `${ROOT}apps/client/dist`;
+  if (!existsSync(dist))
+    console.log("secret-scan: apps/client/dist not found; skipping --dist (run npm run build)");
+  else {
+    const walk = (dir) =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`],
+      );
+    for (const abs of walk(dist)) {
+      const rel = abs.slice(ROOT.length);
+      scanPath(rel, rel);
+      const buf = readFileSync(abs);
+      if (!isBinary(buf)) scanText(rel, rel, buf.toString("utf8"));
+    }
+  }
 }
 
 // ---- history ----
