@@ -190,7 +190,7 @@ export function highlightFor(
 export function decidedMarks(view: ViewMessage): Mark[] {
   const out: Mark[] = [];
   const g = view.game;
-  if (!g || g.phase !== "ACTION_1") return out;
+  if (g?.phase !== "ACTION_1") return out;
   const a1 = view.you.action1Decision;
   if (a1?.kind === "MARK" && g.roll) out.push({ color: a1.color, number: g.roll.whiteSum });
   const a2 = view.you.pendingAction2;

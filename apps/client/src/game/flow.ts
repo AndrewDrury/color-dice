@@ -34,7 +34,7 @@ export function rollOffEvent(view: ViewMessage): FirstChosen | null {
     if (e.type === "FIRST_PLAYER_CHOSEN") i = k;
   });
   const e = ev[i];
-  if (!e || e.type !== "FIRST_PLAYER_CHOSEN" || e.method !== "ROLL_OFF" || e.rounds.length === 0) {
+  if (e?.type !== "FIRST_PLAYER_CHOSEN" || e.method !== "ROLL_OFF" || e.rounds.length === 0) {
     return null;
   }
   return ev.slice(i).some((x) => x.type === "DICE_ROLLED") ? null : e;

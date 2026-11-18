@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { t, useT } from "../i18n";
+import { useInviteLink } from "../invite";
 
 /** How long the "Link copied" confirmation stays up. */
 export const COPIED_MS = 2000;
 
 export interface CopyButtonProps {
-  /** The invite link. Only the link is shared or copied (never a password). */
-  url: string;
+  /** The invite link (null while it loads: the button is disabled). It never holds a password. */
+  url: string | null;
   /** Title for the native share sheet. */
   title: string;
   label?: string;
@@ -21,9 +22,21 @@ function isAbort(err: unknown): boolean {
   );
 }
 
+/** Touch devices (phones, tablets) get the native share sheet; desktops copy. */
+function prefersShare(): boolean {
+  try {
+    return (
+      typeof navigator.share === "function" &&
+      !!globalThis.matchMedia?.("(pointer: coarse)").matches
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Invite button: the native share sheet when available (iPhone), otherwise copy the link
- * to the clipboard and show a "Link copied" check. If both fail, the link is shown as text.
+ * Invite button: one click copies the link and shows a "Copied!" check. On touch devices the
+ * native share sheet is used first, with copy as the fallback. If both fail, the link is shown.
  */
 export function CopyButton({ url, title, label }: CopyButtonProps) {
   useT();
@@ -54,6 +67,7 @@ export function CopyButton({ url, title, label }: CopyButtonProps) {
   }, [outcome]);
 
   const copy = async (): Promise<boolean> => {
+    if (url === null) return false;
     try {
       if (!navigator.clipboard?.writeText) return false;
       await navigator.clipboard.writeText(url);
@@ -64,7 +78,8 @@ export function CopyButton({ url, title, label }: CopyButtonProps) {
   };
 
   const onClick = async () => {
-    if (typeof navigator.share === "function") {
+    if (url === null) return;
+    if (prefersShare()) {
       try {
         await navigator.share({ title, url });
         return;
@@ -86,7 +101,7 @@ export function CopyButton({ url, title, label }: CopyButtonProps) {
 
   return (
     <div class="stack" style={{ gap: "var(--s1)", alignItems: "flex-start" }}>
-      <button type="button" class="btn" onClick={onClick}>
+      <button type="button" class="btn" disabled={url === null} onClick={onClick}>
         {outcome === "copied" ? (
           <span>
             <span ref={checkRef} aria-hidden="true" style={{ display: "inline-block" }}>
@@ -103,9 +118,15 @@ export function CopyButton({ url, title, label }: CopyButtonProps) {
       </span>
       {outcome === "failed" ? (
         <p class="muted" style={{ fontSize: "var(--fs-small)", overflowWrap: "anywhere" }}>
-          {t("waiting.copyThis", { url })}
+          {t("waiting.copyThis", { url: url ?? "" })}
         </p>
       ) : null}
     </div>
   );
+}
+
+/** "Copy invite link" for a room: loads the room's invite key and builds the fragment link. */
+export function InviteButton({ code, token }: { code: string; token: string }) {
+  const url = useInviteLink(code, token);
+  return <CopyButton url={url} title={t("waiting.shareTitle")} />;
 }

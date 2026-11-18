@@ -92,7 +92,6 @@ export const common: Record<keyof typeof en, string> = {
   "field.password": "Las contraseñas tienen de 4 a 64 caracteres.",
   "field.roomName": "Los nombres de sala tienen de {min} a {max} caracteres.",
   "field.maxPlayers": "Elige de 2 a 5 jugadores.",
-  "field.remember": "Recordar en este dispositivo",
   "field.password.label": "Contraseña",
   "field.password.show": "Mostrar contraseña",
   "field.password.hide": "Ocultar contraseña",

@@ -71,7 +71,8 @@ function seatsDiffer(a: ViewMessage["seats"], b: ViewMessage["seats"]): boolean 
       x.name !== y.name ||
       x.host !== y.host ||
       x.online !== y.online ||
-      x.away !== y.away
+      x.away !== y.away ||
+      x.left !== y.left
     );
   });
 }

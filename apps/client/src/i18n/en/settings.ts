@@ -34,6 +34,9 @@ export const settings = {
   "settings.savedNone": "Nothing saved on this device.",
   "settings.savedClear": "Clear saved info",
   "settings.savedCleared": "Saved info cleared.",
+  "settings.hints": "Hints",
+  "settings.hintsShow": "Show hints again",
+  "settings.hintsOn": "Hints are back on.",
 
   "chat.says": "{name} says: {text}",
   "chat.reacted": "{name} reacted {emoji}",

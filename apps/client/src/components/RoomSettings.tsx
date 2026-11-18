@@ -2,6 +2,7 @@ import { type PatchRoomReq, PatchRoomReqSchema, ROOM_NAME_MAX, ROOM_NAME_MIN } f
 import { useEffect, useRef, useState } from "preact/hooks";
 import { patchRoom } from "../api";
 import { t, useT } from "../i18n";
+import { dropInvite, resetInviteKey } from "../invite";
 import { Button } from "./Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "./Field";
 import { PasswordField } from "./PasswordField";
@@ -28,6 +29,7 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [resetNote, setResetNote] = useState<string | null>(null);
   const alive = useRef(true);
 
   useEffect(() => {
@@ -64,8 +66,25 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
     try {
       await patchRoom(code, token, parsed.data);
       if (!alive.current) return;
+      // A new password rotates the invite key on the server: fetch the fresh link.
+      if (parsed.data.password !== undefined) dropInvite(code);
       setPassword("");
       setSaved(true);
+    } catch (err) {
+      if (alive.current) setFormError(requestErrorText(err));
+    } finally {
+      if (alive.current) setBusy(false);
+    }
+  };
+
+  const resetLink = async () => {
+    if (busy) return;
+    setFormError(null);
+    setResetNote(null);
+    setBusy(true);
+    try {
+      await resetInviteKey(code, token);
+      if (alive.current) setResetNote(t("room.inviteReset"));
     } catch (err) {
       if (alive.current) setFormError(requestErrorText(err));
     } finally {
@@ -118,6 +137,19 @@ export function RoomSettings({ code, token, roomName, listed }: RoomSettingsProp
           {t("room.save")}
         </Button>
       </form>
+      <div class="stack" style={{ marginTop: "var(--s3)" }}>
+        <Button busy={busy} onClick={resetLink}>
+          {t("room.resetInvite")}
+        </Button>
+        <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
+          {t("room.resetInviteHint")}
+        </p>
+        {resetNote ? (
+          <p role="status" class="muted">
+            {resetNote}
+          </p>
+        ) : null}
+      </div>
     </details>
   );
 }

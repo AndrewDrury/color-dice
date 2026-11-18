@@ -3,13 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { ApiError, joinGame } from "../api";
 import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
-import {
-  Field,
-  FieldError,
-  issuesByField,
-  RememberToggle,
-  requestErrorText,
-} from "../components/Field";
+import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
 import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
@@ -36,7 +30,6 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
   const [name, setName] = useState(rememberedName);
   // Only for a room this device already holds a seat in; never for an unknown room.
   const [password, setPassword] = useState(() => getRoomPassword(code));
-  const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -95,15 +88,12 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         name: parsed.data.name,
         roomName: roomName ?? "",
       });
-      rememberSubmit(
-        {
-          code: res.code,
-          name: parsed.data.name,
-          ...(roomName ? { roomName } : {}),
-          password: parsed.data.password ?? password,
-        },
-        remember,
-      );
+      rememberSubmit({
+        code: res.code,
+        name: parsed.data.name,
+        ...(roomName ? { roomName } : {}),
+        password: parsed.data.password ?? password,
+      });
       navigate("waiting", res.code);
     } catch (err) {
       if (!alive.current) return;
@@ -144,7 +134,6 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
           error={errors.password}
           autocomplete="off"
         />
-        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
           {t("common.join")}

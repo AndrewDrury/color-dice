@@ -35,6 +35,7 @@ const fixture: ViewMessage = {
       host: true,
       online: true,
       away: false,
+      left: false,
       record: { wins: 0, ties: 0, losses: 0 },
     },
     {
@@ -43,6 +44,7 @@ const fixture: ViewMessage = {
       host: false,
       online: false,
       away: true,
+      left: false,
       record: { wins: 2, ties: 1, losses: 1 },
     },
   ],
@@ -95,7 +97,11 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(lobby).success).toBe(true);
   });
 
-  it("seat `left` is an optional boolean", () => {
+  it("seat `left` and `you.pendingAction2` are required", () => {
+    const noLeft = { ...fixture, seats: fixture.seats.map(({ left: _l, ...s }) => s) };
+    expect(ViewMessageSchema.safeParse(noLeft).success).toBe(false);
+    const { pendingAction2: _p, ...youNoPending } = fixture.you;
+    expect(ViewMessageSchema.safeParse({ ...fixture, you: youNoPending }).success).toBe(false);
     const withLeft = { ...fixture, seats: fixture.seats.map((s) => ({ ...s, left: true })) };
     expect(ViewMessageSchema.safeParse(withLeft).success).toBe(true);
     const bad = { ...fixture, seats: fixture.seats.map((s) => ({ ...s, left: "yes" })) };
@@ -180,6 +186,7 @@ describe("ViewMessage built from the engine's viewFor", () => {
           host: true,
           online: true,
           away: false,
+          left: false,
           record: { wins: 0, ties: 0, losses: 0 },
         },
         {
@@ -188,6 +195,7 @@ describe("ViewMessage built from the engine's viewFor", () => {
           host: false,
           online: true,
           away: false,
+          left: false,
           record: { wins: 0, ties: 0, losses: 0 },
         },
       ],

@@ -79,13 +79,9 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
         .toBe(0);
     }
 
-    // Host leaves the table (Home -> confirm); the unlisted room then expires by alarm.
-    await h.getByRole("button", { name: /Home/ }).click();
-    await h
-      .getByRole("dialog")
-      .getByRole("button", { name: "Leave" })
-      .click({ timeout: 5_000 })
-      .catch(() => {});
+    // Host goes back to Home from the game menu; the unlisted room then expires by alarm.
+    await h.getByRole("button", { name: /Menu/ }).click();
+    await h.getByRole("dialog").getByRole("button", { name: "Back to home" }).click();
     await expect(h.getByRole("button", { name: "Create game" }).first()).toBeVisible();
   } catch (e) {
     console.log(frames.slice(-25).join("\n"));

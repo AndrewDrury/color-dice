@@ -205,6 +205,27 @@ function SavedInfoSection() {
   );
 }
 
+/** K4.6: bring the coaching hints back after "Don't show hints" / "Got it". */
+function HintsSection() {
+  useT();
+  const [note, setNote] = useState<string | null>(null);
+  return (
+    <section class="stack" aria-label={t("settings.hints")}>
+      <button
+        type="button"
+        class="btn"
+        onClick={() => {
+          setPrefs({ hintsOff: false, seenHints: [] });
+          setNote(t("settings.hintsOn"));
+        }}
+      >
+        {t("settings.hintsShow")}
+      </button>
+      {note ? <p role="status">{note}</p> : null}
+    </section>
+  );
+}
+
 export function Settings({
   onClose,
   onPanel,
@@ -256,6 +277,7 @@ export function Settings({
         />
       </div>
       <RecordSection />
+      <HintsSection />
       <SavedInfoSection />
       <button type="button" class="btn" onClick={() => onPanel("help")}>
         {t("settings.help")}

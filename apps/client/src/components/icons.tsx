@@ -42,10 +42,11 @@ export const LockIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Settings cog: toothed outer ring plus a centre hole. */
 export const GearIcon = (p: IconProps) => (
   <Svg {...p}>
+    <path d="M10.0 5.1 L10.3 2.2 L13.7 2.2 L14.0 5.1 L15.5 5.7 L17.7 3.8 L20.2 6.3 L18.3 8.5 L18.9 10.0 L21.8 10.3 L21.8 13.7 L18.9 14.0 L18.3 15.5 L20.2 17.7 L17.7 20.2 L15.5 18.3 L14.0 18.9 L13.7 21.8 L10.3 21.8 L10.0 18.9 L8.5 18.3 L6.3 20.2 L3.8 17.7 L5.7 15.5 L5.1 14.0 L2.2 13.7 L2.2 10.3 L5.1 10.0 L5.7 8.5 L3.8 6.3 L6.3 3.8 L8.5 5.7z" />
     <circle cx="12" cy="12" r="3" />
-    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
   </Svg>
 );
 

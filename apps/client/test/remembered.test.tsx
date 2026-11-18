@@ -33,6 +33,7 @@ vi.mock("../src/api", async (orig) => {
 const api = await import("../src/api");
 
 const CODE = "ABCDE";
+const INVITE = "A".repeat(43);
 const sess = { token: TOKEN, seatId: SEAT, name: "Cleo", roomName: "Lunch" };
 
 function stored(): Record<string, unknown> | null {
@@ -63,7 +64,13 @@ afterEach(cleanup);
 describe("remembered store", () => {
   it("ignores corrupt, non-string and oversized storage", () => {
     localStorage.setItem(REMEMBERED_KEY, "{not json");
-    expect(getRemembered()).toEqual({ name: "", roomName: "", password: "", rooms: [] });
+    expect(getRemembered()).toEqual({
+      name: "",
+      roomName: "",
+      password: "",
+      maxPlayers: 4,
+      rooms: [],
+    });
     _resetRememberedForTests();
     localStorage.setItem(
       REMEMBERED_KEY,
@@ -88,7 +95,7 @@ describe("remembered store", () => {
     );
     for (const c of codes) {
       saveSession(c, sess);
-      rememberSubmit({ code: c, name: "Cleo", password: "secret" }, true);
+      rememberSubmit({ code: c, name: "Cleo", password: "secret" });
     }
     const rooms = getRemembered().rooms.map((r) => r.code);
     expect(rooms).toHaveLength(MAX_ROOM_PASSWORDS);
@@ -97,7 +104,7 @@ describe("remembered store", () => {
 
   it("drops a room password once the session is forgotten", () => {
     saveSession(CODE, sess);
-    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" }, true);
+    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" });
     expect(getRoomPassword(CODE)).toBe("secret");
     localStorage.removeItem("colorDice:sessions");
     _resetMemoryForTests();
@@ -124,7 +131,12 @@ describe("CreateGame", () => {
   });
 
   it("stores after success; the next form is pre-filled", async () => {
-    vi.mocked(api.createGame).mockResolvedValue({ code: CODE, token: TOKEN, seatId: SEAT });
+    vi.mocked(api.createGame).mockResolvedValue({
+      code: CODE,
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey: INVITE,
+    });
     render(<CreateGame />);
     type("Room name", "Lunch");
     type("Your name", "Cleo");
@@ -136,20 +148,60 @@ describe("CreateGame", () => {
     expect(input("Password").value).toBe("secret");
   });
 
-  it("checkbox off stores nothing and removes old values", async () => {
-    localStorage.setItem(
-      REMEMBERED_KEY,
-      JSON.stringify({ name: "Old", roomName: "Old room", password: "oldpw", rooms: [] }),
-    );
-    vi.mocked(api.createGame).mockResolvedValue({ code: CODE, token: TOKEN, seatId: SEAT });
+  it("remembers without any checkbox (always on)", async () => {
+    vi.mocked(api.createGame).mockResolvedValue({
+      code: CODE,
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey: INVITE,
+    });
     render(<CreateGame />);
-    fireEvent.click(screen.getByLabelText("Remember on this device"));
+    expect(screen.queryByLabelText("Remember on this device")).toBeNull();
     type("Room name", "Lunch");
     type("Your name", "Cleo");
     type("Password", "secret");
     await click("Create game");
+    expect(stored()).toMatchObject({ name: "Cleo", roomName: "Lunch", password: "secret" });
+  });
+
+  it("pre-selects the last player count after a create", async () => {
+    vi.mocked(api.createGame).mockResolvedValue({
+      code: CODE,
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey: INVITE,
+    });
+    render(<CreateGame />);
+    expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText("2"));
+    type("Room name", "Lunch");
+    type("Your name", "Cleo");
+    type("Password", "secret");
+    await click("Create game");
+    expect(stored()).toMatchObject({ maxPlayers: 2 });
+    cleanup();
+    render(<CreateGame />);
+    expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
+  });
+
+  it.each([9, 1, 2.5, "x", "3", null])(
+    "an invalid stored player count (%s) falls back to 4",
+    (bad) => {
+      localStorage.setItem(REMEMBERED_KEY, JSON.stringify({ name: "Cleo", maxPlayers: bad }));
+      expect(getRemembered().maxPlayers).toBe(4);
+      render(<CreateGame />);
+      expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
+    },
+  );
+
+  it("Clear saved info also resets the player count", () => {
+    saveSession(CODE, sess);
+    rememberSubmit({ code: CODE, name: "Cleo", password: "secret", maxPlayers: 5 });
+    expect(getRemembered().maxPlayers).toBe(5);
+    render(<Settings onClose={() => {}} onPanel={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear saved info" }));
+    expect(getRemembered().maxPlayers).toBe(4);
     expect(stored()).toBeNull();
-    expect(localStorage.getItem("colorDice:prefs") ?? "").not.toContain("Cleo");
   });
 
   it("failed create stores nothing", async () => {
@@ -166,7 +218,7 @@ describe("CreateGame", () => {
 describe("JoinDialog", () => {
   it("pre-fills the room password only for a room this device has used", () => {
     saveSession(CODE, sess);
-    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" }, true);
+    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" });
     const { unmount } = render(<JoinDialog code={CODE} games={null} onClose={() => {}} />);
     expect(input("Your name").value).toBe("Cleo");
     expect(input("Password").value).toBe("secret");
@@ -198,7 +250,7 @@ describe("JoinDialog", () => {
 describe("Reclaim", () => {
   it("pre-fills name and the room password", () => {
     saveSession(CODE, sess);
-    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" }, true);
+    rememberSubmit({ code: CODE, name: "Cleo", password: "secret" });
     render(<Reclaim code={CODE} />);
     expect(input("Your name").value).toBe("Cleo");
     expect(input("Password").value).toBe("secret");
@@ -208,7 +260,7 @@ describe("Reclaim", () => {
 describe("Settings saved info", () => {
   it("shows no password and Clear saved info wipes everything", () => {
     saveSession(CODE, sess);
-    rememberSubmit({ code: CODE, name: "Cleo", roomName: "Lunch", password: "hunter22" }, true);
+    rememberSubmit({ code: CODE, name: "Cleo", roomName: "Lunch", password: "hunter22" });
     render(<Settings onClose={() => {}} onPanel={() => {}} />);
     expect(screen.getByText("Room password: saved")).toBeTruthy();
     expect(document.body.textContent).not.toContain("hunter22");

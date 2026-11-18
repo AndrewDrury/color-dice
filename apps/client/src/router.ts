@@ -1,8 +1,9 @@
 import { GameCodeSchema } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
+import { isInviteHash, parseInviteHash } from "./invite";
 import { getSession } from "./session";
 
-export type Screen = "home" | "create" | "join" | "reclaim" | "waiting" | "game";
+export type Screen = "home" | "create" | "join" | "invite" | "reclaim" | "waiting" | "game";
 
 export interface Route {
   screen: Screen;
@@ -11,7 +12,7 @@ export interface Route {
 }
 
 const GAME_PARAM = "game";
-const NEEDS_CODE: ReadonlySet<Screen> = new Set(["join", "reclaim", "waiting", "game"]);
+const NEEDS_CODE: ReadonlySet<Screen> = new Set(["join", "invite", "reclaim", "waiting", "game"]);
 
 /** Read and validate `?game=CODE` (case-insensitive input, canonical upper case). */
 export function readGameCode(search: string): string | null {
@@ -21,8 +22,20 @@ export function readGameCode(search: string): string | null {
   return GameCodeSchema.safeParse(code).success ? code : null;
 }
 
-/** The first screen for a URL: a saved seat resumes, a bare code goes to Join. */
-export function initialRoute(search: string): Route {
+/**
+ * The invite key from `#/join/<CODE>/<key>`, held in memory only until the tab leaves the
+ * invite screen. Never stored, logged or put back in the URL (K2.1).
+ */
+let pendingInvite: { code: string; key: string } | null = null;
+
+export function getPendingInvite(code: string): string | null {
+  return pendingInvite?.code === code ? pendingInvite.key : null;
+}
+
+/** The first screen for a URL: an invite link, a saved seat resumes, a bare code goes to Join. */
+export function initialRoute(search: string, hash = ""): Route {
+  const inv = parseInviteHash(hash);
+  if (inv) return { screen: getSession(inv.code) ? "waiting" : "invite", code: inv.code };
   const code = readGameCode(search);
   if (code === null) return { screen: "home", code: null };
   return { screen: getSession(code) ? "waiting" : "join", code };
@@ -47,6 +60,18 @@ function syncUrl(code: string | null): void {
   }
 }
 
+/** Drop the fragment (the invite key) from the address bar and history at once. */
+function stripFragment(): void {
+  try {
+    const url = new URL(globalThis.location.href);
+    if (url.hash === "") return;
+    url.hash = "";
+    globalThis.history.replaceState(null, "", url);
+  } catch {
+    // No location/history (tests, sandboxed frames).
+  }
+}
+
 /** Re-apply `?game=` for the current route (after history moved under us). */
 export function resyncUrl(): void {
   syncUrl(route.code);
@@ -62,13 +87,37 @@ export function navigate(screen: Screen, code: string | null = null): void {
   } else {
     route = { screen, code: nextCode };
   }
+  if (route.screen !== "invite") pendingInvite = null;
   syncUrl(route.code);
   for (const cb of listeners) cb(route);
 }
 
+/** Take an invite link out of the fragment: keep the key in memory, strip the URL, pick a screen. */
+function consumeFragment(hash: string): Route | null {
+  if (!isInviteHash(hash)) return null;
+  const inv = parseInviteHash(hash);
+  stripFragment();
+  if (!inv) return { screen: "home", code: null };
+  const r = initialRoute("", hash);
+  pendingInvite = r.screen === "invite" ? inv : null;
+  return r;
+}
+
+let hashListening = false;
+
 export function startRouter(): Route {
-  route = initialRoute(globalThis.location?.search ?? "");
+  const loc = globalThis.location;
+  const fromHash = consumeFragment(loc?.hash ?? "");
+  route = fromHash ?? initialRoute(loc?.search ?? "");
   syncUrl(route.code);
+  if (!hashListening && typeof globalThis.addEventListener === "function") {
+    hashListening = true;
+    // An invite link opened in a tab that is already running the app.
+    globalThis.addEventListener("hashchange", () => {
+      const r = consumeFragment(globalThis.location.hash);
+      if (r) navigate(r.screen, r.code);
+    });
+  }
   return route;
 }
 

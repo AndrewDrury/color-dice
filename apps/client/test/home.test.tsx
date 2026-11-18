@@ -53,6 +53,7 @@ vi.mock("../src/api", async (orig) => {
 
 const api = await import("../src/api");
 
+const INVITE = "A".repeat(43);
 const XSS = "<img src=x onerror=alert(1)>";
 
 function game(code: string, roomName: string, extra: Partial<PublicGame> = {}): PublicGame {
@@ -144,8 +145,22 @@ describe("CreateGame", () => {
     expect(api.createGame).not.toHaveBeenCalled();
   });
 
+  it("a game card shows the room, count and age but no player name", () => {
+    render(<Home route={{ screen: "home", code: null }} />);
+    // Even if a (buggy or old) server sent a name, the card must not render it.
+    emit([game("ABCDE", "Friday dice", { hostName: "Ana" } as Partial<PublicGame>)]);
+    const card = screen.getByText("Friday dice").closest("li") as HTMLElement;
+    expect(card.textContent).not.toContain("Ana");
+    expect(card.textContent).not.toMatch(/host/i);
+  });
+
   it("submits cleaned values, saves the session and goes to the waiting room", async () => {
-    vi.mocked(api.createGame).mockResolvedValue({ code: CODE, token: TOKEN, seatId: SEAT });
+    vi.mocked(api.createGame).mockResolvedValue({
+      code: CODE,
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey: INVITE,
+    });
     render(<CreateGame />);
     fireEvent.input(screen.getByLabelText("Room name"), {
       target: { value: "  Friday ​  dice " },

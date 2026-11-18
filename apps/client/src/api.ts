@@ -2,9 +2,12 @@ import {
   type AuthRes,
   AuthResSchema,
   type CreateGameReq,
+  type CreateGameRes,
   CreateGameResSchema,
   ErrorBodySchema,
   GameCodeSchema,
+  type InviteRes,
+  InviteResSchema,
   type JoinReq,
   type KickReq,
   type MeRes,
@@ -119,8 +122,8 @@ export async function listGames(): Promise<PublicGame[]> {
   return json(await request("/api/games"), GamesSchema);
 }
 
-/** `POST /api/games` (the response also carries `inviteKey`, K2.1; typed as AuthRes until T-UX-15). */
-export async function createGame(body: CreateGameReq): Promise<AuthRes> {
+/** `POST /api/games` (the response also carries `inviteKey`, K2.1). */
+export async function createGame(body: CreateGameReq): Promise<CreateGameRes> {
   return json(await request("/api/games", { method: "POST", body }), CreateGameResSchema);
 }
 
@@ -144,7 +147,7 @@ export async function startGame(code: string, token: string): Promise<void> {
   await request(gamePath(code, "/start"), { method: "POST", token });
 }
 
-/** `POST /api/games/:code/leave` (lobby only) */
+/** `POST /api/games/:code/leave` (lobby: frees the seat; in play: the seat is marked left) */
 export async function leaveGame(code: string, token: string): Promise<void> {
   await request(gamePath(code, "/leave"), { method: "POST", token });
 }
@@ -157,4 +160,17 @@ export async function kickSeat(code: string, token: string, body: KickReq): Prom
 /** `PATCH /api/games/:code` (host, lobby only) */
 export async function patchRoom(code: string, token: string, body: PatchRoomReq): Promise<void> {
   await request(gamePath(code), { method: "PATCH", token, body });
+}
+
+/** `GET /api/games/:code/invite` (any seated player). The key is a secret: never store or log it. */
+export async function getInvite(code: string, token: string): Promise<InviteRes> {
+  return json(await request(gamePath(code, "/invite"), { token }), InviteResSchema);
+}
+
+/** `POST /api/games/:code/invite/reset` (host): the old key stops working at once. */
+export async function resetInvite(code: string, token: string): Promise<InviteRes> {
+  return json(
+    await request(gamePath(code, "/invite/reset"), { method: "POST", token }),
+    InviteResSchema,
+  );
 }

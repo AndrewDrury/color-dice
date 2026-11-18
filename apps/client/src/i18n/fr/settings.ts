@@ -36,6 +36,9 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.savedNone": "Rien d'enregistré sur cet appareil.",
   "settings.savedClear": "Effacer les infos enregistrées",
   "settings.savedCleared": "Infos effacées.",
+  "settings.hints": "Astuces",
+  "settings.hintsShow": "Réafficher les astuces",
+  "settings.hintsOn": "Les astuces sont de retour.",
 
   "chat.says": "{name} dit : {text}",
   "chat.reacted": "{name} a réagi {emoji}",

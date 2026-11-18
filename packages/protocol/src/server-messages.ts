@@ -42,8 +42,8 @@ export interface ViewSeat {
   host: boolean;
   online: boolean;
   away: boolean;
-  /** The seat left the game for good (K2.2). The server always sends it. */
-  left?: boolean;
+  /** The seat left the game for good (K2.2). */
+  left: boolean;
   /** Wins/ties/losses in this room across rematches. Public. */
   record: { wins: number; ties: number; losses: number };
 }
@@ -101,9 +101,9 @@ export interface ViewYou {
   action1Decision: Action1Decision | null;
   /**
    * Your own early Action 2 (active player, ACTION_1 only, K1.2); never another
-   * seat's. The server always sends it; optional only for older fixtures.
+   * seat's.
    */
-  pendingAction2?: Action2Decision | null;
+  pendingAction2: Action2Decision | null;
   legalAction1: Action1Decision[];
   /**
    * ACTION_2: the active player's options. ACTION_1: the active player's early
@@ -290,7 +290,7 @@ export const ViewMessageSchema = z
             host: z.boolean(),
             online: z.boolean(),
             away: z.boolean(),
-            left: z.boolean().optional(),
+            left: z.boolean(),
             record: z.object({ wins: NonNegInt, ties: NonNegInt, losses: NonNegInt }).strict(),
           })
           .strict(),
@@ -303,7 +303,7 @@ export const ViewMessageSchema = z
         host: z.boolean(),
         seat: NonNegInt.nullable(),
         action1Decision: Action1DecisionSchema.nullable(),
-        pendingAction2: Action2DecisionSchema.nullable().optional(),
+        pendingAction2: Action2DecisionSchema.nullable(),
         legalAction1: z.array(Action1DecisionSchema),
         legalAction2: z.array(LegalAction2Schema),
         canRoll: z.boolean(),

@@ -1,4 +1,4 @@
-import type { ViewMessage } from "@cd/protocol";
+import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LockPopup } from "../src/components/LockPopup";
@@ -213,7 +213,7 @@ describe("opponent penalties in words (K4.7)", () => {
       });
       const v = view({ gamePlayers: [player(0), p, player(2)] });
       const { container, unmount } = render(
-        <OpponentChip view={v} player={v.game!.players[1]!} flash={false} />,
+        <OpponentChip view={v} player={v.game?.players[1] as ViewPlayer} flash={false} />,
       );
       expect((container.querySelector(".g-chip-pen")?.textContent ?? "").trim()).toBe(text);
       const aria = container.querySelector(".g-chip")?.getAttribute("aria-label") ?? "";

@@ -16,7 +16,6 @@ export const home: Record<keyof typeof en, string> = {
   "home.looking": "Recherche de parties ouvertes…",
   "home.noGames": "Aucune partie ouverte pour l'instant. Crées-en une !",
   "home.openGamesAria": "Parties ouvertes",
-  "home.host": "hôte : {name}",
   "home.playersSr": "joueurs",
   "home.joinAria": "Rejoindre {room}",
   "home.passwordProtected": "Protégée par mot de passe",

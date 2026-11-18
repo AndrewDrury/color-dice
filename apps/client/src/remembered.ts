@@ -1,9 +1,16 @@
 /**
  * Form fields remembered on this device (T-UX-6): player name, room name, last room password and
- * per-room passwords. One localStorage key, sanitized on read. The values are low-stakes shared
+ * per-room passwords and the last player count (K0.17). One localStorage key, sanitized on read. The values are low-stakes shared
  * secrets (see Q-009) but are never logged, displayed or put in a URL.
  */
-import { GameCodeSchema, PASSWORD_MAX, PLAYER_NAME_MAX, ROOM_NAME_MAX } from "@cd/protocol";
+import {
+  GameCodeSchema,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  PASSWORD_MAX,
+  PLAYER_NAME_MAX,
+  ROOM_NAME_MAX,
+} from "@cd/protocol";
 import { getPrefs, setPrefs } from "./prefs";
 import { listSessions } from "./session";
 
@@ -16,10 +23,15 @@ export interface RoomPassword {
   password: string;
 }
 
+/** Player count pre-selected on Create Game when nothing valid is stored. */
+export const DEFAULT_MAX_PLAYERS = 4;
+
 export interface Remembered {
   name: string;
   roomName: string;
   password: string;
+  /** Last chosen max players on Create Game; always a valid count. */
+  maxPlayers: number;
   /** Oldest first; the last entry is the most recent. */
   rooms: RoomPassword[];
 }
@@ -28,6 +40,7 @@ const EMPTY: Readonly<Remembered> = Object.freeze({
   name: "",
   roomName: "",
   password: "",
+  maxPlayers: DEFAULT_MAX_PLAYERS,
   rooms: [],
 });
 
@@ -45,6 +58,12 @@ function str(v: unknown, max: number): string {
   return typeof v === "string" ? v.slice(0, max) : "";
 }
 
+function validMaxPlayers(v: unknown): number {
+  return typeof v === "number" && Number.isInteger(v) && v >= MIN_PLAYERS && v <= MAX_PLAYERS
+    ? v
+    : DEFAULT_MAX_PLAYERS;
+}
+
 /** Storage content is not trusted: strings only, capped to the protocol limits. */
 export function sanitizeRemembered(data: unknown): Remembered {
   const out: Remembered = { ...EMPTY, rooms: [] };
@@ -53,6 +72,7 @@ export function sanitizeRemembered(data: unknown): Remembered {
   out.name = str(d.name, PLAYER_NAME_MAX);
   out.roomName = str(d.roomName, ROOM_NAME_MAX);
   out.password = str(d.password, PASSWORD_MAX);
+  out.maxPlayers = validMaxPlayers(d.maxPlayers);
   if (Array.isArray(d.rooms)) {
     const byCode = new Map<string, string>();
     for (const r of d.rooms) {
@@ -92,7 +112,12 @@ function save(r: Remembered): void {
   const ls = storage();
   if (!ls) return;
   try {
-    const empty = !r.name && !r.roomName && !r.password && r.rooms.length === 0;
+    const empty =
+      !r.name &&
+      !r.roomName &&
+      !r.password &&
+      r.rooms.length === 0 &&
+      r.maxPlayers === DEFAULT_MAX_PLAYERS;
     if (empty) ls.removeItem(REMEMBERED_KEY);
     else ls.setItem(REMEMBERED_KEY, JSON.stringify(r));
   } catch {
@@ -129,34 +154,26 @@ export interface RememberInput {
   name: string;
   /** Left unchanged when empty/unknown (e.g. joining before the lobby list arrived). */
   roomName?: string;
-  password: string;
+  /** Left unchanged when omitted (joining with an invite link never sees the password). */
+  password?: string;
+  /** Last chosen player count (Create Game only). */
+  maxPlayers?: number;
 }
 
 /**
- * Call only after a successful create/join/reclaim, and after the session is saved.
- * `remember` false stores nothing and deletes previously stored values for these fields.
+ * Call after a successful create/join/reclaim, and after the session is saved. Always remembers
+ * (K0.9): there is no opt-out checkbox; "Clear saved info" in Settings wipes it.
  */
-export function rememberSubmit(input: RememberInput, remember: boolean): void {
-  if (!remember) {
-    const r = load();
-    save({
-      ...r,
-      name: "",
-      roomName: input.roomName === undefined ? r.roomName : "",
-      password: "",
-      rooms: r.rooms.filter((x) => x.code !== input.code),
-    });
-    setPrefs({ lastName: "" });
-    return;
-  }
+export function rememberSubmit(input: RememberInput): void {
   const r = pruned(load());
-  const rooms = r.rooms.filter((x) => x.code !== input.code);
-  rooms.push({ code: input.code, password: input.password });
+  let rooms = r.rooms.filter((x) => x.code !== input.code);
+  if (input.password) rooms = [...rooms, { code: input.code, password: input.password }];
   save(
     sanitizeRemembered({
       name: input.name,
       roomName: input.roomName ? input.roomName : r.roomName,
-      password: input.password,
+      password: input.password ?? r.password,
+      maxPlayers: input.maxPlayers ?? r.maxPlayers,
       rooms,
     }),
   );

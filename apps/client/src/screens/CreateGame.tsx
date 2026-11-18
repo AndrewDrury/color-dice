@@ -9,15 +9,10 @@ import {
 import { useEffect, useRef, useState } from "preact/hooks";
 import { createGame } from "../api";
 import { Button } from "../components/Button";
-import {
-  Field,
-  FieldError,
-  issuesByField,
-  RememberToggle,
-  requestErrorText,
-} from "../components/Field";
+import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
 import { t, useT } from "../i18n";
+import { primeInvite } from "../invite";
 import { getRemembered, rememberedName, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
@@ -50,8 +45,7 @@ export function CreateGame() {
   const [roomName, setRoomName] = useState(initial.roomName);
   const [name, setName] = useState(rememberedName);
   const [password, setPassword] = useState(initial.password);
-  const [remember, setRemember] = useState(true);
-  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [maxPlayers, setMaxPlayers] = useState(initial.maxPlayers);
   const [listed, setListed] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -84,15 +78,14 @@ export function CreateGame() {
         name: parsed.data.name,
         roomName: parsed.data.roomName,
       });
-      rememberSubmit(
-        {
-          code: res.code,
-          name: parsed.data.name,
-          roomName: parsed.data.roomName,
-          password: parsed.data.password,
-        },
-        remember,
-      );
+      rememberSubmit({
+        code: res.code,
+        name: parsed.data.name,
+        roomName: parsed.data.roomName,
+        password: parsed.data.password,
+        maxPlayers: parsed.data.maxPlayers,
+      });
+      primeInvite(res.code, res.inviteKey);
       // navigate() writes ?game=CODE with history.replaceState.
       navigate("waiting", res.code);
     } catch (err) {
@@ -177,7 +170,6 @@ export function CreateGame() {
           />
           <span>{t("create.listed")}</span>
         </label>
-        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           {t("create.title")}

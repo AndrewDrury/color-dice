@@ -6,10 +6,10 @@ export const waiting: Record<keyof typeof en, string> = {
   "waiting.inviteAria": "Invitation",
   "waiting.gameCode": "Code de partie",
   "waiting.shareTitle": "Rejoins ma partie de Color Dice",
-  "waiting.invite": "Inviter",
-  "waiting.linkCopied": "Lien copié",
+  "waiting.invite": "Copier le lien d'invitation",
+  "waiting.linkCopied": "Copié !",
+  "waiting.inviteNote": "Toute personne avec ce lien peut rejoindre. Pas de mot de passe.",
   "waiting.copyThis": "Copie ce lien : {url}",
-  "waiting.passwordNote": "Transmets le mot de passe en privé : il n'est pas dans le lien.",
   "waiting.locked":
     "Quelqu'un a essayé 10 mauvais mots de passe. Les arrivées sont suspendues jusqu'à {time}.",
   "waiting.players": "Joueurs",
@@ -38,9 +38,17 @@ export const waiting: Record<keyof typeof en, string> = {
   "room.saved": "Enregistré.",
   "room.save": "Enregistrer",
   "room.nothing": "Rien à modifier.",
+  "room.resetInvite": "Réinitialiser le lien d'invitation",
+  "room.resetInviteHint": "L'ancien lien cesse de fonctionner aussitôt.",
+  "room.inviteReset": "Nouveau lien prêt. L'ancien ne marche plus.",
 
   "toast.kicked": "Tu as été retiré de la partie",
   "toast.ended": "Ta session est terminée",
+  "toast.left": "Tu as quitté la partie.",
+  "toast.gameEnded": "Cette partie est terminée.",
+  "invite.title": "Rejoindre la partie",
+  "invite.intro": "Tu as été invité. Écris ton nom pour t'asseoir.",
+  "invite.invalid": "Le lien n'est pas valide ou a expiré.",
   "toast.sessionEnded":
     "Ta session est terminée (tu as peut-être rejoint depuis un autre appareil).",
 };

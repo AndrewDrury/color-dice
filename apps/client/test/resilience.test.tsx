@@ -5,6 +5,7 @@ import { App } from "../src/App";
 import { feedback } from "../src/fx/feedback";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
+import { getRoomPassword, rememberSubmit } from "../src/remembered";
 import { navigate } from "../src/router";
 import { _resetMemoryForTests, getSession, saveSession } from "../src/session";
 import { _resetStoreForTests, getState } from "../src/store";
@@ -131,15 +132,37 @@ describe("reconnect", () => {
 });
 
 describe("session end", () => {
-  it("4004 forgets the session, goes home and toasts", () => {
+  it("4004 forgets the session, goes home and toasts", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
     connect(makeGameView());
     act(() => sock().drop(4004));
     expect(getSession(CODE)).toBeNull();
     expect(window.location.hash).not.toContain(CODE);
-    expect(getState().toast?.text).toBe(
-      "Your session ended (maybe you joined from another device).",
+    await vi.waitFor(() =>
+      expect(getState().toast?.text).toBe(
+        "Your session ended (maybe you joined from another device).",
+      ),
     );
     expect(screen.getByText(/maybe you joined from another device/)).toBeTruthy();
+  });
+
+  it("4004 for a deleted room (404) drops the saved password and says the game ended", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ code: "E_NOT_FOUND" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    rememberSubmit({ code: CODE, name: "Ana", password: "secret" });
+    expect(getRoomPassword(CODE)).toBe("secret");
+    connect(makeGameView());
+    act(() => sock().drop(4004));
+    expect(getSession(CODE)).toBeNull();
+    expect(getRoomPassword(CODE)).toBe("");
+    await vi.waitFor(() => expect(getState().toast?.text).toBe("That game has ended."));
   });
 });
 

@@ -7,6 +7,7 @@ import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
 import { Game } from "./screens/Game";
 import { Home } from "./screens/Home";
+import { InviteJoin } from "./screens/InviteJoin";
 import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
 import { WaitingRoom } from "./screens/WaitingRoom";
@@ -39,6 +40,9 @@ export function App() {
       break;
     case "create":
       screen = <CreateGame />;
+      break;
+    case "invite":
+      screen = route.code ? <InviteJoin key={route.code} code={route.code} /> : null;
       break;
     case "reclaim":
       screen = <Reclaim key={route.code ?? ""} code={route.code} />;

@@ -3,8 +3,9 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { t } from "../src/i18n";
+import { _resetInviteForTests, inviteLink, primeInvite } from "../src/invite";
 import { getRoute, navigate } from "../src/router";
-import { inviteUrl, startLabel } from "../src/screens/WaitingRoom";
+import { startLabel } from "../src/screens/WaitingRoom";
 import { _resetMemoryForTests, getSession, saveSession } from "../src/session";
 import { _resetStoreForTests, applyView, getState } from "../src/store";
 import { CODE, makeView, SEAT, TOKEN } from "./fixtures";
@@ -68,11 +69,14 @@ vi.mock("../src/api", async (orig) => {
     leaveGame: vi.fn(),
     kickSeat: vi.fn(),
     patchRoom: vi.fn(),
+    getInvite: vi.fn(),
+    resetInvite: vi.fn(),
   };
 });
 
 const api = await import("../src/api");
 const OTHER = "e5f6a7b8";
+const KEY = "k".repeat(43);
 
 let version = 0;
 function view(opts: { host?: boolean; seats?: number; status?: "lobby" | "playing" } = {}) {
@@ -86,6 +90,7 @@ function view(opts: { host?: boolean; seats?: number; status?: "lobby" | "playin
     host: host ? i === 0 : i === 1,
     online: true,
     away: false,
+    left: false,
     record: { wins: 0, ties: 0, losses: 0 },
   }));
   v.you.host = host;
@@ -120,6 +125,8 @@ beforeEach(() => {
   vi.mocked(api.startGame).mockReset().mockResolvedValue();
   vi.mocked(api.kickSeat).mockReset().mockResolvedValue();
   vi.mocked(api.leaveGame).mockReset().mockResolvedValue();
+  vi.mocked(api.getInvite).mockReset().mockResolvedValue({ inviteKey: KEY });
+  _resetInviteForTests();
   saveSession(CODE, { token: TOKEN, seatId: SEAT, name: "Andrew", roomName: "Friday dice" });
   history.replaceState(null, "", "/");
   navigate("waiting", CODE);
@@ -136,7 +143,7 @@ describe("WaitingRoom", () => {
     expect(socket().connected).toEqual([CODE, TOKEN]);
     show(view());
     expect(screen.getByText(CODE)).toBeTruthy();
-    expect(screen.getByText("Share the password privately — it isn't in the link.")).toBeTruthy();
+    expect(screen.getByText("Anyone with this link can join. No password needed.")).toBeTruthy();
     expect(screen.getByText("(you)")).toBeTruthy();
     expect(screen.getByText("Host")).toBeTruthy();
   });
@@ -202,11 +209,15 @@ describe("WaitingRoom", () => {
     expect(socket().closed).toBe(true);
   });
 
-  it("a sessionEnded close goes home with 'Your session ended'", () => {
+  it("a sessionEnded close goes home and explains (generic text when /me is unreachable)", async () => {
     act(() => socket().status("ended", "sessionEnded"));
     expect(getRoute().screen).toBe("home");
     expect(getSession(CODE)).toBeNull();
-    expect(getState().toast?.text).toBe("Your session ended");
+    await vi.waitFor(() =>
+      expect(getState().toast?.text).toBe(
+        "Your session ended (maybe you joined from another device).",
+      ),
+    );
   });
 
   it("Leave confirms, posts /leave, forgets the session and goes home", async () => {
@@ -243,35 +254,77 @@ describe("WaitingRoom", () => {
 });
 
 describe("Invite", () => {
-  it("uses navigator.share when present", async () => {
+  const touch = (on: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: on && q.includes("coarse") }));
+
+  it("loads the key and shows 'Copy invite link' with the code as small text", async () => {
+    show(view());
+    await flush();
+    expect(api.getInvite).toHaveBeenCalledWith(CODE, TOKEN);
+    const btn = screen.getByRole("button", { name: "Copy invite link" }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    expect(screen.getByText(CODE).tagName).toBe("SPAN");
+    expect(screen.queryByRole("heading", { name: CODE })).toBeNull();
+  });
+
+  it("uses navigator.share on touch devices", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     const writeText = vi.fn();
+    touch(true);
     vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
     show(view());
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
     await flush();
-    expect(share).toHaveBeenCalledWith({ title: "Join my Color Dice game", url: inviteUrl(CODE) });
+    fireEvent.click(screen.getByRole("button", { name: "Copy invite link" }));
+    await flush();
+    expect(share).toHaveBeenCalledWith({
+      title: "Join my Color Dice game",
+      url: inviteLink(CODE, KEY),
+    });
     expect(writeText).not.toHaveBeenCalled();
   });
 
-  it("copies the link (and only the link) without navigator.share", async () => {
+  it("copies on desktop even when navigator.share exists, then shows Copied!", async () => {
+    const share = vi.fn();
     const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal("navigator", { ...navigator, share: undefined, clipboard: { writeText } });
+    touch(false);
+    vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
     show(view());
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
     await flush();
-    expect(writeText).toHaveBeenCalledWith(`${location.origin}/?game=${CODE}`);
-    expect(screen.getByRole("button", { name: /Link copied/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Copy invite link" }));
+    await flush();
+    expect(share).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const link = writeText.mock.calls[0]?.[0] as string;
+    expect(link).toBe(`${location.origin}${import.meta.env.BASE_URL}#/join/${CODE}/${KEY}`);
+    expect(link).not.toContain("?");
+    expect(screen.getByRole("button", { name: /Copied!/ })).toBeTruthy();
   });
 
   it("ignores a cancelled share sheet", async () => {
     const share = vi.fn().mockRejectedValue(Object.assign(new Error("x"), { name: "AbortError" }));
     const writeText = vi.fn();
+    touch(true);
     vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
+    primeInvite(CODE, KEY);
     show(view());
-    fireEvent.click(screen.getByRole("button", { name: "Invite" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy invite link" }));
     await flush();
     expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("the host sees Reset invite link; a guest does not", async () => {
+    vi.mocked(api.resetInvite).mockResolvedValue({ inviteKey: "n".repeat(43) });
+    show(view({ host: true }));
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "Reset invite link" }));
+    await flush();
+    expect(api.resetInvite).toHaveBeenCalledWith(CODE, TOKEN);
+  });
+
+  it("a guest does not get Reset invite link", async () => {
+    show(view({ host: false, seats: 2 }));
+    await flush();
+    expect(screen.queryByRole("button", { name: "Reset invite link" })).toBeNull();
   });
 });
 

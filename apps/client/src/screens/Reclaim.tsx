@@ -8,13 +8,7 @@ import {
 import { useEffect, useRef, useState } from "preact/hooks";
 import { getMe, reclaimSeat } from "../api";
 import { Button } from "../components/Button";
-import {
-  Field,
-  FieldError,
-  issuesByField,
-  RememberToggle,
-  requestErrorText,
-} from "../components/Field";
+import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
 import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
@@ -47,7 +41,6 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
   const [code, setCode] = useState(initialCode ?? "");
   const [name, setName] = useState(rememberedName);
   const [password, setPassword] = useState(() => (initialCode ? getRoomPassword(initialCode) : ""));
-  const [remember, setRemember] = useState(true);
   const passwordTouched = useRef(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -81,15 +74,12 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
         name: parsed.data.name,
         roomName,
       });
-      rememberSubmit(
-        {
-          code: res.code,
-          name: parsed.data.name,
-          ...(roomName ? { roomName } : {}),
-          password: parsed.data.password ?? password,
-        },
-        remember,
-      );
+      rememberSubmit({
+        code: res.code,
+        name: parsed.data.name,
+        ...(roomName ? { roomName } : {}),
+        password: parsed.data.password ?? password,
+      });
       let screen: "waiting" | "game" = "waiting";
       try {
         const me = await getMe(res.code, res.token);
@@ -152,7 +142,6 @@ export function Reclaim({ code: initialCode }: ReclaimProps) {
           }}
           error={errors.password}
         />
-        <RememberToggle checked={remember} onChange={setRemember} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           {t("reclaim.submit")}

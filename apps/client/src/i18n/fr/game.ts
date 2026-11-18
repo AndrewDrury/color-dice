@@ -1,13 +1,16 @@
 import type { game as en } from "../en/game";
 
 export const game: Record<keyof typeof en, string> = {
-  "game.home": "‹ Accueil",
+  "game.home": "Menu",
+  "game.menuTitle": "Menu de la partie",
+  "game.backHome": "Retour à l'accueil",
+  "game.menuNote": "Retour à l'accueil garde ta place. Quitter l'abandonne pour de bon.",
+  "game.leaveGameTitle": "Quitter cette partie ?",
+  "game.leaveGameBody":
+    "Tu abandonnes ta place et ne pourras pas revenir. Les autres continuent sans toi.",
   "game.turn": "Tour {n}",
   "game.online": "en ligne",
   "game.reconnecting": "reconnexion",
-  "game.leaveTitle": "Quitter la table ?",
-  "game.leaveBody": "Tu pourras reprendre depuis l'accueil.",
-  "game.leave": "Quitter",
   "game.rematchTitle": "Lancer une revanche ?",
   "game.rematchBody": "Tout le monde reste à la table.",
   "game.rematch": "Revanche",
@@ -53,6 +56,7 @@ export const game: Record<keyof typeof en, string> = {
   "away.title": "Joueurs absents",
   "away.back": "Je suis de retour",
   "away.badge": "absent",
+  "away.left": "{name} a quitté la partie.",
   "away.bringBack": "Rappeler",
   "away.offline": "{name} est hors ligne",
   "away.mark": "Marquer absent",
@@ -93,6 +97,7 @@ export const game: Record<keyof typeof en, string> = {
   "opp.penalties_other": "{count} pénalités",
   "opp.none": "Aucune pénalité",
   "opp.away": "absent",
+  "opp.left": "a quitté la partie",
   "opp.offline": "hors ligne",
   "opp.decided": "a choisi",
   "opp.choosing": "réfléchit",

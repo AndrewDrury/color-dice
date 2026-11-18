@@ -1,7 +1,7 @@
 import type { ComponentChildren } from "preact";
 import { useId } from "preact/hooks";
 import { ApiError } from "../api";
-import { errorText, t, useT } from "../i18n";
+import { errorText, t } from "../i18n";
 
 export interface FieldProps {
   label: string;
@@ -125,27 +125,4 @@ export function issuesByField(
     if (!(key in out)) out[key] = messages[key] ?? t("err.invalid");
   }
   return out;
-}
-
-/** "Remember on this device" checkbox shared by Create, Join and Reclaim (default ON). */
-export function RememberToggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  useT();
-  return (
-    <label class="row" style={{ minHeight: "var(--tap)", cursor: "pointer" }}>
-      <input
-        type="checkbox"
-        name="remember"
-        checked={checked}
-        onChange={(e) => onChange(e.currentTarget.checked)}
-        style={{ width: "22px", height: "22px" }}
-      />
-      <span>{t("field.remember")}</span>
-    </label>
-  );
 }

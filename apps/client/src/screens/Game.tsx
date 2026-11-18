@@ -7,6 +7,7 @@ import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
+import { GameMenu } from "../components/GameMenu";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
@@ -378,18 +379,7 @@ function Board({
         />
       ) : null}
       <Panels panel={panel} onPanel={setPanel} />
-      {leaving ? (
-        <ConfirmDialog
-          title={t("game.leaveTitle")}
-          body={t("game.leaveBody")}
-          confirmLabel={t("game.leave")}
-          onCancel={() => setLeaving(false)}
-          onConfirm={() => {
-            clearView();
-            navigate("home");
-          }}
-        />
-      ) : null}
+      {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
       {rematching ? (
         <ConfirmDialog
           title={t("game.rematchTitle")}

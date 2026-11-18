@@ -20,18 +20,22 @@ export function AwayControls(props: {
   }, []);
 
   const me = view.seats.find((s) => s.seatId === view.you.seatId);
-  const awayOnes = view.seats.filter((s) => s.away && s.seatId !== view.you.seatId);
+  const awayOnes = view.seats.filter((s) => s.away && !s.left && s.seatId !== view.you.seatId);
+  const leftOnes = view.seats.filter((s) => s.left && s.seatId !== view.you.seatId);
   const markable = view.you.host
     ? view.seats.filter(
         (s) =>
           s.seatId !== view.you.seatId &&
           !s.away &&
+          !s.left &&
           !s.online &&
           now - (offlineSince[s.seatId] ?? now) >= AWAY_AFTER_OFFLINE_MS,
       )
     : [];
   const target = view.seats.find((s) => s.seatId === confirming);
-  if (!me?.away && awayOnes.length === 0 && markable.length === 0) return null;
+  if (!me?.away && awayOnes.length === 0 && leftOnes.length === 0 && markable.length === 0) {
+    return null;
+  }
 
   const setAway = (seatId: string, away: boolean) => send({ type: "setAway", seatId, away });
 
@@ -63,6 +67,11 @@ export function AwayControls(props: {
           {view.you.host ? (
             <Button onClick={() => setAway(s.seatId, false)}>{t("away.bringBack")}</Button>
           ) : null}
+        </span>
+      ))}
+      {leftOnes.map((s) => (
+        <span key={s.seatId} class="muted" data-left={s.seatId}>
+          {t("away.left", { name: s.name })}
         </span>
       ))}
       {markable.map((s) => (

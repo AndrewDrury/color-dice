@@ -14,7 +14,6 @@ export const home = {
   "home.looking": "Looking for open games…",
   "home.noGames": "No open games right now. Create one!",
   "home.openGamesAria": "Open games",
-  "home.host": "host {name}",
   "home.playersSr": "players",
   "home.joinAria": "Join {room}",
   "home.passwordProtected": "Password protected",

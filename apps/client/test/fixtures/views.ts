@@ -89,6 +89,7 @@ export function makeGameView(o: Opts = {}): ViewMessage {
       host: i === 0,
       online: true,
       away: false,
+      left: false,
       record: { wins: 0, ties: 0, losses: 0 },
     })),
     game: {
@@ -106,6 +107,7 @@ export function makeGameView(o: Opts = {}): ViewMessage {
       host: o.host ?? you === 0,
       seat: you,
       action1Decision: o.decision ? { kind: "PASS" } : null,
+      pendingAction2: null,
       legalAction1: [
         ...(o.legal1 ?? []).map((color) => ({ kind: "MARK" as const, color })),
         ...(o.pass1 === false ? [] : phase === "ACTION_1" ? [{ kind: "PASS" as const }] : []),

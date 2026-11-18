@@ -89,7 +89,6 @@ export const common = {
   "field.password": "Passwords are 4–64 characters.",
   "field.roomName": "Room names are {min}–{max} characters.",
   "field.maxPlayers": "Pick 2 to 5 players.",
-  "field.remember": "Remember on this device",
   "field.password.label": "Password",
   "field.password.show": "Show password",
   "field.password.hide": "Hide password",

@@ -36,6 +36,9 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.savedNone": "No hay nada guardado en este dispositivo.",
   "settings.savedClear": "Borrar datos guardados",
   "settings.savedCleared": "Datos borrados.",
+  "settings.hints": "Pistas",
+  "settings.hintsShow": "Mostrar las pistas otra vez",
+  "settings.hintsOn": "Las pistas han vuelto.",
 
   "chat.says": "{name} dice: {text}",
   "chat.reacted": "{name} reaccionó {emoji}",

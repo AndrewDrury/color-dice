@@ -3,13 +3,15 @@ import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { seatInfo } from "../game/model";
 import { useTween } from "../game/useTween";
 import { t, tn, useT } from "../i18n";
-import { CheckIcon, DotsIcon, WarningIcon } from "./icons";
+import { CheckIcon, CloseIcon, DotsIcon, WarningIcon } from "./icons";
 
 export interface OpponentState {
   active: boolean;
   decided: boolean;
   thinking: boolean;
   away: boolean;
+  /** The player left the game for good (K2.2); shown apart from away. */
+  left: boolean;
   offline: boolean;
 }
 
@@ -25,12 +27,20 @@ export function opponentState(view: ViewMessage, p: ViewPlayer): OpponentState {
     active: !!active,
     decided,
     thinking: !decided && thinking,
-    away: !!seat?.away,
+    away: !!seat?.away && !seat.left,
+    left: !!seat?.left,
     offline: seat ? !seat.online : false,
   };
 }
 
 export function StatusGlyph({ state }: { state: OpponentState }) {
+  if (state.left) {
+    return (
+      <span class="g-glyph is-left" role="img" aria-label={t("opp.left")}>
+        <CloseIcon size={14} />
+      </span>
+    );
+  }
   if (state.away) {
     return (
       <span class="g-glyph is-away" role="img" aria-label={t("opp.away")}>

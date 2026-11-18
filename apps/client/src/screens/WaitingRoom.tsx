@@ -5,22 +5,18 @@ import { ApiError, kickSeat, leaveGame, startGame } from "../api";
 import { resetChat, routeChat, routeChatError } from "../chat/store";
 import { Button } from "../components/Button";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
-import { CopyButton } from "../components/CopyButton";
+import { InviteButton } from "../components/CopyButton";
 import { Dialog } from "../components/Dialog";
 import { FieldError, requestErrorText } from "../components/Field";
 import { RoomSettings } from "../components/RoomSettings";
 import { type Seat, SeatList } from "../components/SeatList";
 import { feedback } from "../fx/feedback";
 import { clockTime, t, tn, useT } from "../i18n";
+import { forgetRoom, toastSessionEnded } from "../roomEnd";
 import { navigate } from "../router";
-import { forgetSession, getSession } from "../session";
+import { getSession } from "../session";
 import { applyView, clearView, getState, setStatus, showToast, useAppState } from "../store";
 import { type EndReason, GameSocket } from "../ws";
-
-/** `…/<base>/?game=CODE` — the code only, never the password. */
-export function inviteUrl(code: string): string {
-  return `${globalThis.location.origin}${import.meta.env.BASE_URL}?game=${encodeURIComponent(code)}`;
-}
 
 /** Label for the host's Start button. */
 export function startLabel(players: number, maxPlayers: number): string {
@@ -56,10 +52,17 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const exitHome = (toast: string | null) => {
     if (done.current) return;
     done.current = true;
-    forgetSession(code);
+    forgetRoom(code);
     clearView();
     navigate("home");
     if (toast) showToast(toast);
+  };
+
+  /** The server ended our session: say whether the whole game is gone. */
+  const exitEnded = () => {
+    if (done.current) return;
+    exitHome(null);
+    void toastSessionEnded(code, token);
   };
 
   useEffect(() => {
@@ -75,13 +78,13 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
       if (msg.type === "view") applyView(msg);
       else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "kicked") exitHome(t("toast.kicked"));
-      else if (msg.type === "sessionEnded") exitHome(t("toast.ended"));
+      else if (msg.type === "sessionEnded") exitEnded();
     });
     const offStatus = socket.onStatus((status, reason?: EndReason) => {
       if (done.current) return;
       setStatus(status);
       if (reason === "kicked") exitHome(t("toast.kicked"));
-      else if (reason === "sessionEnded" || reason === "notAuthed") exitHome(t("toast.ended"));
+      else if (reason === "sessionEnded" || reason === "notAuthed") exitEnded();
     });
     socket.connect(code, session.token);
     return () => {
@@ -183,25 +186,12 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
       {view ? <ChatLayer send={send} /> : null}
 
       <section class="card stack" aria-label={t("waiting.inviteAria")}>
-        <p class="muted">{t("waiting.gameCode")}</p>
-        <p
-          class="num"
-          style={{
-            alignSelf: "flex-start",
-            padding: "var(--s2) var(--s5)",
-            borderRadius: "var(--r-pill)",
-            background: "var(--paper)",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--fs-title)",
-            fontWeight: "var(--fw-heavy)",
-            letterSpacing: "0.3em",
-          }}
-        >
-          {code}
-        </p>
-        <CopyButton url={inviteUrl(code)} title={t("waiting.shareTitle")} />
+        <InviteButton code={code} token={token} />
         <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
-          {t("waiting.passwordNote")}
+          {t("waiting.inviteNote")}
+        </p>
+        <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
+          {t("waiting.gameCode")} <span class="num">{code}</span>
         </p>
       </section>
 

@@ -393,7 +393,7 @@ export class RoomPlay {
     if (!l) return;
     if (!l.me.host) return sendError(ws, "E_NOT_HOST", "rematch");
     const state = await this.loadState();
-    if (!state || state.phase !== "GAME_OVER") return sendError(ws, "E_WRONG_PHASE", "rematch");
+    if (state?.phase !== "GAME_OVER") return sendError(ws, "E_WRONG_PHASE", "rematch");
     const ordered = l.seats
       .filter((s): s is SeatRecord & { seatIndex: number } => s.seatIndex !== null)
       .sort((a, b) => a.seatIndex - b.seatIndex);

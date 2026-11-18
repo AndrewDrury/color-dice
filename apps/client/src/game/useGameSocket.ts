@@ -3,8 +3,9 @@ import type { ClientMessage, ErrorMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
 import { resetChat, routeChat, routeChatError } from "../chat/store";
 import { t } from "../i18n";
+import { forgetRoom, toastSessionEnded } from "../roomEnd";
 import { navigate } from "../router";
-import { forgetSession, getSession } from "../session";
+import { getSession } from "../session";
 import { applyView, clearView, getState, setStatus, showToast } from "../store";
 import { type EndReason, GameSocket } from "../ws";
 
@@ -30,10 +31,15 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
     const exitHome = (toast: string | null) => {
       if (done) return;
       done = true;
-      forgetSession(code);
+      forgetRoom(code);
       clearView();
       navigate("home");
       if (toast) showToast(toast);
+    };
+    const exitEnded = () => {
+      if (done) return;
+      exitHome(null);
+      if (session) void toastSessionEnded(code, session.token);
     };
     if (!session) {
       exitHome(null);
@@ -47,15 +53,14 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
       else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "error") errRef.current(msg);
       else if (msg.type === "kicked") exitHome(t("toast.kicked"));
-      else if (msg.type === "sessionEnded") exitHome(t("toast.sessionEnded"));
+      else if (msg.type === "sessionEnded") exitEnded();
     });
     const offStatus = s.onStatus((status, reason?: EndReason) => {
       if (done) return;
       setStatus(status);
       if (status === "reconnecting" || status === "connecting") resyncNext.current = true;
       if (reason === "kicked") exitHome(t("toast.kicked"));
-      else if (reason === "sessionEnded" || reason === "notAuthed")
-        exitHome(t("toast.sessionEnded"));
+      else if (reason === "sessionEnded" || reason === "notAuthed") exitEnded();
     });
     s.connect(code, session.token);
     return () => {
