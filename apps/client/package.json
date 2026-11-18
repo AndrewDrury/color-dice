@@ -1,0 +1,21 @@
+{
+  "name": "@cd/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "preact": "^11.2.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@testing-library/preact": "^3.2.6",
+    "happy-dom": "^21.0.4",
+    "vite": "^8.3.8"
+  }
+}
