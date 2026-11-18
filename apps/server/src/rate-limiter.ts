@@ -39,19 +39,24 @@ export class RateLimiter extends DurableObject<Env> {
     const now = this.now();
 
     let w = this.windows.get(bucket);
+    let started = false;
     if (!w || now >= w.start + windowMs) {
       w = { start: now, count: 0 };
       this.windows.set(bucket, w);
+      started = true;
     }
     const end = w.start + windowMs;
     if (w.count >= limit) {
       return { ok: false, retryAfterSec: Math.max(1, Math.ceil((end - now) / 1000)) };
     }
     w.count++;
-    await this.ctx.storage.put(STORAGE_KEY, [...this.windows]);
-    if (this.alarmAt === null || this.alarmAt > end) {
-      this.alarmAt = end;
-      await this.ctx.storage.setAlarm(end);
+    // Counters stay in memory; storage is touched only when a window starts.
+    if (started) {
+      await this.ctx.storage.put(STORAGE_KEY, [...this.windows]);
+      if (this.alarmAt === null || this.alarmAt > end) {
+        this.alarmAt = end;
+        await this.ctx.storage.setAlarm(end);
+      }
     }
     return { ok: true, retryAfterSec: 0 };
   }

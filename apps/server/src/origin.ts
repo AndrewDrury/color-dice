@@ -38,7 +38,17 @@ export function checkOrigin(req: Request, allowed: Set<string>): Response | null
     if (origin === null) return new Response(null, { status: 204 });
     return error("E_FORBIDDEN_ORIGIN", 403);
   }
+  if (origin !== null && !ok) return error("E_FORBIDDEN_ORIGIN", 403);
+  if (req.method !== "GET" && req.method !== "HEAD" && hasBody(req)) {
+    const type = req.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+    if (type !== "application/json") return error("E_INVALID_COMMAND", 415, "json only");
+  }
   return null;
+}
+
+function hasBody(req: Request): boolean {
+  const len = req.headers.get("content-length");
+  return req.headers.has("transfer-encoding") || (len !== null && Number(len) > 0);
 }
 
 /** Adds CORS headers to an HTTP response when the request Origin is allowed. */

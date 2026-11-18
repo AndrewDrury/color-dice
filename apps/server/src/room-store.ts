@@ -59,6 +59,11 @@ export class RoomStore {
     return this.storage.put("meta", meta);
   }
 
+  /** Writes `seats` without counting it as activity (e.g. lastSeenAt on disconnect). */
+  putSeatsQuiet(seats: SeatRecord[]): Promise<void> {
+    return this.storage.put("seats", seats);
+  }
+
   /** Records an accepted change: version +1, lastActivityAt = now. Mutates `meta`. */
   async commit(meta: RoomMeta, now: number, seats?: SeatRecord[], state?: string): Promise<void> {
     meta.version += 1;

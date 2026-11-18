@@ -83,6 +83,8 @@ export class GameRoom extends DurableObject<Env> {
   /** Serializes operations: PBKDF2 awaits are not storage ops, so input gates don't cover them. */
   private queue: Promise<unknown> = Promise.resolve();
   private readonly play: RoomPlay;
+  /** Last public entry sent to the Lobby (JSON, "" = unlisted); undefined = unknown. */
+  private lastSynced: string | undefined;
   /** Test-hook clock offset (always 0 unless ALLOW_TEST_HOOKS === "1"). */
   private clockOffsetMs = 0;
 
@@ -96,6 +98,7 @@ export class GameRoom extends DurableObject<Env> {
       sockets: () => this.ctx.getWebSockets(),
       now: () => this.now(),
       commit: (meta, seats, state) => this.commit(meta, seats, state),
+      broadcast: (meta, seats) => this.broadcast(meta, seats),
     });
     if (hooksEnabled(env)) {
       void ctx.blockConcurrencyWhile(async () => {
@@ -260,6 +263,8 @@ export class GameRoom extends DurableObject<Env> {
       if (input.listed !== undefined) meta.listed = input.listed;
       if (input.password !== undefined) {
         meta.pwd = await hashPassword(input.password, iterationsFromEnv(this.env));
+        meta.failedJoins = 0;
+        meta.joinLockedUntil = null;
       }
       await this.commit(meta, seats);
       return ok(null);
@@ -368,8 +373,9 @@ export class GameRoom extends DurableObject<Env> {
       if (meta.failedJoins >= LOCKOUT_FAILED_ATTEMPTS) {
         meta.joinLockedUntil = now + LOCKOUT_MS;
         meta.failedJoins = 0;
-        // Lock state is visible to the host (C7), so it counts as a change.
-        await this.commit(meta);
+        await this.store.putMetaQuiet(meta);
+        // Lock state is visible to the host (C7): tell them, without counting it as activity.
+        await this.broadcast(meta, await this.store.getSeats());
       } else {
         await this.store.putMetaQuiet(meta);
       }
@@ -431,8 +437,11 @@ export class GameRoom extends DurableObject<Env> {
   private async syncLobby(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
     try {
       const entry = publicEntry(meta, seats);
+      const key = entry ? JSON.stringify(entry) : "";
+      if (key === this.lastSynced) return;
       if (entry) await this.lobby().upsert(entry);
       else await this.lobby().remove(meta.code);
+      this.lastSynced = key;
     } catch (e) {
       // The lobby list is best-effort; the room change already succeeded.
       console.error("lobby sync failed", e instanceof Error ? e.message : "unknown");
@@ -443,6 +452,7 @@ export class GameRoom extends DurableObject<Env> {
   private async destroy(code: string): Promise<void> {
     for (const ws of this.ctx.getWebSockets())
       this.closeSocket(ws, CLOSE.SESSION_ENDED, "sessionEnded");
+    this.lastSynced = undefined;
     try {
       await this.lobby().remove(code);
     } catch (e) {

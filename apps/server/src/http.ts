@@ -18,11 +18,41 @@ export function error(code: ErrorCode, status: number, reason?: string): Respons
 
 export type ReadResult<T> = { ok: true; value: T } | { ok: false; response: Response };
 
+/** Largest accepted request body. */
+export const MAX_BODY_BYTES = 4096;
+
+async function readCapped(req: Request): Promise<string> {
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw new Error("too large");
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    all.set(c, off);
+    off += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
 /** Parses the JSON body with `schema`; any failure becomes 400 E_INVALID_COMMAND. */
 export async function readJson<T>(req: Request, schema: Schema<T>): Promise<ReadResult<T>> {
   let raw: unknown;
   try {
-    raw = await req.json();
+    const len = req.headers.get("content-length");
+    if (len !== null && Number(len) > MAX_BODY_BYTES) throw new Error("too large");
+    const text = await readCapped(req);
+    raw = JSON.parse(text);
   } catch {
     return { ok: false, response: error("E_INVALID_COMMAND", 400, "body must be JSON") };
   }

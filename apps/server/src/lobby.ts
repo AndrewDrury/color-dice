@@ -53,7 +53,11 @@ export class Lobby extends DurableObject<Env> {
   async upsert(entry: PublicGame): Promise<void> {
     const parsed = PublicGameSchema.safeParse(entry);
     if (!parsed.success) throw new Error("invalid lobby entry");
-    this.rooms.set(parsed.data.code, { ...toPublic(parsed.data), lastActivityAt: this.now() });
+    const next = toPublic(parsed.data);
+    const prev = this.rooms.get(next.code);
+    this.rooms.set(next.code, { ...next, lastActivityAt: this.now() });
+    // Only lastActivityAt changed: keep it in memory, skip persist + broadcast.
+    if (prev && JSON.stringify(toPublic(prev)) === JSON.stringify(next)) return;
     if (this.rooms.size > MAX_ENTRIES) this.evictOldest();
     await this.persist();
     this.broadcast();

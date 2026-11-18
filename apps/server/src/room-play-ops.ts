@@ -32,11 +32,17 @@ import { loadDice } from "./test-hooks";
 export const AUTH_TIMEOUT_MS = 10_000;
 /** Invalid frames tolerated before closing with 4008. */
 export const MAX_INVALID_FRAMES = 5;
+/** Per-socket message cap: this many messages per window, then close 4008. */
+export const MAX_MESSAGES = 30;
+export const MESSAGE_WINDOW_MS = 10_000;
 
 export interface PlayAttachment {
   seatId: string | null;
   openedAt: number;
   invalid: number;
+  /** Start of the current message-rate window and its count. */
+  winStart: number;
+  winCount: number;
 }
 
 export function getAttachment(ws: WebSocket): PlayAttachment {
@@ -46,9 +52,11 @@ export function getAttachment(ws: WebSocket): PlayAttachment {
       seatId: typeof a?.seatId === "string" ? a.seatId : null,
       openedAt: typeof a?.openedAt === "number" ? a.openedAt : 0,
       invalid: typeof a?.invalid === "number" ? a.invalid : 0,
+      winStart: typeof a?.winStart === "number" ? a.winStart : 0,
+      winCount: typeof a?.winCount === "number" ? a.winCount : 0,
     };
   } catch {
-    return { seatId: null, openedAt: 0, invalid: 0 };
+    return { seatId: null, openedAt: 0, invalid: 0, winStart: 0, winCount: 0 };
   }
 }
 
@@ -125,6 +133,8 @@ export interface PlayDeps {
   now(): number;
   /** Persist (version +1), re-arm the alarm, sync the lobby, broadcast views. */
   commit(meta: RoomMeta, seats: SeatRecord[], state?: string): Promise<void>;
+  /** Send views to every authenticated socket without persisting anything. */
+  broadcast(meta: RoomMeta, seats: SeatRecord[]): Promise<void>;
 }
 
 type Loaded = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
@@ -134,7 +144,13 @@ export class RoomPlay {
 
   /** New socket: unauthenticated until a valid `auth`. */
   open(ws: WebSocket): void {
-    const a: PlayAttachment = { seatId: null, openedAt: this.d.now(), invalid: 0 };
+    const a: PlayAttachment = {
+      seatId: null,
+      openedAt: this.d.now(),
+      invalid: 0,
+      winStart: 0,
+      winCount: 0,
+    };
     ws.serializeAttachment(a);
   }
 
@@ -157,6 +173,17 @@ export class RoomPlay {
     this.sweepUnauthed();
     if (ws.readyState !== WebSocket.OPEN) return;
     const att = getAttachment(ws);
+    const now = this.d.now();
+    if (now - att.winStart >= MESSAGE_WINDOW_MS) {
+      att.winStart = now;
+      att.winCount = 0;
+    }
+    att.winCount += 1;
+    if (att.winCount > MAX_MESSAGES) {
+      closeWith(ws, CLOSE.POLICY_VIOLATION, "rate");
+      return;
+    }
+    ws.serializeAttachment(att);
     const msg = parseClientMessage(raw);
     if (att.seatId === null) {
       if (msg?.type === "auth") await this.auth(ws, att, msg.token);
@@ -198,7 +225,8 @@ export class RoomPlay {
     const seat = seats.find((s) => s.seatId === seatId);
     if (!meta || !seat) return;
     seat.lastSeenAt = this.d.now();
-    await this.d.commit(meta, seats);
+    await this.d.store.putSeatsQuiet(seats);
+    await this.d.broadcast(meta, seats);
   }
 
   private async auth(ws: WebSocket, att: PlayAttachment, token: string): Promise<void> {
@@ -213,8 +241,8 @@ export class RoomPlay {
       return;
     }
     ws.serializeAttachment({ ...att, seatId: me.seatId });
-    me.lastSeenAt = this.d.now();
-    await this.d.commit(meta, seats); // sends this socket its view and everyone presence
+    // Presence only: no version/lastActivityAt bump, no persist (lastSeenAt is saved on close).
+    await this.d.broadcast(meta, seats); // this socket gets its view, everyone presence
   }
 
   /** Loads meta + seats and this socket's seat; ends the session if it is gone. */
@@ -286,6 +314,7 @@ export class RoomPlay {
     } else if (!l.me.host && l.me.seatId !== seat.seatId) {
       return sendError(ws, "E_NOT_HOST", "setAway");
     }
+    if (seat.away === away) return;
     seat.away = away;
     const state = await this.loadState();
     if (!state) return this.d.commit(l.meta, l.seats);

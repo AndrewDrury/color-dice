@@ -36,6 +36,13 @@ export default {
     const allowed = parseAllowedOrigins(env.ALLOWED_ORIGINS);
     const early = checkOrigin(req, allowed);
     if (early) return early;
-    return withCors(req, await route(req, env), allowed);
+    let res: Response;
+    try {
+      res = await route(req, env);
+    } catch (e) {
+      console.error("unhandled", e instanceof Error ? e.message : "unknown");
+      res = error("E_INVALID_COMMAND", 500, "internal error");
+    }
+    return withCors(req, res, allowed);
   },
 } satisfies ExportedHandler<Env>;
