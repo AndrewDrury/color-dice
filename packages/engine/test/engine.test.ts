@@ -98,7 +98,7 @@ describe("#13 createGame (§5)", () => {
       type: "FIRST_PLAYER_CHOSEN",
       seat: 2,
       method: "CONFIGURED",
-      rolls: [],
+      rounds: [],
     });
     expect(createGame(players(3), { dice: noDice(), firstPlayer: "zz" })).toEqual({
       ok: false,
@@ -106,23 +106,27 @@ describe("#13 createGame (§5)", () => {
     });
   });
 
-  it("roll-off from seat 0 in seat order, wrapping, logging every roll (I-1)", () => {
-    const dice = new ScriptedDice([1, 2, 3, 4, 6, 6]);
+  it("simultaneous roll-off: rounds until exactly one 6, seat order inside a round (A-1)", () => {
+    // Round 1: no 6. Round 2: two 6s. Round 3: only seat 2 rolls a 6.
+    const dice = new ScriptedDice([1, 2, 3, 6, 6, 4, 5, 1, 6, 6]);
     const { state, events } = ok(createGame(players(3), { dice }));
-    expect(state.turn?.activeSeat).toBe(1);
+    expect(state.turn?.activeSeat).toBe(2);
     expect(events[1]).toEqual({
       type: "FIRST_PLAYER_CHOSEN",
-      seat: 1,
+      seat: 2,
       method: "ROLL_OFF",
-      rolls: [
-        { seat: 0, face: 1 },
-        { seat: 1, face: 2 },
-        { seat: 2, face: 3 },
-        { seat: 0, face: 4 },
-        { seat: 1, face: 6 },
+      rounds: [
+        [1, 2, 3],
+        [6, 6, 4],
+        [5, 1, 6],
       ],
     });
     expect(dice.remaining).toBe(1);
+  });
+
+  it("roll-off gives up after 1,000 rounds", () => {
+    const sixes = { rollDie: () => 6 as const };
+    expect(() => createGame(players(2), { dice: sixes })).toThrow(/roll-off/);
   });
 
   it("copies player input (no aliasing)", () => {

@@ -2,11 +2,13 @@
  * Internal transitions (spec §7.3, §7.5, §7.6, §9). These mutate a draft state
  * that the public command functions have already deep-copied.
  */
+import { checkAction2 } from "./action2";
 import { COLORS, indexOf, LOCKS_TO_END, PENALTY_BOXES } from "./constants";
 import { applyMark } from "./rules";
 import { scoreSheet, winners } from "./scoring";
 import type {
   Action1Decision,
+  Action2Decision,
   Color,
   EndReason,
   GameEvent,
@@ -114,8 +116,54 @@ export function resolveAction1(d: Draft): void {
     emit(d, { type: "ROW_LOCKED", color: c, lockedBy: by, action: 1 });
     emit(d, { type: "DIE_REMOVED", color: c });
   }
+  // A game-ending lock drops any early Action 2 (spec §17 A-2, I-6).
+  const pending = turn.pendingAction2;
+  turn.pendingAction2 = null;
   if (endIfTwoLocks(d)) return;
   s.phase = "ACTION_2";
+  if (!pending) return;
+  const active = activePlayer(s) as Player;
+  const recheck = checkAction2(active.sheet.rows, s.lockedColors, roll, pending);
+  if ("code" in recheck) {
+    // Another player's Action 1 lock removed the die: void it, choose again in ACTION_2.
+    const reason =
+      recheck.code === "E_ILLEGAL_MARK" && recheck.reason ? recheck.reason : "ROW_LOCKED";
+    emit(d, { type: "ACTION2_VOIDED", playerId: active.id, reason });
+    return;
+  }
+  applyAction2(d, recheck);
+  finishAction2(d);
+}
+
+/** Apply a validated Action 2 decision for the active player (spec §7.4 Effect). */
+export function applyAction2(d: Draft, dec: Action2Decision): void {
+  const s = d.state;
+  const t = s.turn as TurnState;
+  const active = activePlayer(s) as Player;
+  if (dec.kind === "PASS") {
+    emit(d, { type: "ACTION2_PASSED", playerId: active.id });
+    return;
+  }
+  const r = t.roll as NonNullable<TurnState["roll"]>;
+  const n = r.white[dec.whiteDie] + (r.colored[dec.color] as number);
+  const { row, lockedNow } = applyMark(active.sheet.rows[dec.color], n);
+  active.sheet.rows[dec.color] = row;
+  t.activeMarkedThisTurn = true;
+  emit(d, {
+    type: "MARKED",
+    playerId: active.id,
+    action: 2,
+    color: dec.color,
+    number: n,
+    index: indexOf(dec.color, n),
+    whiteDie: dec.whiteDie,
+    lockedNow,
+  });
+  if (lockedNow) {
+    addLock(s, dec.color);
+    emit(d, { type: "ROW_LOCKED", color: dec.color, lockedBy: [active.id], action: 2 });
+    emit(d, { type: "DIE_REMOVED", color: dec.color });
+  }
 }
 
 /** After Action 2: lock end check, then penalty, then next turn (spec §7.4 post, §7.5). */
@@ -147,6 +195,7 @@ function advanceTurn(d: Draft): void {
     activeSeat: (prev.activeSeat + 1) % s.players.length,
     roll: null,
     action1Decisions: {},
+    pendingAction2: null,
     activeMarkedThisTurn: false,
   };
   s.phase = "AWAIT_ROLL";

@@ -205,7 +205,14 @@ describe("viewFor shape", () => {
       ["endReason", "events", "lockedColors", "phase", "players", "roll", "turn", "winners"].sort(),
     );
     expect(Object.keys(view.you).sort()).toEqual(
-      ["action1Decision", "canRoll", "legalAction1", "legalAction2", "seat"].sort(),
+      [
+        "action1Decision",
+        "canRoll",
+        "legalAction1",
+        "legalAction2",
+        "pendingAction2",
+        "seat",
+      ].sort(),
     );
     expect(Object.keys(must(view.game.players[0])).sort()).toEqual(
       ["action1Submitted", "score", "seat", "sheet"].sort(),

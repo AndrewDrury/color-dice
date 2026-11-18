@@ -48,6 +48,12 @@ export interface TurnState {
   roll: DiceRoll | null;
   /** Decisions submitted so far (hidden until ACTION1_REVEALED). */
   action1Decisions: Record<PlayerId, Action1Decision>;
+  /**
+   * The active player's early Action 2 decision (spec §17 A-2), submitted during
+   * ACTION_1 after their own Action 1 decision. Hidden from other players; applied
+   * (or voided) when Action 1 resolves. Always null outside ACTION_1.
+   */
+  pendingAction2: Action2Decision | null;
   activeMarkedThisTurn: boolean;
 }
 
@@ -79,7 +85,8 @@ export type GameEvent =
       type: "FIRST_PLAYER_CHOSEN";
       seat: number;
       method: "CONFIGURED" | "ROLL_OFF";
-      rolls: { seat: number; face: Face }[];
+      /** `rounds[r][seat]` = face rolled by `seat` in round r (spec §17 A-1). Empty if CONFIGURED. */
+      rounds: Face[][];
     }
   | { type: "TURN_STARTED"; turnNumber: number; activeSeat: number }
   | {
@@ -107,6 +114,8 @@ export type GameEvent =
   | { type: "ROW_LOCKED"; color: Color; lockedBy: PlayerId[]; action: 1 | 2 }
   | { type: "DIE_REMOVED"; color: Color }
   | { type: "ACTION2_PASSED"; playerId: PlayerId }
+  /** An early Action 2 became illegal during Action 1 resolution (spec §17 A-2). */
+  | { type: "ACTION2_VOIDED"; playerId: PlayerId; reason: IllegalReason }
   | { type: "PENALTY"; playerId: PlayerId; total: number }
   | {
       type: "GAME_ENDED";
@@ -132,4 +141,6 @@ export type Result =
 export type Command =
   | { type: "ROLL"; playerId: PlayerId }
   | { type: "ACTION1"; playerId: PlayerId; decision: Action1Decision }
-  | { type: "ACTION2"; playerId: PlayerId; decision: Action2Decision };
+  | { type: "ACTION2"; playerId: PlayerId; decision: Action2Decision }
+  /** Active player's Action 1 + early Action 2 in one command (spec §17 A-2). */
+  | { type: "TURN"; playerId: PlayerId; action1: Action1Decision; action2: Action2Decision };

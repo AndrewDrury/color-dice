@@ -22,8 +22,8 @@ export interface CreateGameOptions {
   firstPlayer?: PlayerId;
 }
 
-/** Safety cap so a broken dice source cannot hang the roll-off. */
-const MAX_ROLL_OFF_ROLLS = 10_000;
+/** Safety cap so a broken dice source cannot hang the roll-off (spec §17 A-1). */
+export const MAX_ROLL_OFF_ROUNDS = 1_000;
 
 const fail = (error: EngineError): Result => ({ ok: false, error });
 
@@ -65,6 +65,21 @@ function validatePlayers(players: unknown): EngineError | null {
   return null;
 }
 
+/**
+ * Simultaneous roll-off (spec §17 A-1): every seat rolls one die per round, drawn
+ * in seat order 0..N-1. The round with exactly one 6 decides; its seat starts.
+ * Returns every round rolled; the last one holds the unique 6.
+ */
+export function rollOff(dice: DiceSource, seats: number): Face[][] {
+  const rounds: Face[][] = [];
+  for (;;) {
+    if (rounds.length >= MAX_ROLL_OFF_ROUNDS) throw new Error("roll-off did not produce a winner");
+    const round = Array.from({ length: seats }, () => rollFace(dice));
+    rounds.push(round);
+    if (round.filter((f) => f === 6).length === 1) return rounds;
+  }
+}
+
 /** Create a game (spec §5): seats in input order, first player configured or rolled off. */
 export function createGame(players: readonly PlayerInput[], options: CreateGameOptions): Result {
   const invalid = validatePlayers(players);
@@ -95,19 +110,11 @@ export function createGame(players: readonly PlayerInput[], options: CreateGameO
   let activeSeat: number;
   if (options.firstPlayer !== undefined) {
     activeSeat = input.findIndex((p) => p.id === options.firstPlayer);
-    emit(d, { type: "FIRST_PLAYER_CHOSEN", seat: activeSeat, method: "CONFIGURED", rolls: [] });
+    emit(d, { type: "FIRST_PLAYER_CHOSEN", seat: activeSeat, method: "CONFIGURED", rounds: [] });
   } else {
-    const rolls: { seat: number; face: Face }[] = [];
-    let seat = 0;
-    for (;;) {
-      if (rolls.length >= MAX_ROLL_OFF_ROLLS) throw new Error("roll-off did not produce a 6");
-      const face = rollFace(options.dice);
-      rolls.push({ seat, face });
-      if (face === 6) break;
-      seat = (seat + 1) % input.length;
-    }
-    activeSeat = seat;
-    emit(d, { type: "FIRST_PLAYER_CHOSEN", seat, method: "ROLL_OFF", rolls });
+    const rounds = rollOff(options.dice, input.length);
+    activeSeat = (rounds[rounds.length - 1] as Face[]).indexOf(6);
+    emit(d, { type: "FIRST_PLAYER_CHOSEN", seat: activeSeat, method: "ROLL_OFF", rounds });
   }
 
   state.phase = "AWAIT_ROLL";
@@ -116,6 +123,7 @@ export function createGame(players: readonly PlayerInput[], options: CreateGameO
     activeSeat,
     roll: null,
     action1Decisions: {},
+    pendingAction2: null,
     activeMarkedThisTurn: false,
   };
   return { ok: true, state, events: d.events };

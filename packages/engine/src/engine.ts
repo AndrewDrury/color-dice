@@ -2,12 +2,12 @@
  * Public command functions (spec §7, §16). Each one deep-copies its input and
  * never mutates it; a rejected command returns an error and no state.
  */
-import { COLORS, indexOf } from "./constants";
-import { applyMark, canMark } from "./rules";
+import { checkAction2, isColor, rowsAfterAction1 } from "./action2";
+import { COLORS } from "./constants";
+import { canMark } from "./rules";
 import { rollFace } from "./setup";
 import {
-  activePlayer,
-  addLock,
+  applyAction2,
   type Draft,
   emit,
   findPlayer,
@@ -34,10 +34,6 @@ import type {
 export { type CreateGameOptions, createGame, type PlayerInput } from "./setup";
 
 const fail = (error: EngineError): Result => ({ ok: false, error });
-
-function isColor(v: unknown): v is Color {
-  return typeof v === "string" && (COLORS as readonly string[]).includes(v);
-}
 
 /** Common preconditions: game not over, right phase, known player. */
 function precheck(
@@ -75,6 +71,7 @@ export function roll(state: GameState, actorId: PlayerId, dice: DiceSource): Res
   for (const c of COLORS) if (!s.lockedColors.includes(c)) colored[c] = rollFace(dice);
   turn.roll = { white, colored };
   turn.action1Decisions = {};
+  turn.pendingAction2 = null;
   turn.activeMarkedThisTurn = false;
   s.phase = "ACTION_1";
   emit(d, {
@@ -95,107 +92,123 @@ function parseAction1(decision: unknown): Action1Decision | null {
   return null;
 }
 
-/** Submit one player's hidden Action 1 decision (spec §7.2). */
-export function submitAction1(
+/** Action 1 preconditions (spec §7.2 Pre). */
+function checkAction1(
   state: GameState,
   playerId: PlayerId,
-  decision: Action1Decision,
-): Result {
+  decision: unknown,
+): EngineError | { player: Player; turn: TurnState; dec: Action1Decision } {
   const pre = precheck(state, "ACTION_1", playerId);
-  if ("code" in pre) return fail(pre);
+  if ("code" in pre) return pre;
   const { player, turn } = pre;
-  if (getDecision(turn, player.id)) return fail({ code: "E_ALREADY_DECIDED" });
+  if (getDecision(turn, player.id)) return { code: "E_ALREADY_DECIDED" };
   const dec = parseAction1(decision);
-  if (!dec) return fail({ code: "E_INVALID_COMMAND" });
+  if (!dec) return { code: "E_INVALID_COMMAND" };
   const r = turn.roll;
-  if (!r) return fail({ code: "E_WRONG_PHASE" });
+  if (!r) return { code: "E_WRONG_PHASE" };
   if (dec.kind === "MARK") {
     const check = canMark(
       player.sheet.rows[dec.color],
       r.white[0] + r.white[1],
       state.lockedColors,
     );
-    if (!check.ok) return fail({ code: "E_ILLEGAL_MARK", reason: check.reason });
+    if (!check.ok) return { code: "E_ILLEGAL_MARK", reason: check.reason };
   }
+  return { player, turn, dec };
+}
 
+/** Record a validated Action 1 (and optional early Action 2); resolve when all decided. */
+function commitAction1(
+  state: GameState,
+  player: Player,
+  dec: Action1Decision,
+  pending: Action2Decision | null,
+): Result {
   const d = draft(state);
   const t = d.state.turn as TurnState;
   setDecision(t, player.id, dec);
+  if (pending) t.pendingAction2 = pending;
   emit(d, { type: "ACTION1_SUBMITTED", playerId: player.id });
   const decided = d.state.players.filter((p) => getDecision(t, p.id)).length;
   if (decided === d.state.players.length) resolveAction1(d);
   return done(d);
 }
 
-/** Validate an untrusted Action 2 payload against the post-Action-1 state. */
-function checkAction2(
+/** Submit one player's hidden Action 1 decision (spec §7.2). */
+export function submitAction1(
   state: GameState,
-  player: Player,
-  turn: TurnState,
-  decision: unknown,
-): EngineError | Action2Decision {
-  if (decision === null || typeof decision !== "object") return { code: "E_INVALID_COMMAND" };
-  const { kind, color, whiteDie } = decision as {
-    kind?: unknown;
-    color?: unknown;
-    whiteDie?: unknown;
-  };
-  if (kind === "PASS") return { kind: "PASS" };
-  if (kind !== "MARK") return { code: "E_INVALID_COMMAND" };
-  if (!isColor(color)) return { code: "E_BAD_DIE" };
-  const r = turn.roll;
-  const face = r?.colored[color];
-  if (state.lockedColors.includes(color) || face === undefined)
-    return { code: "E_DIE_NOT_IN_PLAY" };
-  if (whiteDie !== 0 && whiteDie !== 1) return { code: "E_BAD_DIE" };
-  const n = (r as NonNullable<typeof r>).white[whiteDie] + face;
-  const check = canMark(player.sheet.rows[color], n, state.lockedColors);
-  if (!check.ok) return { code: "E_ILLEGAL_MARK", reason: check.reason };
-  return { kind: "MARK", color, whiteDie };
+  playerId: PlayerId,
+  decision: Action1Decision,
+): Result {
+  const c = checkAction1(state, playerId, decision);
+  if ("code" in c) return fail(c);
+  return commitAction1(state, c.player, c.dec, null);
 }
 
-/** The active player's white + colored decision (spec §7.4). */
+/**
+ * The active player's Action 1 and early Action 2 in one atomic command
+ * (spec §17 A-2, "both in one confirm"). Same checks as `submitAction1` followed
+ * by an early `submitAction2`; if either is rejected nothing changes.
+ */
+export function submitTurn(
+  state: GameState,
+  playerId: PlayerId,
+  action1: Action1Decision,
+  action2: Action2Decision,
+): Result {
+  const c = checkAction1(state, playerId, action1);
+  if ("code" in c) return fail(c);
+  const { player, turn, dec } = c;
+  if (player.seat !== turn.activeSeat) return fail({ code: "E_NOT_ACTIVE_PLAYER" });
+  const roll = turn.roll as NonNullable<TurnState["roll"]>;
+  const rows = rowsAfterAction1(player.sheet.rows, dec, roll.white[0] + roll.white[1]);
+  const dec2 = checkAction2(rows, state.lockedColors, roll, action2);
+  if ("code" in dec2) return fail(dec2);
+  return commitAction1(state, player, dec, dec2);
+}
+
+/**
+ * The active player's white + colored decision (spec §7.4). In ACTION_1 this is
+ * an early Action 2 (spec §17 A-2): allowed once the active player has made their
+ * own Action 1 decision; stored hidden and applied when Action 1 resolves.
+ */
 export function submitAction2(
   state: GameState,
   playerId: PlayerId,
   decision: Action2Decision,
 ): Result {
+  if (state.phase === "ACTION_1") return submitEarlyAction2(state, playerId, decision);
   const pre = precheck(state, "ACTION_2", playerId);
   if ("code" in pre) return fail(pre);
   const { player, turn } = pre;
   if (player.seat !== turn.activeSeat) return fail({ code: "E_NOT_ACTIVE_PLAYER" });
-  const dec = checkAction2(state, player, turn, decision);
+  const dec = checkAction2(player.sheet.rows, state.lockedColors, turn.roll, decision);
   if ("code" in dec) return fail(dec);
 
   const d = draft(state);
-  const s = d.state;
-  const t = s.turn as TurnState;
-  const active = activePlayer(s) as Player;
-  if (dec.kind === "PASS") {
-    emit(d, { type: "ACTION2_PASSED", playerId: active.id });
-  } else {
-    const r = t.roll as NonNullable<TurnState["roll"]>;
-    const n = r.white[dec.whiteDie] + (r.colored[dec.color] as number);
-    const { row, lockedNow } = applyMark(active.sheet.rows[dec.color], n);
-    active.sheet.rows[dec.color] = row;
-    t.activeMarkedThisTurn = true;
-    emit(d, {
-      type: "MARKED",
-      playerId: active.id,
-      action: 2,
-      color: dec.color,
-      number: n,
-      index: indexOf(dec.color, n),
-      whiteDie: dec.whiteDie,
-      lockedNow,
-    });
-    if (lockedNow) {
-      addLock(s, dec.color);
-      emit(d, { type: "ROW_LOCKED", color: dec.color, lockedBy: [active.id], action: 2 });
-      emit(d, { type: "DIE_REMOVED", color: dec.color });
-    }
-  }
+  applyAction2(d, dec);
   finishAction2(d);
+  return done(d);
+}
+
+/** Early Action 2 during ACTION_1 (spec §17 A-2). */
+function submitEarlyAction2(state: GameState, playerId: PlayerId, decision: unknown): Result {
+  const pre = precheck(state, "ACTION_1", playerId);
+  if ("code" in pre) return fail(pre);
+  const { player, turn } = pre;
+  if (player.seat !== turn.activeSeat) return fail({ code: "E_NOT_ACTIVE_PLAYER" });
+  const own = getDecision(turn, player.id);
+  // Before the player's own Action 1 decision it is not yet their Action 2 window.
+  if (!own || !turn.roll) return fail({ code: "E_WRONG_PHASE" });
+  if (turn.pendingAction2) return fail({ code: "E_ALREADY_DECIDED" });
+  const whiteSum = turn.roll.white[0] + turn.roll.white[1];
+  const rows = rowsAfterAction1(player.sheet.rows, own, whiteSum);
+  const dec = checkAction2(rows, state.lockedColors, turn.roll, decision);
+  if ("code" in dec) return fail(dec);
+
+  const d = draft(state);
+  // No event: the commit itself stays hidden from other players.
+  (d.state.turn as TurnState).pendingAction2 = dec;
   return done(d);
 }
 
@@ -209,6 +222,8 @@ export function dispatch(state: GameState, cmd: Command, dice: DiceSource): Resu
       return submitAction1(state, cmd.playerId, cmd.decision);
     case "ACTION2":
       return submitAction2(state, cmd.playerId, cmd.decision);
+    case "TURN":
+      return submitTurn(state, cmd.playerId, cmd.action1, cmd.action2);
     default:
       if (state.phase === "GAME_OVER") return fail({ code: "E_GAME_OVER" });
       return fail({ code: "E_INVALID_COMMAND" });

@@ -39,6 +39,31 @@ describe("determinism", () => {
     });
   }
 
+  it("roll-off: same seed gives same rounds; winner is the unique 6 of the last round (A-1)", () => {
+    for (const n of [2, 3, 4, 5]) {
+      for (let seed = 1; seed <= 200; seed++) {
+        const players = Array.from({ length: n }, (_, i) => ({
+          id: `p${i}`,
+          displayName: `P${i}`,
+        }));
+        const a = createGame(players, { dice: new SeededDice(seed) });
+        const b = createGame(players, { dice: new SeededDice(seed) });
+        if (!a.ok || !b.ok) throw new Error("createGame failed");
+        const ev = a.events[1];
+        if (ev?.type !== "FIRST_PLAYER_CHOSEN") throw new Error("missing FIRST_PLAYER_CHOSEN");
+        expect(JSON.stringify(b.events)).toBe(JSON.stringify(a.events));
+        expect(ev.method).toBe("ROLL_OFF");
+        const sixes = (r: number[]) => r.filter((f) => f === 6).length;
+        for (const r of ev.rounds) expect(r).toHaveLength(n);
+        for (const r of ev.rounds.slice(0, -1)) expect(sixes(r)).not.toBe(1);
+        const last = ev.rounds.at(-1) ?? [];
+        expect(sixes(last)).toBe(1);
+        expect(last.indexOf(6)).toBe(ev.seat);
+        expect(a.state.turn?.activeSeat).toBe(ev.seat);
+      }
+    }
+  });
+
   it("different seeds give different games", () => {
     expect(toJSON(play(3, 1).state)).not.toBe(toJSON(play(3, 2).state));
   });

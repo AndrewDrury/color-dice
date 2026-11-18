@@ -24,7 +24,7 @@ describe("dispatch", () => {
 
   it("is deterministic: same dice and commands → byte-equal logs", () => {
     const run = () => {
-      let s = ok(createGame(players(3), { dice: new ScriptedDice([2, 6]) })).state;
+      let s = ok(createGame(players(3), { dice: new ScriptedDice([2, 6, 1]) })).state;
       for (let i = 0; i < 6; i++)
         s = playTurn(s, [3, 4, 1, 2, 3, 4], { [activeId(s)]: PASS }).state;
       return toJSON(s);

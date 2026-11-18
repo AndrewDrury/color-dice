@@ -57,6 +57,11 @@ export function assertInvariants(prev: GameState | null, next: GameState): void 
     check(locked.size <= 3, "INV-7", `locked ${locked.size}`);
   }
 
+  // Early Action 2 (spec §17 A-2) only ever pends during ACTION_1.
+  if (next.phase !== "ACTION_1") {
+    check(next.turn?.pendingAction2 == null, "A-2", `pendingAction2 in ${next.phase}`);
+  }
+
   // INV-9 (from the log: marks since the last TURN_STARTED)
   const perPlayer = new Map<string, number>();
   let activeSeat = -1;

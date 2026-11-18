@@ -72,6 +72,7 @@ export function makeTurn(partial: Partial<TurnState> = {}): TurnState {
     action1Decisions: {},
     activeMarkedThisTurn: false,
     ...partial,
+    pendingAction2: partial.pendingAction2 ?? null,
   };
 }
 

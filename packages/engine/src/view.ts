@@ -12,6 +12,7 @@ import { scoreSheet, winners } from "./scoring";
 import { getDecision } from "./transitions";
 import type {
   Action1Decision,
+  Action2Decision,
   Color,
   EndReason,
   Face,
@@ -63,6 +64,8 @@ export interface EngineViewYou {
   seat: number;
   /** Your own pending decision (ACTION_1 only); never another seat's. */
   action1Decision: Action1Decision | null;
+  /** Your own early Action 2 (active player, ACTION_1 only, spec §17 A-2); never another seat's. */
+  pendingAction2: Action2Decision | null;
   legalAction1: Action1Decision[];
   legalAction2: EngineLegalAction2[];
   canRoll: boolean;
@@ -75,6 +78,12 @@ export interface EngineView {
 
 function copyDecision(d: Action1Decision): Action1Decision {
   return d.kind === "PASS" ? { kind: "PASS" } : { kind: "MARK", color: d.color };
+}
+
+function copyAction2(d: Action2Decision): Action2Decision {
+  return d.kind === "PASS"
+    ? { kind: "PASS" }
+    : { kind: "MARK", whiteDie: d.whiteDie, color: d.color };
 }
 
 function copyColored(c: Partial<Record<Color, Face>>): Partial<Record<Color, Face>> {
@@ -105,7 +114,7 @@ export function copyEvent(e: GameEvent): GameEvent {
         type: e.type,
         seat: e.seat,
         method: e.method,
-        rolls: e.rolls.map((r) => ({ seat: r.seat, face: r.face })),
+        rounds: e.rounds.map((round) => [...round]),
       };
     case "TURN_STARTED":
       return { type: e.type, turnNumber: e.turnNumber, activeSeat: e.activeSeat };
@@ -145,6 +154,8 @@ export function copyEvent(e: GameEvent): GameEvent {
       return { type: e.type, color: e.color };
     case "ACTION2_PASSED":
       return { type: e.type, playerId: e.playerId };
+    case "ACTION2_VOIDED":
+      return { type: e.type, playerId: e.playerId, reason: e.reason };
     case "PENALTY":
       return { type: e.type, playerId: e.playerId, total: e.total };
     case "GAME_ENDED":
@@ -209,10 +220,14 @@ export function viewFor(state: GameState, seatIndex: number): EngineView {
 
   // Only ever read the viewer's own entry from the hidden decisions.
   const own = state.phase === "ACTION_1" && turn ? getDecision(turn, me.id) : undefined;
+  // The early Action 2 belongs to the active player alone.
+  const pending =
+    state.phase === "ACTION_1" && isActive && turn ? (turn.pendingAction2 ?? null) : null;
 
   const you: EngineViewYou = {
     seat: me.seat,
     action1Decision: own ? copyDecision(own) : null,
+    pendingAction2: pending ? copyAction2(pending) : null,
     // legalAction1Options is already empty unless ACTION_1 and undecided.
     legalAction1: legalAction1Options(state, me.id).map((o) =>
       o.kind === "PASS" ? { kind: "PASS" } : { kind: "MARK", color: o.color },

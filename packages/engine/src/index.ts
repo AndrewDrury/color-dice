@@ -1,3 +1,4 @@
+export { rowsAfterAction1 } from "./action2";
 export * from "./constants";
 export * from "./derived";
 export * from "./dice";
