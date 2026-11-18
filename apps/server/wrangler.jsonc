@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "qwixx",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-17",
+  // The dashboard Worker "qwixx" has workers.dev OFF; deploy turns it on.
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAME_ROOM", "class_name": "GameRoom" },
+      { "name": "LOBBY", "class_name": "Lobby" },
+      { "name": "RATE_LIMITER", "class_name": "RateLimiter" }
+    ]
+  },
+  // new_sqlite_classes is required on the Free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "Lobby", "RateLimiter"] }],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://andrewdrury.github.io,http://localhost:5173,http://localhost:4173"
+  }
+}
