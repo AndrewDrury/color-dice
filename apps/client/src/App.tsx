@@ -1,5 +1,6 @@
 import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
+import { Game } from "./screens/Game";
 import { Home } from "./screens/Home";
 import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
@@ -25,8 +26,10 @@ export function App() {
     case "waiting":
       screen = route.code ? <WaitingRoom key={route.code} code={route.code} /> : null;
       break;
+    case "game":
+      screen = route.code ? <Game key={route.code} code={route.code} /> : null;
+      break;
     default:
-      // The game screen lands in a later task.
       screen = <Placeholder route={route} status={status} />;
   }
 
