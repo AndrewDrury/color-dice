@@ -131,7 +131,12 @@ export function tallyRecord(seats: SeatRecord[], winners: readonly string[]): vo
   const won = new Set(winners);
   for (const s of seats) {
     if (s.seatIndex === null) continue;
-    const r = s.record ?? { wins: 0, ties: 0, losses: 0 };
+    // Normalise on read: a legacy `{wins, losses}` record has no `ties`.
+    const r = {
+      wins: s.record?.wins ?? 0,
+      ties: s.record?.ties ?? 0,
+      losses: s.record?.losses ?? 0,
+    };
     if (won.has(playerId(s.seatIndex))) {
       if (won.size > 1) r.ties += 1;
       else r.wins += 1;

@@ -150,6 +150,10 @@ export function importTransferCode(text: string): ImportResult {
       ),
     );
     if (incoming.length === 0) return { ok: false, reason: "empty" };
+    // Clamp future timestamps so an imported code cannot pin entries at the top forever.
+    // Note: room-code reuse can in rare cases collide on the `code:game` dedupe key (accepted).
+    const maxAt = Date.now() + 86_400_000;
+    for (const e of incoming) if (e.at > maxAt) e.at = maxAt;
     const cur = getHistory();
     const have = new Set(cur.map(keyOf));
     const fresh = incoming.filter((e) => !have.has(keyOf(e)));

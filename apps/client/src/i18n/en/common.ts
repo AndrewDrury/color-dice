@@ -44,6 +44,8 @@ export const common = {
   "time.day": "{n} d ago",
 
   "err.generic": "Something went wrong.",
+
+  "err.invalid": "That value isn't valid.",
   "err.E_PLAYER_COUNT": "A game needs 2 to 5 players.",
   "err.E_DUPLICATE_PLAYER": "That player is already in the game.",
   "err.E_GAME_OVER": "This game is over.",

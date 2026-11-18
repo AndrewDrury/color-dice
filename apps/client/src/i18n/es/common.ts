@@ -46,6 +46,8 @@ export const common: Record<keyof typeof en, string> = {
   "time.day": "hace {n} d",
 
   "err.generic": "Algo salió mal.",
+
+  "err.invalid": "Este valor no es válido.",
   "err.E_PLAYER_COUNT": "Una partida necesita de 2 a 5 jugadores.",
   "err.E_DUPLICATE_PLAYER": "Ese jugador ya está en la partida.",
   "err.E_GAME_OVER": "Esta partida ha terminado.",

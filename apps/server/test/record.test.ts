@@ -54,3 +54,17 @@ describe("tallyRecord (J5)", () => {
     expect(rest[0]?.record).toEqual({ wins: 0, ties: 0, losses: 2 });
   });
 });
+
+describe("tallyRecord legacy records", () => {
+  it("a legacy {wins, losses} record never yields NaN after a tie", () => {
+    const seats = [seat(0), seat(1)] as [SeatRecord, SeatRecord];
+    // Stored before `ties` existed.
+    seats[0].record = { wins: 2, losses: 1 } as unknown as SeatRecord["record"];
+    seats[1].record = { wins: 0, losses: 3 } as unknown as SeatRecord["record"];
+    tallyRecord(seats, ["seat-0", "seat-1"]);
+    expect(seats.map((s) => s.record)).toEqual([
+      { wins: 2, ties: 1, losses: 1 },
+      { wins: 0, ties: 1, losses: 3 },
+    ]);
+  });
+});

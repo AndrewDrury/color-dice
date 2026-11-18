@@ -122,7 +122,7 @@ export function issuesByField(
   const out: Record<string, string> = {};
   for (const issue of issues) {
     const key = String(issue.path[0] ?? "");
-    if (!(key in out)) out[key] = messages[key] ?? issue.message;
+    if (!(key in out)) out[key] = messages[key] ?? t("err.invalid");
   }
   return out;
 }
