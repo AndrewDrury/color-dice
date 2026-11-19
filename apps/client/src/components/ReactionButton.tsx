@@ -20,7 +20,14 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
         aria-expanded={open ? "true" : "false"}
         onClick={() => setOpen((o) => !o)}
       >
-        <span aria-hidden="true">😊</span>
+        <img
+          class="rx-btn-gif"
+          src="/reactions/mad-cat.jpg"
+          alt=""
+          aria-hidden="true"
+          width={44}
+          height={44}
+        />
       </button>
       {mounted ? (
         <ReactionPicker

@@ -15,7 +15,7 @@ export type TextEntry = Extract<ChatEntry, { kind: "text" }>;
 export type ReactionEntry = Extract<ChatEntry, { kind: "reaction" }>;
 
 export interface ChatState {
-  messages: TextEntry[];
+  messages: ChatEntry[];
   unread: number;
   draft: string;
   sending: boolean;
@@ -101,6 +101,9 @@ function ingestText(e: TextEntry, mine: boolean): void {
 
 function ingestReaction(e: ReactionEntry, mine: boolean): void {
   if (state.floats.some((f) => f.id === e.id)) return;
+  if (!state.messages.some((m) => m.id === e.id)) {
+    set({ messages: [...state.messages, e].slice(-MAX_LOG) });
+  }
   if (!mine && !getPrefs().showChat) return;
   if (state.floats.filter((f) => f.seatId === e.seatId).length >= MAX_FLOATS_PER_SEAT) return;
   set({ floats: [...state.floats, e] });

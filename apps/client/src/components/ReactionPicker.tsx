@@ -9,10 +9,12 @@ export function ReactionPicker({
   onPick,
   onClose,
   closing = false,
+  inChat = false,
 }: {
   onPick: (id: Reaction) => void;
   onClose: () => void;
   closing?: boolean;
+  inChat?: boolean;
 }) {
   const ref = useRef<HTMLFieldSetElement>(null);
   const close = useRef(onClose);
@@ -48,7 +50,7 @@ export function ReactionPicker({
   return (
     <fieldset
       ref={ref}
-      class={`rx-picker mo-pop${closing ? " mo-exit" : ""}`}
+      class={`rx-picker mo-pop${inChat ? " chat-rx-picker" : ""}${closing ? " mo-exit" : ""}`}
       aria-label={t("chat.reactions")}
     >
       {REACTIONS.map((id) => (
@@ -56,7 +58,7 @@ export function ReactionPicker({
           key={id}
           type="button"
           class="rx-pick"
-          aria-label={t("cat.react", { caption: catCaption(id) })}
+          aria-label={t("chat.react", { emoji: catCaption(id) })}
           onClick={() => onPick(id)}
         >
           <CatReaction id={id} size={32} />

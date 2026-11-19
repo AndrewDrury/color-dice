@@ -262,7 +262,7 @@ describe("WaitingRoom", () => {
     v.seats[1] = { ...v.seats[1], name: evil } as ViewMessage["seats"][number];
     show(v);
     expect(screen.getByText(evil)).toBeTruthy();
-    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelector("img[src='x']")).toBeNull();
   });
 });
 

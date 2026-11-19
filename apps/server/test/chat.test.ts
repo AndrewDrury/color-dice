@@ -135,8 +135,11 @@ describe("chat", () => {
   it("broadcasts allow-listed reactions; rejects others", async () => {
     const r = await setup(2);
     const [a, b] = r.clients as [Client, Client];
-    a.send({ type: "react", emoji: "cat_fire" });
-    expect((await b.count("chat", 1))[0]).toMatchObject({ kind: "reaction", emoji: "cat_fire" });
+    a.send({ type: "react", emoji: "mad-the-internet-gif-by-moodman" });
+    expect((await b.count("chat", 1))[0]).toMatchObject({
+      kind: "reaction",
+      emoji: "mad-the-internet-gif-by-moodman",
+    });
     // Old emoji keys (K5.1) and anything else off the allow-list are rejected.
     a.send({ type: "react", emoji: "🔥" });
     a.send({ type: "react", emoji: "hello" });
@@ -196,7 +199,7 @@ describe("chat", () => {
     for (let batch = 0; batch < 7; batch++) {
       clock.now += 11_000;
       for (let i = 0; i < 5; i++) a.send({ type: "chat", text: `m${sent++}` });
-      a.send({ type: "react", emoji: "cat_thumbs" });
+      a.send({ type: "react", emoji: "cat-gif" });
       await a.count("chat", (batch + 1) * 6);
     }
     const c = await connect(r.code, (r.players[1] as AuthRes).token);

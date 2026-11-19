@@ -5,6 +5,8 @@ import { closePanel, seatName, setDraft, setSending, useChat } from "../chat/sto
 import { chatErrorText, t, useT } from "../i18n";
 import { getState } from "../store";
 import { BottomSheet } from "./BottomSheet";
+import { CatReaction } from "./CatReaction";
+import { ReactionPicker } from "./ReactionPicker";
 
 export function ChatPanel({
   send,
@@ -18,6 +20,7 @@ export function ChatPanel({
   const log = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const [touching, setTouching] = useState(false);
+  const [reactionPicker, setReactionPicker] = useState(false);
   const touchEnd = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(touchEnd.current), []);
   const me = getState().view?.you.seatId;
@@ -56,7 +59,16 @@ export function ChatPanel({
           {messages.length === 0 ? <p class="muted">{t("chat.empty")}</p> : null}
           {messages.map((m) => (
             <p key={m.id} class={`chat-line${m.seatId === me ? " is-mine" : ""}`}>
-              <span class="chat-who">{seatName(m.seatId)}</span> · <span>{m.text}</span>
+              {m.kind === "text" ? (
+                <>
+                  <span class="chat-who">{seatName(m.seatId)}</span> · <span>{m.text}</span>
+                </>
+              ) : (
+                <>
+                  <span class="chat-who">{seatName(m.seatId)}</span> ·
+                  <CatReaction id={m.emoji} size={32} />
+                </>
+              )}
             </p>
           ))}
         </div>
@@ -78,10 +90,29 @@ export function ChatPanel({
             value={draft}
             onInput={(e) => setDraft(e.currentTarget.value)}
           />
+          <button
+            type="button"
+            class="btn chat-rx-toggle"
+            aria-label={t("chat.reactionSend")}
+            aria-expanded={reactionPicker ? "true" : "false"}
+            onClick={() => setReactionPicker((open) => !open)}
+          >
+            <img src="/reactions/mad-cat.jpg" alt="" aria-hidden="true" width={28} height={28} />
+          </button>
           <button type="submit" class="btn" disabled={sending || draft.trim() === ""}>
             {t("chat.send")}
           </button>
         </form>
+        {reactionPicker ? (
+          <ReactionPicker
+            inChat
+            onClose={() => setReactionPicker(false)}
+            onPick={(emoji) => {
+              send({ type: "react", emoji });
+              setReactionPicker(false);
+            }}
+          />
+        ) : null}
         <p class="chat-status muted" role="status" aria-live="polite">
           {error ? chatErrorText(error) : sending ? t("chat.sending") : ""}
         </p>

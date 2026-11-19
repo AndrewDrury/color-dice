@@ -1,4 +1,4 @@
-import type { ServerMessage, ViewMessage } from "@cd/protocol";
+import { REACTIONS, type ServerMessage, type ViewMessage } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseChatFrame } from "../src/chat/parse";
@@ -49,7 +49,7 @@ const reaction = (seat: number, id = nextId++): ServerMessage => ({
   id,
   seatId: seatIdOf(seat),
   kind: "reaction",
-  emoji: "cat_fire",
+  emoji: "mad-the-internet-gif-by-moodman",
   at: 1,
 });
 
@@ -112,16 +112,16 @@ describe("chat client", () => {
   it("renders markup as literal text", () => {
     emit(text(1, "<img src=x onerror=alert(1)>"));
     openChat();
-    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelector("img[src='x']")).toBeNull();
     expect(screen.getByRole("log").textContent).toContain("<img src=x onerror=alert(1)>");
   });
 
   it("picker sends the tapped cat id and closes after its exit animation", async () => {
-    fireEvent.click(screen.getByLabelText("Send reaction"));
+    fireEvent.click(screen.getAllByLabelText("Send reaction")[0] as HTMLElement);
     // Accessible name is the translated caption, never the raw id.
     expect(screen.queryByLabelText(/cat_/)).toBeNull();
-    fireEvent.click(screen.getByLabelText("React: party"));
-    expect(sent).toEqual([{ type: "react", emoji: "cat_party" }]);
+    fireEvent.click(screen.getByLabelText("React dancing cat"));
+    expect(sent).toEqual([{ type: "react", emoji: "cat-dancing-gif-by-unscreen" }]);
     // The node stays mounted while it animates out, then goes away.
     expect(document.querySelector(".rx-picker.mo-exit")).not.toBeNull();
     await waitFor(() => expect(screen.queryByRole("group", { name: "Reactions" })).toBeNull());
@@ -129,10 +129,10 @@ describe("chat client", () => {
 
   it("every picker button sends its own id", () => {
     fireEvent.click(screen.getByLabelText("Send reaction"));
-    const ids = ["thumbs", "lol", "shock", "cringe", "fire", "party", "cry", "clap"];
+    const ids = REACTIONS;
     expect(document.querySelectorAll(".rx-pick")).toHaveLength(ids.length);
     for (const b of document.querySelectorAll(".rx-pick")) fireEvent.click(b);
-    expect(sent.map((m) => (m as { emoji: string }).emoji)).toEqual(ids.map((i) => `cat_${i}`));
+    expect(sent.map((m) => (m as { emoji: string }).emoji)).toEqual(ids);
   });
 
   it("Esc closes the picker", async () => {
@@ -144,7 +144,7 @@ describe("chat client", () => {
   it("a reaction float lives 3.5 s with its caption, then is removed", () => {
     vi.useFakeTimers();
     emit(reaction(1));
-    expect(document.querySelector(".rx-float .cat-cap")?.textContent).toBe("on fire");
+    expect(document.querySelector(".rx-float .cat-cap")?.textContent).toBe("mad the internet");
     act(() => {
       vi.advanceTimersByTime(3400);
     });
@@ -179,6 +179,13 @@ describe("chat client", () => {
     emit(text(0, "gg"));
     expect(screen.getByRole("log").textContent).toContain("gg");
     expect((screen.getByLabelText("Message") as HTMLInputElement).value).toBe("");
+  });
+
+  it("chat panel sends a reaction GIF from the in-chat picker", () => {
+    openChat();
+    fireEvent.click(screen.getAllByLabelText("Send reaction").at(-1) as HTMLElement);
+    fireEvent.click(screen.getByLabelText("React mad the internet"));
+    expect(sent).toEqual([{ type: "react", emoji: "mad-the-internet-gif-by-moodman" }]);
   });
 
   it("showChat=false: no toast, badge or float from others; panel still lists messages", () => {

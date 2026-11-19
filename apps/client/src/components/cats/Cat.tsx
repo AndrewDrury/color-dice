@@ -17,7 +17,7 @@ const stroke = {
 } as const;
 
 /** Eyes + mouth per cat. Coordinates are in the 64×64 viewBox. */
-const FACES: Record<Reaction, ComponentChildren> = {
+const FACES: Record<string, ComponentChildren> = {
   cat_thumbs: (
     <>
       <path d="M17 30q4-5 8 0M39 30q4-5 8 0" fill="none" {...stroke} />
@@ -104,7 +104,7 @@ const FACES: Record<Reaction, ComponentChildren> = {
 };
 
 /** Paws drawn in front of the face (thumbs up, clapping). */
-const PAWS: Partial<Record<Reaction, ComponentChildren>> = {
+const PAWS: Record<string, ComponentChildren> = {
   cat_thumbs: (
     <>
       <rect x="38" y="50" width="16" height="12" rx="5" fill={FUR} {...stroke} />

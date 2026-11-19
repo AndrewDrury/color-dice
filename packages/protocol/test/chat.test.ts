@@ -18,16 +18,8 @@ describe("chat protocol", () => {
       text: { limit: 5, windowMs: 10_000 },
       react: { limit: 10, windowMs: 10_000 },
     });
-    expect(REACTIONS).toEqual([
-      "cat_thumbs",
-      "cat_lol",
-      "cat_shock",
-      "cat_cringe",
-      "cat_fire",
-      "cat_party",
-      "cat_cry",
-      "cat_clap",
-    ]);
+    expect(REACTIONS).toHaveLength(21);
+    expect(new Set(REACTIONS).size).toBe(21);
   });
 
   it("allows only cat reaction ids; old emoji keys are rejected (K5.1)", () => {
@@ -38,7 +30,19 @@ describe("chat protocol", () => {
       });
       expect(isReaction(id)).toBe(true);
     }
-    for (const old of ["👍", "😂", "😮", "😬", "🔥", "🎉", "😭", "👏", "cat_", "CAT_LOL"]) {
+    for (const old of [
+      "👍",
+      "😂",
+      "😮",
+      "😬",
+      "🔥",
+      "🎉",
+      "😭",
+      "👏",
+      "cat_",
+      "cat_fire",
+      "CAT_LOL",
+    ]) {
       expect(parseClientMessage(JSON.stringify({ type: "react", emoji: old }))).toBeNull();
       expect(isReaction(old)).toBe(false);
     }
@@ -49,9 +53,11 @@ describe("chat protocol", () => {
       type: "chat",
       text: "hi 🎉",
     });
-    expect(parseClientMessage(JSON.stringify({ type: "react", emoji: "cat_fire" }))?.type).toBe(
-      "react",
-    );
+    expect(
+      parseClientMessage(
+        JSON.stringify({ type: "react", emoji: "mad-the-internet-gif-by-moodman" }),
+      )?.type,
+    ).toBe("react");
     expect(parseClientMessage(JSON.stringify({ type: "react", emoji: "💩" }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ type: "react", emoji: "hello" }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ type: "chat", text: "x", extra: 1 }))).toBeNull();
@@ -64,7 +70,7 @@ describe("chat protocol", () => {
   it("cleans text like names and keeps emoji", () => {
     expect(cleanChatText("  a \n\n b\t🎉\u0000​ ")).toBe("a b 🎉");
     expect(cleanChatText("\u0000\u0007 \n")).toBe("");
-    expect(isReaction("cat_thumbs")).toBe(true);
+    expect(isReaction("cat-gif")).toBe(true);
     expect(isReaction("x")).toBe(false);
   });
 });
