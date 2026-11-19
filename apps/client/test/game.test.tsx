@@ -157,8 +157,8 @@ describe("Game screen", () => {
     show(v);
     mount();
     expect(passTakesPenalty(v)).toBe(true);
-    expect(passLabel(v)).toBe("Pass (−5 penalty)");
-    const btn = screen.getByText("Pass (−5 penalty)") as HTMLButtonElement;
+    expect(passLabel(v)).toBe("Take penalty (−5)");
+    const btn = screen.getByText("Take penalty (−5)") as HTMLButtonElement;
     fireEvent.click(btn);
     fireEvent.click(btn);
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "PASS" }]);
@@ -177,14 +177,14 @@ describe("Game screen", () => {
       ],
     });
     expect(passTakesPenalty(marked)).toBe(false);
-    expect(passLabel(marked)).toBe("Pass");
+    expect(passLabel(marked)).toBe("Pass on colour");
     // Step 1 skip never costs on its own.
     const step1 = makeGameView({ legal1: ["RED"] });
     expect(passTakesPenalty(step1)).toBe(false);
-    expect(passLabel(step1)).toBe("Skip");
+    expect(passLabel(step1)).toBe("Pass on white");
     // Passive player: plain Pass.
     const passive = makeGameView({ active: 1, legal1: ["RED"] });
-    expect(passLabel(passive)).toBe("Pass");
+    expect(passLabel(passive)).toBe("Pass on white");
     // Staged step-1 mark: step 2 pass is free.
     const staged = { color: "RED" as const, number: 8 };
     expect(passTakesPenalty(step1, staged)).toBe(false);
@@ -238,7 +238,7 @@ describe("Game screen", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    fireEvent.click(screen.getByText("Pass"));
+    fireEvent.click(screen.getByText("Pass on colour"));
     expect(sent).toEqual([
       {
         type: "turn",
@@ -260,7 +260,7 @@ describe("Game screen", () => {
     _resetStoreForTests();
     show(makeGameView({ legal1: ["RED"], version: 8 }));
     mount();
-    const skip = screen.getByText("Skip");
+    const skip = screen.getByText("Pass on white");
     fireEvent.click(skip);
     fireEvent.click(skip);
     expect(sent).toEqual([{ type: "action1", turn: 9, kind: "PASS" }]);
@@ -380,7 +380,9 @@ describe("Game screen", () => {
     const { container } = mount();
     const chip = container.querySelector(`.g-chip[data-seat-id="${seatIdOf(1)}"]`);
     expect(chip?.textContent).toContain("Cleo");
-    expect(chip?.querySelector(".num")?.getAttribute("data-total")).toBe("-7");
+    expect(chip?.querySelector("[data-total]")).toBeNull(); // opponent totals stay hidden
+    expect(chip?.textContent).not.toContain("-7");
+    expect(chip?.getAttribute("aria-label") ?? "").not.toContain("-7");
     expect(chip?.querySelector(".g-chip-pen")?.getAttribute("data-penalties")).toBe("2");
   });
 

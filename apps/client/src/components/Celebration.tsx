@@ -1,22 +1,56 @@
 /**
- * Winner reveal (K5.4/K5.7): suspenseful build-up (results drop in lowest first under a drum-roll),
- * a hush, the winner celebration with confetti and a jingle, then the laughing-cat moment.
+ * Winner reveal (K5.4/K5.7): "And the scores are..." beat, then each player's final card one at a time
+ * from last place to first with a row-by-row count-up (red, yellow, green, blue, penalties, total),
+ * a hush, the winner modal (reaction GIF, confetti, jingle), then the laughing-cat moment.
  * Tap anywhere (or Skip / Esc) ends it. Plays once per game: see `claimCelebration`.
  */
-import type { ViewMessage } from "@cd/protocol";
+import type { Reaction, ViewMessage } from "@cd/protocol";
 import type { ComponentType } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { useReducedMotion } from "../fx/motion";
 import { jingleFor, playDrumRoll, playJingle, playLaugh, type SoundHandle } from "../fx/sound";
-import { seatInfo, tieInfo } from "../game/model";
+import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
 import "../styles/motion.css";
+import { reactionAsset } from "./CatReaction";
 import { LaughingCat } from "./cats/LaughingCat";
 import { CrownIcon, TieIcon } from "./icons";
-import { ResultEquation, rankPlayers } from "./ScoreTable";
+import { ResultEquation, rankNumbers, rankPlayers } from "./ScoreTable";
+import { Sheet } from "./Sheet";
 
 const HUSH_MS = 600;
+const INTRO_MS = 1400;
+const REDUCED_STEP_MS = 900;
+const NO_FX = { flash: {}, glint: null, floats: [], shakeKey: 0 };
+const NO_LEGAL: ReadonlySet<string> = new Set();
+const noop = () => {};
+
+const HAPPY_GIFS: readonly Reaction[] = [
+  "cat-dancing-gif-by-unscreen",
+  "dance-cat-gif",
+  "happy-black-cat-gif-by-sou-eu-na-vida",
+  "cat-laugh-gif",
+  "in-love-cat-gif",
+  "kitty-cute-cat-gif",
+];
+const SAD_GIFS: readonly Reaction[] = [
+  "shocked-cat-gif",
+  "surprised-cat-quedado-gif",
+  "cat-screaming-gif",
+];
+
+/** Deterministic reaction GIF by game key, so everyone with the same outcome sees the same one. */
+export function winnerGif(key: string, happy: boolean): Reaction {
+  const list = happy ? HAPPY_GIFS : SAD_GIFS;
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return list[(h >>> 0) % list.length] as Reaction;
+}
+function randomGif(happy: boolean): Reaction {
+  const list = happy ? HAPPY_GIFS : SAD_GIFS;
+  return list[Math.floor(Math.random() * list.length)] as Reaction;
+}
 const WIN_MIN_MS = 3000;
 const WIN_MAX_MS = 6000;
 const CAT_TAIL_MS = 800;
@@ -46,7 +80,7 @@ export function _resetCelebrationForTests(): void {
   claimed.clear();
 }
 
-type Phase = "build" | "reveal" | "win" | "cat";
+type Phase = "intro" | "build" | "reveal" | "win" | "cat";
 
 function useConfetti(on: boolean): ComponentType | null {
   const [C, setC] = useState<ComponentType | null>(null);
@@ -71,8 +105,12 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
     seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 });
   const winners = ranked.filter((p) => winnerSeats.includes(p.seat));
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
-  const [phase, setPhase] = useState<Phase>("build");
-  const [shown, setShown] = useState(0);
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [shown, setShown] = useState(0); // players revealed so far (phase "build")
+  const stepMs = reduced ? REDUCED_STEP_MS : Math.max(1600, Math.min(3000, 7000 / rows.length));
+  const lost = view.you.seat !== null && !iWon;
+  // Cosmetic and random per client; picked once so re-renders keep the same cat.
+  const [gif] = useState(() => randomGif(!lost));
   const [second, setSecond] = useState(false);
   const Confetti = useConfetti(phase === "win" && !reduced);
   const sounds = useRef<SoundHandle[]>([]);
@@ -99,11 +137,14 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
-    const n = Math.max(1, rows.length);
-    const step = reduced ? 250 : Math.min(600, 2800 / n);
-    const buildMs = n * step + 500;
+    const intro = reduced ? 600 : INTRO_MS;
+    const buildMs = intro + rows.length * stepMs;
     const roll = keep(playDrumRoll(buildMs / 1000 + 0.3));
-    for (let i = 0; i < rows.length; i++) at(200 + i * step, () => setShown(i + 1));
+    for (let i = 0; i < rows.length; i++)
+      at(intro + i * stepMs, () => {
+        setPhase("build");
+        setShown(i + 1);
+      });
     at(buildMs, () => {
       roll?.stop();
       setPhase("reveal");
@@ -137,6 +178,10 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
   }, []);
 
   const showWinner = phase === "win" || phase === "cat";
+  const cur = phase === "build" ? rows[shown - 1] : undefined;
+  const rowRanks = new Map(
+    rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
+  );
   const heading = allTied
     ? t("over.tieAll")
     : tie
@@ -161,6 +206,18 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
       <button type="button" class="btn cel-skip" ref={skipBtn} onClick={finish}>
         {t("celebrate.skip")}
       </button>
+      {showWinner ? (
+        <img
+          class="cel-gif"
+          data-testid="cel-gif"
+          src={reactionAsset(gif)}
+          alt=""
+          aria-hidden="true"
+          width={140}
+          height={140}
+          decoding="async"
+        />
+      ) : null}
       {phase === "cat" ? null : (
         <div class="cel-card">
           <h2 class="cel-title">
@@ -172,25 +229,55 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
               </span>
             ) : (
               <span class={phase === "reveal" ? "cel-hush" : undefined}>
-                {t("celebrate.title")}
+                {phase === "reveal" ? t("celebrate.title") : t("celebrate.scores")}
               </span>
             )}
           </h2>
-          <ol class="cel-rows">
-            {rows.map((p, i) => {
-              const win = winnerSeats.includes(p.seat);
-              return (
-                <li
-                  key={p.seat}
-                  class={`cel-row${i < shown ? " is-in" : ""}${phase === "build" && i === shown - 1 ? " is-lead" : ""}${phase !== "build" && win ? " is-winner" : ""}${phase !== "build" && !win ? " is-dim" : ""}`}
-                  data-seat={p.seat}
-                >
-                  <span class="g-name cel-pname">{name(p)}</span>
-                  <ResultEquation player={p} name={name(p)} ms={reduced ? 1 : 700} />
-                </li>
-              );
-            })}
-          </ol>
+          {cur ? (
+            <article
+              key={cur.seat}
+              class="cel-reveal"
+              data-testid="cel-reveal"
+              data-seat={cur.seat}
+              aria-live="polite"
+            >
+              <h3 class="cel-reveal-head">
+                <span class="num">{rowRanks.get(cur.seat)}.</span>{" "}
+                <span class="g-name cel-pname">{name(cur)}</span>
+              </h3>
+              {hasCard(cur) ? (
+                <Sheet
+                  player={cur}
+                  lockedColors={view.game?.lockedColors ?? []}
+                  legal={NO_LEGAL}
+                  staged={[]}
+                  ghost={[]}
+                  disabled
+                  readOnly
+                  fx={NO_FX}
+                  onPick={noop}
+                />
+              ) : null}
+              <ResultEquation player={cur} name={name(cur)} ms={reduced ? 1 : stepMs * 0.7} />
+            </article>
+          ) : null}
+          {showWinner ? (
+            <ol class="cel-rows">
+              {rows.map((p) => {
+                const win = winnerSeats.includes(p.seat);
+                return (
+                  <li
+                    key={p.seat}
+                    class={`cel-row is-in${win ? " is-winner" : " is-dim"}`}
+                    data-seat={p.seat}
+                  >
+                    <span class="g-name cel-pname">{name(p)}</span>
+                    <ResultEquation player={p} name={name(p)} ms={1} />
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
           {Confetti ? <Confetti key="a" /> : null}
           {Confetti && second ? <Confetti key="b" /> : null}
         </div>

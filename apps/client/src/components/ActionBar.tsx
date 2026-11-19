@@ -1,8 +1,8 @@
 /** Bottom bar (inline on desktop): step text, one-click Pass / Skip and the Confirm button. */
 import type { ViewMessage } from "@cd/protocol";
 import { cssColor, seatName } from "../game/model";
-import { canPass, type Mark, passLabel, passTakesPenalty } from "../game/staging";
-import { colorName, t, useT } from "../i18n";
+import { canPass, type Mark, passLabel, passTakesPenalty, waitingNames } from "../game/staging";
+import { colorName, joinNames, t, useT } from "../i18n";
 import { StatusBar } from "./StatusBar";
 
 export interface ActionBarProps {
@@ -30,6 +30,7 @@ export function ActionBar(p: ActionBarProps) {
   const last = s2 ?? s1;
   const showPass = canPass(view, s1) && !view.you.canRoll && !p.noMove;
   const penalty = passTakesPenalty(view, s1);
+  // Staged marks undo locally; otherwise only when the server says the decision can be undone.
   const canUndo = !!(p.s1 || p.s2 || view.you.canUndo);
 
   let primary: preact.JSX.Element | null = null;
@@ -56,9 +57,12 @@ export function ActionBar(p: ActionBarProps) {
       </button>
     );
   } else {
+    const who = waitingNames(view, (seat) => seatName(view, seat));
+    const idle =
+      who.length > 0 ? t("action.waitingFor", { names: joinNames(who) }) : t("action.waiting");
     primary = (
-      <button type="button" class="btn g-primary" disabled>
-        {p.sent ? t("action.sent") : canPass(view) ? t("action.pickBox") : t("action.waiting")}
+      <button type="button" class="btn g-primary g-waiting" disabled>
+        {p.sent ? t("action.sent") : canPass(view) ? t("action.pickBox") : idle}
       </button>
     );
   }
@@ -66,7 +70,7 @@ export function ActionBar(p: ActionBarProps) {
   return (
     <div class="g-actionbar">
       <StatusBar text={p.status} announce={p.announce} />
-      {showPass || primary ? (
+      {showPass || primary || canUndo ? (
         <div class="g-actions">
           {showPass ? (
             <button

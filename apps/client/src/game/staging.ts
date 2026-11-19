@@ -121,7 +121,19 @@ export function markedInAction1(view: ViewMessage): boolean {
 export function passTakesPenalty(view: ViewMessage, s1: Mark | null = null): boolean {
   if (!isActive(view) || s1) return false;
   const step = currentStep(view);
+  if (step === 1) return penaltyOnly(view);
   return step === 2 && !markedInAction1(view);
+}
+
+/**
+ * T-NEW-9: active player at step 1 with nothing legal to mark in either step. The only outcome is
+ * the −5, so one button sends both passes (same commands as skipping, then passing).
+ */
+export function penaltyOnly(view: ViewMessage): boolean {
+  if (currentStep(view) !== 1 || !isActive(view) || !view.game?.roll) return false;
+  return (
+    !view.you.legalAction1.some((a) => a.kind === "MARK") && early2Options(view, null).length === 0
+  );
 }
 
 /** The pass for the current step (K4.4: sent at once). With your step 1 staged it is step 2's. */
@@ -137,6 +149,9 @@ export function passMessage(view: ViewMessage, s1: Mark | null): ClientMessage |
         action1: { kind: "MARK", color: s1.color },
         action2: { kind: "PASS" },
       };
+    }
+    if (penaltyOnly(view)) {
+      return { type: "turn", turn, action1: { kind: "PASS" }, action2: { kind: "PASS" } };
     }
     return { type: "action1", turn, kind: "PASS" };
   }
@@ -205,11 +220,27 @@ export function decidedMarks(view: ViewMessage): Mark[] {
 export function noWhiteSumMove(view: ViewMessage): boolean {
   const g = view.game;
   if (g?.phase !== "ACTION_1" || view.you.seat === null || isActive(view)) return false;
+  if (currentStep(view) !== 1) return false;
   return !view.you.legalAction1.some((a) => a.kind === "MARK");
 }
 
 export function passLabel(view: ViewMessage, s1: Mark | null = null): string {
   if (passTakesPenalty(view, s1)) return t("action.passPenalty");
-  const early = currentStep(view) === 1 && isActive(view) && !s1;
-  return early ? t("action.skip") : t("action.pass");
+  const step = currentStep(view);
+  return step === 2 || (step === 1 && s1 && isActive(view))
+    ? t("action.passColour")
+    : t("action.pass");
+}
+
+/** Seats still to decide (or the active player in Action 2): the "Waiting for …" list. */
+export function waitingNames(view: ViewMessage, name: (seat: number) => string): string[] {
+  const g = view.game;
+  if (!g) return [];
+  if (g.phase === "ACTION_2") {
+    return g.turn && g.turn.activeSeat !== view.you.seat ? [name(g.turn.activeSeat)] : [];
+  }
+  if (g.phase !== "ACTION_1") return [];
+  return g.players
+    .filter((p) => p.seat !== view.you.seat && !(p.decided ?? p.action1Submitted))
+    .map((p) => name(p.seat));
 }

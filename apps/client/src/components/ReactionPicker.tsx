@@ -1,8 +1,8 @@
 /** Small popover with the 8 allow-listed cat reactions (I3). One tap sends and closes. */
-import { REACTIONS, type Reaction } from "@cd/protocol";
+import type { Reaction } from "@cd/protocol";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { t } from "../i18n";
-import { CatReaction, catCaption } from "./CatReaction";
+import { CatReaction, catCaption, REACTION_MOOD_ORDER } from "./CatReaction";
 import "../styles/motion.css";
 
 export function ReactionPicker({
@@ -53,7 +53,7 @@ export function ReactionPicker({
       class={`rx-picker mo-pop${inChat ? " chat-rx-picker" : ""}${closing ? " mo-exit" : ""}`}
       aria-label={t("chat.reactions")}
     >
-      {REACTIONS.map((id) => (
+      {REACTION_MOOD_ORDER.map((id) => (
         <button
           key={id}
           type="button"

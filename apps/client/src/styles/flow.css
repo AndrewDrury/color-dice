@@ -150,6 +150,8 @@
   font-size: 18px;
 }
 .ro-round {
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -176,6 +178,8 @@
   font-size: var(--fs-small);
 }
 .ro-caption {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   margin: 0;
   min-height: 1.3em;
   text-align: center;
@@ -194,4 +198,42 @@
 }
 :root[data-motion="reduced"] .lp-card {
   animation: none;
+}
+
+/* ---------- T-NEW-9: whose turn, step and what to press ---------- */
+.g-turnbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s2);
+  padding: 6px var(--s3);
+  border-radius: var(--r-button);
+  background: var(--paper);
+  box-shadow: var(--e1);
+  min-width: 0;
+}
+.g-turnbar.is-mine {
+  background: var(--accent);
+  color: var(--on-accent, var(--paper));
+}
+.g-turnbar-who {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: var(--fw-heavy);
+}
+.g-turnbar-step {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.g-turnbar-cta {
+  flex-basis: 100%;
+  font-weight: var(--fw-bold);
+  overflow-wrap: anywhere;
+}
+.g-chip.is-dim {
+  opacity: 0.7;
+}
+.g-actions .g-waiting {
+  white-space: normal;
+  line-height: 1.2;
 }

@@ -9,7 +9,7 @@ export interface PasswordFieldProps {
   onValue: (value: string) => void;
   error?: string | undefined;
   hint?: string;
-  /** Defaults to "off": a room password is a shared secret, not an account login. */
+  /** Defaults to "new-password" (browsers ignore "off" on password inputs): a room password is not a login. */
   autocomplete?: "off" | "new-password" | "current-password";
   enterkeyhint?: "go" | "next" | "done";
 }
@@ -22,12 +22,13 @@ export function PasswordField(props: PasswordFieldProps) {
     <Field
       label={props.label ?? t("field.password.label")}
       type={shown ? "text" : "password"}
+      name="room-pass"
       value={props.value}
       onValue={props.onValue}
       error={props.error}
       {...(props.hint ? { hint: props.hint } : {})}
       maxLength={PASSWORD_MAX}
-      autocomplete={props.autocomplete ?? "off"}
+      autocomplete={props.autocomplete ?? "new-password"}
       autocapitalize="off"
       autocorrect="off"
       spellcheck={false}

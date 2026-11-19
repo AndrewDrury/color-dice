@@ -64,6 +64,11 @@ export function Field(props: FieldProps) {
           enterkeyhint={props.enterkeyhint}
           inputMode={props.inputmode}
           autofocus={props.autofocus}
+          // Password managers ignore autocomplete="off"; these opt-outs cover 1Password, LastPass, Bitwarden.
+          data-1p-ignore
+          data-lpignore="true"
+          data-bwignore
+          data-form-type="other"
           disabled={props.disabled}
           aria-invalid={props.error ? "true" : undefined}
           aria-describedby={describedBy}

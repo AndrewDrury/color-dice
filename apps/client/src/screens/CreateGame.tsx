@@ -128,7 +128,6 @@ export function CreateGame() {
           onValue={setPassword}
           error={errors.password}
           hint={t("create.passwordHint")}
-          autocomplete="off"
           enterkeyhint="next"
         />
         <fieldset class="stack" style={{ border: 0, padding: 0, margin: 0, gap: "var(--s1)" }}>

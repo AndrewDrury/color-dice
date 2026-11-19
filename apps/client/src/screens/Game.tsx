@@ -21,6 +21,8 @@ import {
 import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
+import { TurnBanner } from "../components/TurnBanner";
+import { TurnSummary } from "../components/TurnSummary";
 import { feedback } from "../fx/feedback";
 import { useGameKeys } from "../fx/keyboard";
 import { useTabAttention } from "../fx/tabAttention";
@@ -30,6 +32,7 @@ import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
 import { canPass, decidedMarks, legalBoxes } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
+import { type TurnSummary as Summary, summarizeTurn } from "../game/turnSummary";
 import { useBackGuard } from "../game/useBackGuard";
 import { useAutoPass, useFlowEvents } from "../game/useFlow";
 import { useFx } from "../game/useFx";
@@ -226,6 +229,13 @@ function Board({
   );
   const noMove = useAutoPass(view, conn.send, landed);
   const flow = useFlowEvents(view, cur.fresh, st.lastEarly);
+  // T-NEW-12: summary of the turn that just ended; a newer turn replaces it.
+  const [summary, setSummary] = useState<Summary | null>(null);
+  useEffect(() => {
+    if (cur.resync) return setSummary(null);
+    const next = summarizeTurn(view, cur.fresh);
+    if (next) setSummary(next);
+  }, [view.version]);
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
   const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
@@ -309,6 +319,12 @@ function Board({
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
+      <TurnBanner
+        view={view}
+        staged={st.s1 !== null || st.s2 !== null}
+        noMove={noMove}
+        s1={st.s1}
+      />
       <AwayControls view={view} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
@@ -370,6 +386,9 @@ function Board({
       {viewport !== "desktop" ? actionBar : null}
       <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
       {toast ? <div class="g-toast">{toast}</div> : null}
+      {summary && !gameOver ? (
+        <TurnSummary summary={summary} onClose={() => setSummary(null)} />
+      ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
       {showRollOff && rollOff ? (
         <RollOff

@@ -123,7 +123,7 @@ describe("CreateGame", () => {
     expect(input("Your name").value).toBe("Cleo");
     expect(input("Password").value).toBe("secret");
     expect(input("Password").getAttribute("type")).toBe("password");
-    expect(input("Password").getAttribute("autocomplete")).toBe("off");
+    expect(input("Password").getAttribute("autocomplete")).toBe("new-password");
     type("Your name", "");
     type("Password", "");
     expect(input("Your name").value).toBe("");

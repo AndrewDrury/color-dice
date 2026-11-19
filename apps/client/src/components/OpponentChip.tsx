@@ -1,7 +1,6 @@
-/** Phone opponent chip (H3): name, total, status glyph, status glyph, penalties. */
+/** Phone opponent chip (H3): name, status glyph, penalties (totals stay hidden until game over). */
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { seatInfo } from "../game/model";
-import { useTween } from "../game/useTween";
 import { t, tn, useT } from "../i18n";
 import { CheckIcon, CloseIcon, DotsIcon, WarningIcon } from "./icons";
 
@@ -19,9 +18,9 @@ export function opponentState(view: ViewMessage, p: ViewPlayer): OpponentState {
   const g = view.game;
   const seat = seatInfo(view, p);
   const active = g?.turn?.activeSeat === p.seat && g.phase !== "GAME_OVER";
-  const decided = g?.phase === "ACTION_1" && p.action1Submitted;
+  const decided = g?.phase === "ACTION_1" && (p.decided ?? p.action1Submitted);
   const thinking =
-    (g?.phase === "ACTION_1" && !p.action1Submitted) ||
+    (g?.phase === "ACTION_1" && !(p.decided ?? p.action1Submitted)) ||
     ((g?.phase === "ACTION_2" || g?.phase === "AWAIT_ROLL") && active);
   return {
     active: !!active,
@@ -73,33 +72,29 @@ export interface ChipProps {
   flash: boolean;
 }
 
-/** Opponent chip: name, status glyph, total and penalty count. Their card stays hidden until game over. */
+/** Opponent chip: name, status glyph and penalty count. Their total (and card) stay hidden until game over. */
 export function OpponentChip({ view, player, flash }: ChipProps) {
   useT();
   const seat = seatInfo(view, player);
   const name = seat?.name ?? t("player.fallback", { n: player.seat + 1 });
+  const g = view.game;
   const st = opponentState(view, player);
-  const total = useTween(player.score.total);
   const strikes = Math.round(-player.score.penalties / 5);
   const penText = strikes > 0 ? tn("opp.penaltiesPts", strikes, { pts: strikes * 5 }) : "";
   return (
     <div
-      class={`g-chip${st.active ? " is-active" : ""}${flash ? " is-flash" : ""}`}
+      class={`g-chip${st.active ? " is-active" : g?.phase !== "GAME_OVER" ? " is-dim" : ""}${flash ? " is-flash" : ""}`}
       title={name}
       data-seat-id={seat?.seatId}
       role="img"
       aria-label={t("opp.chip", {
         name,
-        points: player.score.total,
         strikes: strikes > 0 ? penText : t("opp.none"),
       })}
     >
       <span class="g-chip-top">
         <span class="g-name">{name}</span>
         <StatusGlyph state={st} />
-        <span class="num" data-total={player.score.total}>
-          {total}
-        </span>
       </span>
       <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
         {strikes > 0 ? penText : "\u00a0"}

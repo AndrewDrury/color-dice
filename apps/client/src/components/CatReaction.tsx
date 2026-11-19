@@ -49,6 +49,36 @@ export const REACTION_LABELS: Record<Reaction, string> = {
   "surprised-cat-quedado-gif": "surprised",
 };
 
+/** Display order of the pickers, grouped by mood (display only: the protocol REACTIONS order is unchanged). */
+export const REACTION_MOOD_ORDER: readonly Reaction[] = [
+  // happy / love / cute / dancing
+  "happy-black-cat-gif-by-sou-eu-na-vida",
+  "in-love-cat-gif",
+  "kitty-cute-cat-gif",
+  "cat-dancing-gif-by-unscreen",
+  "dance-cat-gif",
+  // laughing / funny / memes
+  "cat-laugh-gif",
+  "cat-meme-gif",
+  "cat-meme-gif-1",
+  "cat-meme-gif-2",
+  "cat-reaction-gif-gif",
+  // surprised / shocked / screaming
+  "surprised-cat-quedado-gif",
+  "shocked-cat-gif",
+  "cat-screaming-gif",
+  // angry / mad / disgusted / fighting / sword
+  "angry-cat-disgusted-face-gif",
+  "mad-the-internet-gif-by-moodman",
+  "bruce-lee-fighting-gif",
+  "cat-holding-sword-gif",
+  // neutral / peeking / other
+  "cat-peeking-gif",
+  "cat-gif",
+  "cat-gif-1",
+  "cat-emoji-gif",
+];
+
 /** Public URL of a file in /reactions, honouring the deploy base path (Pages serves under /color-dice/). */
 export function reactionUrl(file: string): string {
   const base = import.meta.env?.BASE_URL ?? "/";

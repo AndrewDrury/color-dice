@@ -125,12 +125,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
           autocomplete="nickname"
           enterkeyhint="next"
         />
-        <PasswordField
-          value={password}
-          onValue={setPassword}
-          error={errors.password}
-          autocomplete="off"
-        />
+        <PasswordField value={password} onValue={setPassword} error={errors.password} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
           {t("common.join")}

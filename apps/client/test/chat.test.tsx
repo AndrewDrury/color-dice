@@ -1,7 +1,8 @@
-import { REACTIONS, type ServerMessage, type ViewMessage } from "@cd/protocol";
+import type { ServerMessage, ViewMessage } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseChatFrame } from "../src/chat/parse";
+import { REACTION_MOOD_ORDER } from "../src/components/CatReaction";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
 import { _resetMemoryForTests, saveSession } from "../src/session";
@@ -129,7 +130,7 @@ describe("chat client", () => {
 
   it("every picker button sends its own id", () => {
     fireEvent.click(screen.getByLabelText("Send reaction"));
-    const ids = REACTIONS;
+    const ids = REACTION_MOOD_ORDER;
     expect(document.querySelectorAll(".rx-pick")).toHaveLength(ids.length);
     for (const b of document.querySelectorAll(".rx-pick")) fireEvent.click(b);
     expect(sent.map((m) => (m as { emoji: string }).emoji)).toEqual(ids);

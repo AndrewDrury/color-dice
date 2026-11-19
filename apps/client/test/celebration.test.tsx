@@ -1,7 +1,7 @@
 import type { ViewMessage } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _resetCelebrationForTests } from "../src/components/Celebration";
+import { _resetCelebrationForTests, winnerGif } from "../src/components/Celebration";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { GameOver } from "../src/screens/GameOver";
 import { makeGameView, player, seatIdOf } from "./fixtures/views";
@@ -79,30 +79,73 @@ afterEach(() => {
 });
 
 describe("celebration", () => {
-  it("builds up with the lowest score first, equation terms equal the engine scores", () => {
+  it("opens with the suspense beat, then reveals one card at a time from last place to first", () => {
     mount(overView([9, 2, 5], [0]));
-    expect(screen.getByText("And the winner is…")).toBeTruthy();
+    expect(screen.getByText("And the scores are…")).toBeTruthy();
     expect(sound.playDrumRoll).toHaveBeenCalledTimes(1);
-    tick(900);
-    const rows = [...document.querySelectorAll(".cel-row.is-in")];
-    expect(rows[0]?.getAttribute("data-seat")).toBe("1"); // 2 points shown first
-    const eq = document.querySelector('.cel-row[data-seat="1"] .g-res-eq') as HTMLElement;
-    expect(eq.querySelector('[data-term="RED"] .eqn')?.getAttribute("data-value")).toBe("2");
+    expect(document.querySelector('[data-testid="cel-reveal"]')).toBeNull();
+    const seen: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      tick(i === 0 ? 1500 : 2400);
+      const card = document.querySelector('[data-testid="cel-reveal"]');
+      seen.push(card?.getAttribute("data-seat") ?? "none");
+      expect(document.querySelectorAll('[data-testid="cel-reveal"]')).toHaveLength(1);
+      expect(card?.querySelector(".g-sheet, .sheet, [data-color]")).not.toBeNull();
+    }
+    expect(seen).toEqual(["1", "2", "0"]); // 2, 5, 9 points
+    const eq = document.querySelector('[data-testid="cel-reveal"] .g-res-eq') as HTMLElement;
     expect(eq.querySelector('[data-term="PEN"] .eqn')?.getAttribute("data-value")).toBe("0");
-    expect(eq.querySelector(".g-total .num")?.getAttribute("data-value")).toBe("2");
-    expect(eq.querySelector(".g-penscore .g-pencap")?.textContent).toBe("penalties");
+    expect(eq.querySelector(".g-total .num")?.getAttribute("data-value")).toBe("9");
     expect(eq.querySelector('[data-term="RED"]')?.classList.contains("c-red")).toBe(true);
+  });
+
+  it("takes roughly 8-12 s overall before the winner modal", () => {
+    mount(overView([9, 2, 5], [0]));
+    tick(7000);
+    expect(overlay()?.getAttribute("data-phase")).not.toBe("win");
+    tick(2500);
+    expect(overlay()?.getAttribute("data-phase")).toBe("win");
+  });
+
+  it("winner modal shows a random, base-aware reaction GIF that ignores pointers", () => {
+    const v = overView([9, 2], [0]);
+    mount(v);
+    tick(9000);
+    const img = screen.getByTestId("cel-gif") as HTMLImageElement;
+    const happy = ["Dancing", "Dance", "Happy", "Laugh", "Love", "Cute"];
+    expect(happy.some((w) => (img.getAttribute("src") ?? "").includes(w))).toBe(true);
+    expect(img.getAttribute("src")).toMatch(/^\/reactions\/.+\.gif$/);
+    expect(getComputedStyle(img).pointerEvents).toBeDefined();
+    expect(winnerGif("A:1", true)).toBe(winnerGif("A:1", true));
+    expect(winnerGif("A:1", false)).toMatch(/shocked|surprised|screaming/);
+  });
+
+  it("a loser gets the shocked GIF set", () => {
+    mount(overView([9, 2], [0], 1));
+    tick(9000);
+    expect(screen.getByTestId("cel-gif").getAttribute("src")).toMatch(
+      /Shocked|Surprised|Screaming/,
+    );
+  });
+
+  it("skip button jumps out of the build-up", () => {
+    mount(overView([9, 2, 5], [0]));
+    tick(1500);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(overlay()).toBeNull();
+    for (const h of sound.handles) expect(h.stop).toHaveBeenCalled();
   });
 
   it("reveals 'You win!' with the jingle once, then the laughing cat with one laugh", () => {
     mount(overView([9, 2], [0]));
-    tick(5000); // build-up + hush
+    tick(9000); // build-up + hush
     expect(screen.getByTestId("cel-winner").textContent).toContain("You win!");
     expect(sound.playJingle).toHaveBeenCalledTimes(1);
     expect(sound.playLaugh).not.toHaveBeenCalled();
     tick(4100); // jingle (4 s) ends -> cat
     expect(sound.playLaugh).toHaveBeenCalledTimes(1);
     expect(overlay()?.getAttribute("data-phase")).toBe("cat");
+    expect(screen.getByTestId("cel-gif")).toBeTruthy(); // the cat stays through the laugh moment
     expect(sound.handles[1]?.stop).toHaveBeenCalled(); // jingle stopped before the laugh
     fireEvent.click(screen.getByLabelText(/laughing so hard/));
     expect(sound.playLaugh).toHaveBeenCalledTimes(2); // tap replays
@@ -112,13 +155,27 @@ describe("celebration", () => {
     expect(sound.playLaugh).toHaveBeenCalledTimes(2);
   });
 
+  it("ties are revealed in order and shown as a tie", () => {
+    mount(overView([5, 5, 2], [0, 1]));
+    tick(1500);
+    expect(document.querySelector('[data-testid="cel-reveal"]')?.getAttribute("data-seat")).toBe(
+      "2",
+    );
+    tick(2400);
+    expect(
+      document.querySelector('[data-testid="cel-reveal"] .cel-reveal-head .num')?.textContent,
+    ).toBe("1.");
+    tick(8000);
+    expect(screen.getByTestId("cel-winner").textContent).toMatch(/Tie: Andrew & Cleo/);
+  });
+
   it("names the winner for others and lists co-winners on a tie", () => {
     const { unmount } = mount(overView([9, 2], [0], 1));
-    tick(5000);
+    tick(9000);
     expect(screen.getByTestId("cel-winner").textContent).toContain("Andrew");
     unmount();
     mount(overView([9, 9, 2], [0, 1]));
-    tick(5000);
+    tick(9000);
     expect(screen.getByTestId("cel-winner").textContent).toMatch(/Tie: Andrew & Cleo/);
   });
 
@@ -141,7 +198,7 @@ describe("celebration", () => {
 
   it("tap to skip ends it and stops every sound", () => {
     mount(overView([9, 2], [0]));
-    tick(5000);
+    tick(9000);
     fireEvent.click(screen.getByTestId("celebration"));
     expect(overlay()).toBeNull();
     for (const h of sound.handles) expect(h.stop).toHaveBeenCalled();
@@ -149,7 +206,7 @@ describe("celebration", () => {
 
   it("muting during the sequence stops the sounds", () => {
     mount(overView([9, 2], [0]));
-    tick(5000);
+    tick(9000);
     act(() => {
       setPrefs({ sound: false });
     });
@@ -160,7 +217,15 @@ describe("celebration", () => {
     setPrefs({ motion: "reduced" });
     mount(overView([9, 2], [0]));
     expect(overlay()?.classList.contains("is-reduced")).toBe(true);
-    tick(4000);
+    tick(600); // reduced: short fixed delays, still one by one
+    expect(document.querySelector('[data-testid="cel-reveal"]')?.getAttribute("data-seat")).toBe(
+      "1",
+    );
+    tick(900);
+    expect(document.querySelector('[data-testid="cel-reveal"]')?.getAttribute("data-seat")).toBe(
+      "0",
+    );
+    tick(3000);
     await act(async () => {});
     expect(document.querySelector(".cf")).toBeNull();
     tick(6000);
@@ -169,7 +234,7 @@ describe("celebration", () => {
 
   it("full motion: confetti appears at the reveal and the cat moves", async () => {
     mount(overView([9, 2], [0]));
-    tick(4000);
+    tick(8200);
     await act(async () => {
       await vi.dynamicImportSettled();
     });
