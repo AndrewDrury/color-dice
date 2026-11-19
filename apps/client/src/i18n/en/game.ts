@@ -53,13 +53,8 @@ export const game = {
   "action.undo": "Undo",
 
   "away.title": "Away players",
-  "away.back": "I'm back",
-  "away.badge": "away",
   "away.left": "{name} left the game.",
-  "away.bringBack": "Bring back",
-  "away.offline": "{name} is offline",
-  "away.mark": "Mark as away",
-  "away.body": "{name} will auto-pass and take penalties on their turns.",
+  "away.paused": "Game paused — waiting for {names} to reconnect",
 
   "sheet.penaltyLabel": "Penalty −5 each",
   "sheet.penaltyAria": "{n} of 4 penalties, minus 5 each",

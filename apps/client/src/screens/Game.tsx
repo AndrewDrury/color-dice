@@ -310,7 +310,7 @@ function Board({
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
-      <AwayControls view={view} offlineSince={offlineSince} send={conn.send} />
+      <AwayControls view={view} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
       ) : null}

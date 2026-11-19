@@ -49,7 +49,6 @@ export const FINISHED_ROOM_TTL_MS = 24 * 60 * 60_000;
 /** K2.2: a room with no authenticated socket for this long is deleted. */
 export const ABANDONED_ROOM_MS = 30 * 60_000;
 
-export const AWAY_AFTER_OFFLINE_MS = 2 * 60_000;
 export const AUTOPASS_LOOP_GUARD = 20;
 
 /** Single source: the engine decides how many events a view carries. */

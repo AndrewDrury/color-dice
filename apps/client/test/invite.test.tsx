@@ -174,20 +174,10 @@ describe("left seats", () => {
   it("says 'Cleo left the game.' and not 'away'", () => {
     const v = makeGameView({ version: 5 });
     const seats = v.seats.map((s, i) => (i === 1 ? { ...s, away: true, left: true } : s));
-    const { container } = render(
-      <AwayControls view={{ ...v, seats }} offlineSince={{}} send={() => true} />,
-    );
+    const { container } = render(<AwayControls view={{ ...v, seats }} />);
     expect(screen.getByText("Cleo left the game.")).toBeTruthy();
     expect(container.textContent).not.toContain("away");
     expect(screen.queryByRole("button", { name: "Bring back" })).toBeNull();
-  });
-
-  it("an away seat that has not left still shows the away badge", () => {
-    const v = makeGameView({ version: 5 });
-    const seats = v.seats.map((s, i) => (i === 1 ? { ...s, away: true } : s));
-    render(<AwayControls view={{ ...v, seats }} offlineSince={{}} send={() => true} />);
-    expect(screen.getByText("away")).toBeTruthy();
-    expect(screen.queryByText(/left the game/)).toBeNull();
   });
 });
 

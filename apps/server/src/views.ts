@@ -5,6 +5,7 @@
  */
 import { type GameState, legalEarlyAction2Options, viewFor } from "@cd/engine";
 import type { ViewGame, ViewMessage, ViewRollOff, ViewSeat, ViewYou } from "@cd/protocol";
+import { pausedSeatIds } from "./pause";
 import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
 import type { RollOffState, RoomMeta, SeatRecord } from "./room-store";
 
@@ -122,6 +123,8 @@ export function buildView(
     seats: viewSeats(seats, sockets),
     game,
     rollOff: ro,
+    // T-NEW-3: seats holding the game up (offline, not left). Empty = not paused.
+    pausedSeatIds: meta.status === "lobby" ? [] : pausedSeatIds(seats, sockets, state),
     you,
   };
 }

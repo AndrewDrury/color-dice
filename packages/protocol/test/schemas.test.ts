@@ -154,7 +154,7 @@ describe("client messages", () => {
       action2: { kind: "MARK", whiteDie: 0, color: "GREEN" },
     },
     { type: "turn", turn: 3, action1: { kind: "PASS" }, action2: { kind: "PASS" } },
-    { type: "setAway", seatId: "a1b2c3d4", away: true },
+    { type: "rollOff", round: 2 },
     { type: "rematch" },
     { type: "ping" },
   ];

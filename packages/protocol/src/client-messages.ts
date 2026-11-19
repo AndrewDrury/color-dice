@@ -67,10 +67,6 @@ export const TurnMsgSchema = z
   })
   .strict();
 
-export const SetAwayMsgSchema = z
-  .object({ type: z.literal("setAway"), seatId: SeatIdSchema, away: z.boolean() })
-  .strict();
-
 export const RematchMsgSchema = z.object({ type: z.literal("rematch") }).strict();
 export const UndoMsgSchema = z.object({ type: z.literal("undo"), turn: TurnSchema }).strict();
 
@@ -94,7 +90,6 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   Action2MsgSchema,
   TurnMsgSchema,
   UndoMsgSchema,
-  SetAwayMsgSchema,
   RematchMsgSchema,
   PingMsgSchema,
   ChatMsgSchema,

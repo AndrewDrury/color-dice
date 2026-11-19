@@ -14,7 +14,6 @@ import {
   winners,
 } from "@cd/engine";
 import {
-  AWAY_AFTER_OFFLINE_MS,
   CLOSE,
   type ClientMessage,
   type ClientMessageType,
@@ -25,8 +24,9 @@ import {
 import { autopass } from "./autopass";
 import { hashToken, tokenHashEquals } from "./crypto";
 import type { Env } from "./env";
+import { pausedSeatIds } from "./pause";
 import { RoomChat } from "./room-chat-ops";
-import { isOnline, playerId } from "./room-lobby-ops";
+import { playerId } from "./room-lobby-ops";
 import { RollOffOps } from "./room-rolloff-ops";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 import { loadDice } from "./test-hooks";
@@ -142,9 +142,10 @@ function toCommand(msg: PlayMsg, id: string): Command {
   }
 }
 
-function awaySeats(seats: SeatRecord[]): Set<number> {
+/** Seats auto-passed: only seats that confirmed a leave (K2.2). Offline seats pause the game instead. */
+function leftSeats(seats: SeatRecord[]): Set<number> {
   const out = new Set<number>();
-  for (const s of seats) if (s.away && s.seatIndex !== null) out.add(s.seatIndex);
+  for (const s of seats) if (s.left && s.seatIndex !== null) out.add(s.seatIndex);
   return out;
 }
 
@@ -271,8 +272,6 @@ export class RoomPlay {
       case "turn":
       case "undo":
         return this.command(ws, att.seatId, msg);
-      case "setAway":
-        return this.setAway(ws, att.seatId, msg.seatId, msg.away);
       case "rematch":
         return this.rematch(ws, att.seatId);
       case "chat":
@@ -312,7 +311,11 @@ export class RoomPlay {
     }
     ws.serializeAttachment({ ...att, seatId: me.seatId });
     // Presence only: no version/lastActivityAt bump, no persist (lastSeenAt is saved on close).
-    await this.d.broadcast(meta, seats); // this socket gets its view, everyone presence
+    // Reconnecting may resume a paused game; left seats are then auto-passed (T-NEW-3).
+    const state = await this.loadState();
+    if (state && state.phase !== "GAME_OVER" && seats.some((s) => s.left)) {
+      await this.resave(meta, seats);
+    } else await this.d.broadcast(meta, seats); // this socket gets its view, everyone presence
     send(ws, { type: "chatHistory", messages: await this.chat.history() });
   }
 
@@ -340,7 +343,9 @@ export class RoomPlay {
     state: GameState,
     dice: { dice: DiceSource; save(): Promise<void> },
   ): Promise<void> {
-    const next = autopass(state, awaySeats(seats), dice.dice);
+    // T-NEW-3: while the game is paused nothing advances, not even auto-pass for left seats.
+    const paused = pausedSeatIds(seats, this.d.sockets(), state).length > 0;
+    const next = paused ? state : autopass(state, leftSeats(seats), dice.dice);
     if (next.phase === "GAME_OVER") {
       if (meta.status !== "finished") {
         // Exactly once per game end: later saves (e.g. setAway) see status "finished".
@@ -359,6 +364,10 @@ export class RoomPlay {
   private async rollOffRoll(ws: WebSocket, seatId: string, round: number): Promise<void> {
     const l = await this.load(ws, seatId);
     if (!l) return;
+    // Everyone present rolls together; nobody can roll while a seat is away.
+    if (pausedSeatIds(l.seats, this.d.sockets(), null).length > 0) {
+      return sendError(ws, "E_WRONG_PHASE", "rollOff", "paused");
+    }
     const err = await this.rollOff.submit(l.meta, l.seats, l.me, round);
     if (err) sendError(ws, err.code, "rollOff", err.reason);
   }
@@ -371,33 +380,14 @@ export class RoomPlay {
       return sendError(ws, "E_WRONG_PHASE", msg.type);
     }
     if (state.phase === "GAME_OVER") return sendError(ws, "E_GAME_OVER", msg.type);
+    if (pausedSeatIds(l.seats, this.d.sockets(), state).length > 0) {
+      return sendError(ws, "E_WRONG_PHASE", msg.type, "paused");
+    }
     if (msg.turn !== state.turn?.turnNumber) return sendError(ws, "E_STALE_TURN", msg.type);
     const dice = await loadDice(this.d.env(), this.d.storage);
     const r = dispatch(state, toCommand(msg, playerId(l.me.seatIndex)), dice.dice);
     if (!r.ok) return sendError(ws, r.error.code, msg.type, r.error.reason);
     await this.save(l.meta, l.seats, r.state, dice);
-  }
-
-  /** D3: host marks an offline (≥ 2 min) seat away; host or the seat itself clears it. */
-  private async setAway(ws: WebSocket, seatId: string, target: string, away: boolean) {
-    const l = await this.load(ws, seatId);
-    if (!l) return;
-    const seat = l.seats.find((s) => s.seatId === target);
-    if (!seat) return sendError(ws, "E_INVALID_COMMAND", "setAway", "unknown seat");
-    if (l.meta.status === "lobby") return sendError(ws, "E_WRONG_PHASE", "setAway");
-    if (away) {
-      if (!l.me.host) return sendError(ws, "E_NOT_HOST", "setAway");
-      const offline = !isOnline(this.d.sockets(), seat.seatId);
-      if (!offline || this.d.now() - seat.lastSeenAt < AWAY_AFTER_OFFLINE_MS) {
-        return sendError(ws, "E_TOO_SOON", "setAway");
-      }
-    } else if (!l.me.host && l.me.seatId !== seat.seatId) {
-      return sendError(ws, "E_NOT_HOST", "setAway");
-    }
-    if (seat.left) return sendError(ws, "E_INVALID_COMMAND", "setAway", "seat left");
-    if (seat.away === away) return;
-    seat.away = away;
-    await this.resave(l.meta, l.seats);
   }
 
   /** Commits a seat change; during play away seats are auto-passed first (K2.2 leave, D3). */

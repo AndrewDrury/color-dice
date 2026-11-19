@@ -166,35 +166,20 @@ describe("session end", () => {
   });
 });
 
-describe("away controls", () => {
+describe("automatic pause (T-NEW-3)", () => {
   const offline = () => seatsOffline(makeGameView({ version: 5 }), 2);
 
-  it("host sees Mark as away only after 2 min offline, and it confirms then sends", () => {
-    connect(offline());
+  it("shows a paused banner naming the offline player; there is no Mark as away", () => {
+    connect({ ...offline(), pausedSeatIds: [seatIdOf(2)] });
+    expect(screen.getByTestId("paused-banner").textContent).toContain("Dev");
     expect(screen.queryByText("Mark as away")).toBeNull();
-    wait(119_000);
-    expect(screen.queryByText("Mark as away")).toBeNull();
-    wait(2000);
-    fireEvent.click(screen.getByText("Mark as away"));
-    expect(screen.getByText("Dev will auto-pass and take penalties on their turns.")).toBeTruthy();
-    const confirm = screen.getAllByText("Mark as away").pop() as HTMLElement;
-    fireEvent.click(confirm);
-    expect(sock().sent).toContainEqual({ type: "setAway", seatId: seatIdOf(2), away: true });
-  });
-
-  it("non-hosts never see Mark as away", () => {
-    connect({ ...offline(), you: { ...offline().you, host: false, seatId: seatIdOf(1), seat: 1 } });
     wait(200_000);
     expect(screen.queryByText("Mark as away")).toBeNull();
+    expect(sock().sent.some((m) => (m as { type: string }).type === "setAway")).toBe(false);
   });
 
-  it("an away player sees I'm back, which sends setAway false for their seat", () => {
-    const v = makeGameView({ version: 5, you: 1 });
-    connect({
-      ...v,
-      seats: v.seats.map((s, i) => (i === 1 ? { ...s, away: true } : s)),
-    });
-    fireEvent.click(screen.getByText("I'm back"));
-    expect(sock().sent).toContainEqual({ type: "setAway", seatId: seatIdOf(1), away: false });
+  it("no banner when nobody is away", () => {
+    connect(offline());
+    expect(screen.queryByTestId("paused-banner")).toBeNull();
   });
 });

@@ -192,7 +192,7 @@ describe("full games over sockets", () => {
     expect(room.players).toHaveLength(2);
     expect(rec(after)).toEqual(["0-0-1", "1-0-0"]); // no change mid-game
 
-    // Second game: the record accumulates, and a replayed save (setAway) does not double-count.
+    // Second game: the record accumulates, and a later save does not double-count.
     // Fresh sockets: each socket is limited to 30 messages per 10 s.
     for (const c of conns) c.close();
     const g2 = await connectAll(room);
@@ -203,7 +203,6 @@ describe("full games over sockets", () => {
     }
     const over = await settled(g2);
     for (const v of over) expect(rec(v)).toEqual(["0-0-2", "2-0-0"]);
-    d0.send({ type: "setAway", seatId: after.seats[1]?.seatId as string, away: false });
     (g2[1] as Conn).send({ type: "ping" });
     await (g2[1] as Conn).next("pong");
     for (const v of await settled(g2)) expect(rec(v)).toEqual(["0-0-2", "2-0-0"]);

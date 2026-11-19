@@ -278,48 +278,52 @@ describe("lobby phase", () => {
 });
 
 describe("away and rematch", () => {
-  it("host marks an offline seat away; rounds complete and its penalties accrue", async () => {
+  it("pauses while a seat is offline: nothing advances, no penalties; resumes on reconnect", async () => {
     const r = await setup(3);
     const [c0, c1, c2] = r.clients as [Client, Client, Client];
     const away = r.players[1]?.seatId as string;
-    // Too soon while the seat is still online / just left.
-    c0.send({ type: "setAway", seatId: away, away: true });
-    expect((await c0.lastError()).code).toBe("E_TOO_SOON");
+    expect(c0.view()?.pausedSeatIds ?? []).toEqual([]);
     c1.close();
-    await c0.until(() => c0.view()?.seats.find((s) => s.seatId === away)?.online === false);
-    r.clock.now += 3 * 60_000;
-    c0.send({ type: "setAway", seatId: away, away: true });
-    await c0.until(() => c0.view()?.seats.find((s) => s.seatId === away)?.away);
-    // Play until seat 1 has taken a turn (turn 2) and the game is back awaiting seat 2.
-    for (let guard = 0; guard < 6; guard++) {
-      const v = c0.view() as ViewMessage;
-      if (turnOf(v) >= 3) break;
-      const t = turnOf(v);
-      const active = v.game?.turn?.activeSeat;
-      const cs = [c0, c2];
-      if (v.game?.phase === "AWAIT_ROLL" && active !== 1) {
-        (active === 0 ? c0 : c2).send({ type: "roll", turn: t });
-        await c0.until(() => c0.view()?.game?.phase !== "AWAIT_ROLL");
-      }
-      const p = (c0.view() as ViewMessage).game?.phase;
-      if (p === "ACTION_1") {
-        const before = (c0.view() as ViewMessage).version;
-        for (const c of cs) c.send({ type: "action1", turn: t, kind: "PASS" });
-        await c0.nextView(before);
-        await c0.until(() => c0.view()?.game?.phase !== "ACTION_1");
-      }
-      if ((c0.view() as ViewMessage).game?.phase === "ACTION_2" && active !== 1) {
-        (active === 0 ? c0 : c2).send({ type: "action2", turn: t, kind: "PASS" });
-        await c0.until(() => turnOf(c0.view() as ViewMessage) > t);
-      }
-      await c0.until(() => c0.view()?.game?.phase);
-    }
-    const v = c0.view() as ViewMessage;
-    expect(turnOf(v)).toBeGreaterThanOrEqual(3);
-    // Seat 1's card is hidden from seat 0; its penalty points stay public (-5 each).
-    const p1 = v.game?.players.find((p) => p.seat === 1);
-    expect(p1?.sheet).toBeNull();
-    expect(p1?.score.penalties).toBeLessThanOrEqual(-5);
+    const paused = await c0.until(() => {
+      const v = c0.view();
+      return v?.pausedSeatIds?.length ? v : undefined;
+    });
+    expect(paused.pausedSeatIds).toEqual([away]);
+    const version = paused.version;
+    // Hours pass; the roll is refused and nothing changes (no timers, no auto-pass, no penalties).
+    r.clock.now += 3 * 60 * 60_000;
+    c0.send({ type: "roll", turn: 1 });
+    const e = await c0.lastError();
+    expect([e.code, e.reason]).toEqual(["E_WRONG_PHASE", "paused"]);
+    await c2.until(() => c2.view()?.pausedSeatIds?.length);
+    expect(c0.view()?.version).toBe(version);
+    expect(c0.view()?.game?.phase).toBe("AWAIT_ROLL");
+    expect(c0.view()?.game?.players.every((p) => p.score.penalties === 0)).toBe(true);
+    // Reconnect + authenticate: the pause clears and play continues.
+    const back = await Client.open(r.code);
+    back.send({ type: "auth", token: r.players[1]?.token });
+    await c0.until(() => c0.view()?.pausedSeatIds?.length === 0);
+    c0.send({ type: "roll", turn: 1 });
+    await c0.until(() => c0.view()?.game?.phase === "ACTION_1");
+    back.close();
+  });
+
+  it("two seats offline pause together and resume only when both are back", async () => {
+    const r = await setup(3);
+    const [c0, c1, c2] = r.clients as [Client, Client, Client];
+    c1.close();
+    c2.close();
+    await c0.until(() => c0.view()?.pausedSeatIds?.length === 2);
+    const b1 = await Client.open(r.code);
+    b1.send({ type: "auth", token: r.players[1]?.token });
+    await c0.until(() => c0.view()?.pausedSeatIds?.length === 1);
+    c0.send({ type: "roll", turn: 1 });
+    expect((await c0.lastError()).reason).toBe("paused");
+    const b2 = await Client.open(r.code);
+    b2.send({ type: "auth", token: r.players[2]?.token });
+    await c0.until(() => c0.view()?.pausedSeatIds?.length === 0);
+    b1.close();
+    b2.close();
   });
 
   it("rematch resets the game and keeps the seats", async () => {

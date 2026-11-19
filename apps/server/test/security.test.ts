@@ -20,7 +20,7 @@ describe("game socket validation and authority", () => {
     expect(c.view().version).toBe(v0.version);
   });
 
-  it("host-only setAway from a non-host seat → E_NOT_HOST", async () => {
+  it("setAway no longer exists (T-NEW-3): it is an invalid command", async () => {
     const room = await createRoom(2);
     await startGame(room);
     const conns = await connectAll(room);
@@ -29,7 +29,7 @@ describe("game socket validation and authority", () => {
     const v0 = guest.view().version;
     guest.send({ type: "setAway", seatId: hostSeat, away: true });
     const e = await guest.until(() => guest.frames.find((f) => f.type === "error"));
-    expect(e.code).toBe("E_NOT_HOST");
+    expect(e.code).toBe("E_INVALID_COMMAND");
     expect(guest.view().version).toBe(v0);
   });
 });

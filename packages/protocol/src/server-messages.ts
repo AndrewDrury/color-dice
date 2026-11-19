@@ -136,6 +136,11 @@ export interface ViewMessage {
   game: ViewGame | null;
   /** Present only while the opening roll-off runs (game is null then). */
   rollOff?: ViewRollOff | null;
+  /**
+   * Automatic pause (T-NEW-3): seat ids of players who are offline. While non-empty nothing
+   * advances; the game resumes by itself when they reconnect. Absent/empty = not paused.
+   */
+  pausedSeatIds?: string[];
   you: ViewYou;
 }
 
@@ -323,6 +328,7 @@ export const ViewMessageSchema = z
       .strict()
       .nullable()
       .optional(),
+    pausedSeatIds: z.array(SeatIdSchema).max(5).optional(),
     you: z
       .object({
         seatId: SeatIdSchema,
@@ -352,7 +358,6 @@ export const ErrorMessageSchema = z
         "action2",
         "turn",
         "undo",
-        "setAway",
         "rematch",
         "ping",
         "chat",

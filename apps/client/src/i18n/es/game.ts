@@ -54,13 +54,8 @@ export const game: Record<keyof typeof en, string> = {
   "action.undo": "Deshacer",
 
   "away.title": "Jugadores ausentes",
-  "away.back": "Ya volví",
-  "away.badge": "ausente",
   "away.left": "{name} salió de la partida.",
-  "away.bringBack": "Reincorporar",
-  "away.offline": "{name} está desconectado",
-  "away.mark": "Marcar ausente",
-  "away.body": "{name} pasará automáticamente y recibirá penalizaciones en sus turnos.",
+  "away.paused": "Partida en pausa: esperando a {names}",
 
   "sheet.penaltyLabel": "Penalización −5 c/u",
   "sheet.penaltyAria": "{n} de 4 penalizaciones, menos 5 cada una",
