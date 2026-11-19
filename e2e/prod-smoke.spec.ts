@@ -38,7 +38,10 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     await expect(g.getByRole("button", { name: "Leave" })).toBeVisible();
     await expect(h.getByText(guest.name).first()).toBeVisible();
 
-    // The guest filled the room, so the game starts by itself; both see the game screen.
+    // 4-player room with 2 seated: the host starts it (a full room would start by itself).
+    const start = h.getByRole("button", { name: "Start game" });
+    if (await start.isVisible()) await start.click();
+    // Both see the game screen.
     for (const p of [host, guest]) {
       await expect(p.page.locator(".g-main")).toBeVisible();
     }
@@ -65,14 +68,15 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     await expect
       .poll(
         async () => {
-          if (await rollBtn.isVisible()) await rollBtn.click({ timeout: 2_000 }).catch(() => {});
-          return roller.page.locator("[data-die][data-face]").count();
+          if (!(await rollBtn.isVisible())) return true;
+          await rollBtn.click({ timeout: 2_000 }).catch(() => {});
+          return false;
         },
         { timeout: 30_000, intervals: [1_000] },
       )
-      .toBeGreaterThan(0);
+      .toBe(true);
     for (const p of [host, guest]) {
-      await expect(p.page.locator("[data-die][data-face]").first()).toBeVisible();
+      await expect.poll(() => p.page.locator("[data-die][data-face]").count()).toBeGreaterThan(0);
       await expect
         .poll(() => p.page.locator("[data-die]:not(.is-removed):not([data-face])").count())
         .toBe(0);
