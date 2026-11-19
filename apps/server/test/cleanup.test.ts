@@ -13,8 +13,10 @@ import {
   connectAll,
   createRoom,
   PASSWORD,
+  queueDice,
   startGame,
 } from "./helpers/client";
+import { seat0RollOff } from "./helpers/plan";
 
 const MIN = 60_000;
 const stub = (code: string) => env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code));
@@ -45,6 +47,7 @@ async function listedRoom(): Promise<AuthRes> {
 describe("leave during play", () => {
   it("the seat becomes LEFT: session ends (4004), auto-passed, host passes on", async () => {
     const room = await createRoom(3);
+    await queueDice(room.code, seat0RollOff(3));
     await startGame(room);
     const conns = await connectAll(room);
     const [host, p1, p2] = room.players as [AuthRes, AuthRes, AuthRes];

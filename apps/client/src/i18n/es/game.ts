@@ -146,6 +146,8 @@ export const game: Record<keyof typeof en, string> = {
   "rolloff.many": "{n} seises — se tira de nuevo",
   "rolloff.winner": "{name} sacó el único 6 — ¡empieza {name}!",
   "rolloff.skip": "Toca para saltar",
+  "rolloff.roll": "Tirar",
+  "rolloff.waiting": "Esperando a {names}…",
   "hint.tag": "Pista",
   "hint.off": "No mostrar más",
   "opp.penaltiesPts_one": "{count} penalización (−{pts})",

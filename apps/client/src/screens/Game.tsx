@@ -11,7 +11,13 @@ import { GameMenu } from "../components/GameMenu";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
-import { markRollOffPlayed, RollOff, rollOffKey, rollOffPlayed } from "../components/RollOff";
+import {
+  markRollOffPlayed,
+  RollOff,
+  RollOffLive,
+  rollOffKey,
+  rollOffPlayed,
+} from "../components/RollOff";
 import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
@@ -79,6 +85,10 @@ export function Game({ code }: { code: string }) {
     return () => clearTimeout(t);
   }, [toast?.id]);
 
+  // The live roll-off: this player watched the rounds happen, so only the deciding one replays.
+  const sawLive = useRef(false);
+  if (view?.rollOff && !view.game) sawLive.current = true;
+  if (view && !view.game && view.rollOff) return <RollOffLive view={view} send={conn.send} />;
   if (!view?.game) {
     return (
       <main class="stack" style={{ paddingTop: "var(--s8)" }}>
@@ -100,6 +110,7 @@ export function Game({ code }: { code: string }) {
       failSignal={failSignal}
       leaving={leaving}
       setLeaving={setLeaving}
+      liveRollOff={sawLive.current}
     />
   );
 }
@@ -114,6 +125,7 @@ interface BoardProps {
   failSignal: number;
   leaving: boolean;
   setLeaving: (v: boolean) => void;
+  liveRollOff: boolean;
 }
 
 function Board({
@@ -126,6 +138,7 @@ function Board({
   failSignal,
   leaving,
   setLeaving,
+  liveRollOff,
 }: BoardProps) {
   const game = view.game;
   const viewport = useViewport();
@@ -362,7 +375,7 @@ function Board({
       {showRollOff && rollOff ? (
         <RollOff
           view={view}
-          rounds={rollOff.rounds}
+          rounds={liveRollOff ? rollOff.rounds.slice(-1) : rollOff.rounds}
           onDone={() => {
             markRollOffPlayed(rollOffId as string);
             setRollOffDone(true);

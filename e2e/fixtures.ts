@@ -96,6 +96,27 @@ export async function startGame(host: Player) {
   if (await start.isVisible()) await start.click();
 }
 
+/**
+ * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every player
+ * taps Roll each round until every page shows the game board.
+ */
+export async function playRollOff(players: Player[]) {
+  await expect
+    .poll(
+      async () => {
+        let boards = 0;
+        for (const { page } of players) {
+          if (await page.locator(".g-main").isVisible()) boards += 1;
+          const roll = page.getByTestId("rolloff-roll");
+          if (await roll.isVisible()) await roll.click().catch(() => {});
+        }
+        return boards === players.length;
+      },
+      { timeout: 30_000, intervals: [250] },
+    )
+    .toBe(true);
+}
+
 /** Queue scripted dice (server must run with ALLOW_TEST_HOOKS=1). */
 export async function queueDice(code: string, faces: number[]) {
   const api = await request.newContext({ baseURL: SERVER });

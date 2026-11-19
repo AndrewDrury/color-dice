@@ -27,6 +27,7 @@ import { hashToken, tokenHashEquals } from "./crypto";
 import type { Env } from "./env";
 import { RoomChat } from "./room-chat-ops";
 import { isOnline, playerId } from "./room-lobby-ops";
+import { RollOffOps } from "./room-rolloff-ops";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 import { loadDice } from "./test-hooks";
 
@@ -183,8 +184,16 @@ type Loaded = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
 
 export class RoomPlay {
   private readonly chat: RoomChat;
+  private readonly rollOff: RollOffOps;
 
   constructor(private readonly d: PlayDeps) {
+    this.rollOff = new RollOffOps({
+      env: () => d.env(),
+      storage: d.storage,
+      store: d.store,
+      commit: (m, s, st) => d.commit(m, s, st),
+      finish: (m, s, st, dice) => this.save(m, s, st, dice),
+    });
     this.chat = new RoomChat(
       d.store,
       () => d.sockets(),
@@ -254,6 +263,8 @@ export class RoomPlay {
       case "auth":
         sendError(ws, "E_INVALID_COMMAND", "auth", "already authenticated");
         return;
+      case "rollOff":
+        return this.rollOffRoll(ws, att.seatId, msg.round);
       case "roll":
       case "action1":
       case "action2":
@@ -345,6 +356,13 @@ export class RoomPlay {
     await this.d.commit(meta, seats, toJSON(next));
   }
 
+  private async rollOffRoll(ws: WebSocket, seatId: string, round: number): Promise<void> {
+    const l = await this.load(ws, seatId);
+    if (!l) return;
+    const err = await this.rollOff.submit(l.meta, l.seats, l.me, round);
+    if (err) sendError(ws, err.code, "rollOff", err.reason);
+  }
+
   private async command(ws: WebSocket, seatId: string, msg: PlayMsg): Promise<void> {
     const l = await this.load(ws, seatId);
     if (!l) return;
@@ -385,7 +403,10 @@ export class RoomPlay {
   /** Commits a seat change; during play away seats are auto-passed first (K2.2 leave, D3). */
   async resave(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
     const state = await this.loadState();
-    if (!state) return this.d.commit(meta, seats);
+    if (!state) {
+      if (await this.rollOff.resettle(meta, seats)) return;
+      return this.d.commit(meta, seats);
+    }
     const dice = await loadDice(this.d.env(), this.d.storage);
     await this.save(meta, seats, state, dice);
   }

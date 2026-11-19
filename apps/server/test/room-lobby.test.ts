@@ -243,7 +243,7 @@ describe("host-only actions", () => {
     expect(res.status).toBe(422);
   });
 
-  it("start assigns seatIndex by joinOrder and stores engine state", async () => {
+  it("start assigns seatIndex by joinOrder and opens the roll-off", async () => {
     const host = await create();
     const bob = await joinOk(host.code, "Bob");
     await runInDurableObject(
@@ -255,9 +255,13 @@ describe("host-only actions", () => {
           [host.seatId, 0],
           [bob.seatId, 1],
         ]);
-        const st = JSON.parse((await state.storage.get<string>("state")) as string);
-        expect(st.players.map((p: { id: string }) => p.id)).toEqual(["seat-0", "seat-1"]);
-        expect(st.phase).toBe("AWAIT_ROLL");
+        // No scripted dice: the players roll off themselves (T-NEW-2), so no engine state yet.
+        expect(await state.storage.get("state")).toBeUndefined();
+        expect(await state.storage.get("rollOff")).toEqual({
+          round: 1,
+          current: [null, null],
+          completed: [],
+        });
       },
     );
   });

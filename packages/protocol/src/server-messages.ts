@@ -114,6 +114,19 @@ export interface ViewYou {
   canUndo: boolean;
 }
 
+/**
+ * Opening roll-off in progress (T-NEW-2). Nobody's current die is revealed until every
+ * expected seat has rolled; then the round moves to `completed` for everyone at once.
+ */
+export interface ViewRollOff {
+  /** 1-based round being rolled now. */
+  round: number;
+  /** Per seat index: has this seat rolled in the current round? */
+  rolled: boolean[];
+  /** Fully revealed rounds, one face per seat each (all without a unique 6). */
+  completed: number[][];
+}
+
 export interface ViewMessage {
   type: "view";
   version: number;
@@ -121,6 +134,8 @@ export interface ViewMessage {
   room: ViewRoom;
   seats: ViewSeat[];
   game: ViewGame | null;
+  /** Present only while the opening roll-off runs (game is null then). */
+  rollOff?: ViewRollOff | null;
   you: ViewYou;
 }
 
@@ -299,6 +314,15 @@ export const ViewMessageSchema = z
       )
       .max(5),
     game: ViewGameSchema.nullable(),
+    rollOff: z
+      .object({
+        round: z.number().int().min(1),
+        rolled: z.array(z.boolean()).max(5),
+        completed: z.array(z.array(z.number().int().min(1).max(6)).max(5)).max(1000),
+      })
+      .strict()
+      .nullable()
+      .optional(),
     you: z
       .object({
         seatId: SeatIdSchema,

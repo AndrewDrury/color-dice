@@ -144,6 +144,8 @@ export const game = {
   "rolloff.many": "{n} sixes — roll again",
   "rolloff.winner": "{name} rolled the only 6 — {name} goes first!",
   "rolloff.skip": "Tap to skip",
+  "rolloff.roll": "Roll",
+  "rolloff.waiting": "Waiting for {names}…",
   "hint.tag": "Hint",
   "hint.off": "Don't show hints",
   "opp.penaltiesPts_one": "{count} penalty (−{pts})",

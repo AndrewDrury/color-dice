@@ -4,9 +4,9 @@
  * a socket. The game part comes only from the engine's `viewFor(state, seat)`.
  */
 import { type GameState, legalEarlyAction2Options, viewFor } from "@cd/engine";
-import type { ViewGame, ViewMessage, ViewSeat, ViewYou } from "@cd/protocol";
+import type { ViewGame, ViewMessage, ViewRollOff, ViewSeat, ViewYou } from "@cd/protocol";
 import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
-import type { RoomMeta, SeatRecord } from "./room-store";
+import type { RollOffState, RoomMeta, SeatRecord } from "./room-store";
 
 function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
   return byJoinOrder(seats).map((s) => ({
@@ -59,6 +59,7 @@ export function buildView(
   state: GameState | null,
   seat: SeatRecord,
   sockets: WebSocket[],
+  rollOff: RollOffState | null = null,
 ): ViewMessage {
   let game: ViewGame | null = null;
   let you = lobbyYou(seat);
@@ -95,6 +96,17 @@ export function buildView(
       canUndo: v.you.canUndo,
     };
   }
+  // During the roll-off the seat's index is public to its owner (no game state yet).
+  if (rollOff && !state && seat.seatIndex !== null) you = { ...you, seat: seat.seatIndex };
+  const ro: ViewRollOff | null =
+    rollOff && !state
+      ? {
+          round: rollOff.round,
+          // Only "has rolled", never the face: the round is revealed to everyone at once.
+          rolled: rollOff.current.map((f) => f !== null),
+          completed: rollOff.completed.map((r) => [...r]),
+        }
+      : null;
   return {
     type: "view",
     version: meta.version,
@@ -109,6 +121,7 @@ export function buildView(
     },
     seats: viewSeats(seats, sockets),
     game,
+    rollOff: ro,
     you,
   };
 }
@@ -119,6 +132,7 @@ export function broadcastViews(
   meta: RoomMeta,
   seats: SeatRecord[],
   state: GameState | null,
+  rollOff: RollOffState | null = null,
 ): void {
   for (const ws of sockets) {
     if (ws.readyState !== WebSocket.OPEN) continue;
@@ -126,7 +140,7 @@ export function broadcastViews(
     const seat = seatId === null ? undefined : seats.find((s) => s.seatId === seatId);
     if (!seat) continue;
     try {
-      ws.send(JSON.stringify(buildView(meta, seats, state, seat, sockets)));
+      ws.send(JSON.stringify(buildView(meta, seats, state, seat, sockets, rollOff)));
     } catch {
       // socket is closing; ignore
     }

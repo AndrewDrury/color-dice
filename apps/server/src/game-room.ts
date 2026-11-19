@@ -111,7 +111,14 @@ export class GameRoom extends DurableObject<Env> {
   /** Sends every authenticated socket the view for its own seat. */
   protected async broadcast(meta: RoomMeta, seats: SeatRecord[], state?: string): Promise<void> {
     const raw = state ?? (await this.store.getState());
-    broadcastViews(this.ctx.getWebSockets(), meta, seats, raw === undefined ? null : fromJSON(raw));
+    const rollOff = raw === undefined ? ((await this.store.getRollOff()) ?? null) : null;
+    broadcastViews(
+      this.ctx.getWebSockets(),
+      meta,
+      seats,
+      raw === undefined ? null : fromJSON(raw),
+      rollOff,
+    );
   }
 
   /** `GET /ws/game/:code` (Origin and rate limit checked by the Worker). */
@@ -186,7 +193,8 @@ export class GameRoom extends DurableObject<Env> {
       const started = isRoomFull(meta, all)
         ? await startLobbyGame(this.env, this.ctx.storage, meta, all)
         : null;
-      if (started?.ok) await this.commit(meta, started.value.seats, started.value.state);
+      if (started?.ok)
+        await this.commit(meta, started.value.seats, started.value.state ?? undefined);
       else await this.commit(meta, all);
       return ok({ code: meta.code, token, seatId: seat.seatId });
     });
@@ -307,7 +315,7 @@ export class GameRoom extends DurableObject<Env> {
       if (meta.status !== "lobby") return NOT_IN_LOBBY;
       const res = await startLobbyGame(this.env, this.ctx.storage, meta, seats, diceOverride);
       if (!res.ok) return res;
-      await this.commit(meta, res.value.seats, res.value.state);
+      await this.commit(meta, res.value.seats, res.value.state ?? undefined);
       return ok(null);
     });
   }

@@ -177,8 +177,8 @@ describe("secrecy", () => {
       expect(
         (await api("POST", `/api/games/${host.code}/start`, { token: host.token })).status,
       ).toBe(204);
-      await hostConn.until(() => hostConn.view().game !== null);
-      await boConn.until(() => boConn.view().game !== null);
+      await hostConn.until(() => hostConn.view().rollOff != null);
+      await boConn.until(() => boConn.view().rollOff != null);
       const list = await (await api("GET", "/api/games")).text();
       const bodies = await Promise.all(errors.map((r) => r.text()));
       const frames = JSON.stringify([...hostConn.frames, ...boConn.frames]);

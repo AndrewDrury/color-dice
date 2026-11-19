@@ -106,6 +106,31 @@ describe("#13 createGame (§5)", () => {
     });
   });
 
+  it("accepts a played roll-off and rejects malformed ones (T-NEW-2)", () => {
+    const dice = new ScriptedDice([]);
+    const rounds = [
+      [1, 6, 6],
+      [2, 3, 6],
+    ] as const;
+    const { state, events } = ok(createGame(players(3), { dice, rollOffRounds: rounds }));
+    expect(state.turn?.activeSeat).toBe(2);
+    expect(events[1]).toMatchObject({ method: "ROLL_OFF", seat: 2, rounds });
+    for (const bad of [
+      [],
+      [[1, 2, 3]],
+      [
+        [6, 1, 2],
+        [2, 3, 6],
+      ],
+      [[1, 6, 6, 2]],
+      [[1, 6, 6]],
+      [[1, 2, 7]],
+    ]) {
+      const r = createGame(players(3), { dice, rollOffRounds: bad as never });
+      expect(r.ok).toBe(false);
+    }
+  });
+
   it("simultaneous roll-off: rounds until exactly one 6, seat order inside a round (A-1)", () => {
     // Round 1: no 6. Round 2: two 6s. Round 3: only seat 2 rolls a 6.
     const dice = new ScriptedDice([1, 2, 3, 6, 6, 4, 5, 1, 6, 6]);

@@ -20,6 +20,21 @@ export interface PlayerInput {
 export interface CreateGameOptions {
   dice: DiceSource;
   firstPlayer?: PlayerId;
+  /**
+   * Opening roll-off already played by the players (T-NEW-2): one face per seat per
+   * round, the last round holding exactly one 6. Wins over `firstPlayer`/`dice`.
+   */
+  rollOffRounds?: readonly (readonly Face[])[];
+}
+
+/** True when `rounds` is a finished roll-off for `seats` players (only the last round has one 6). */
+export function isValidRollOff(rounds: readonly (readonly unknown[])[], seats: number): boolean {
+  if (rounds.length === 0 || rounds.length > MAX_ROLL_OFF_ROUNDS) return false;
+  return rounds.every((r, i) => {
+    if (r.length !== seats || !r.every(isFace)) return false;
+    const sixes = r.filter((f) => f === 6).length;
+    return i === rounds.length - 1 ? sixes === 1 : sixes !== 1;
+  });
 }
 
 /** Safety cap so a broken dice source cannot hang the roll-off (spec §17 A-1). */
@@ -85,6 +100,9 @@ export function createGame(players: readonly PlayerInput[], options: CreateGameO
   const invalid = validatePlayers(players);
   if (invalid) return fail(invalid);
   const input = players.map((p) => ({ id: p.id, displayName: p.displayName }));
+  if (options.rollOffRounds && !isValidRollOff(options.rollOffRounds, input.length)) {
+    return fail({ code: "E_INVALID_COMMAND" });
+  }
   if (options.firstPlayer !== undefined && !input.some((p) => p.id === options.firstPlayer)) {
     return fail({ code: "E_UNKNOWN_PLAYER" });
   }
@@ -108,7 +126,11 @@ export function createGame(players: readonly PlayerInput[], options: CreateGameO
   });
 
   let activeSeat: number;
-  if (options.firstPlayer !== undefined) {
+  if (options.rollOffRounds) {
+    const rounds = options.rollOffRounds.map((r) => [...r]);
+    activeSeat = (rounds[rounds.length - 1] as Face[]).indexOf(6);
+    emit(d, { type: "FIRST_PLAYER_CHOSEN", seat: activeSeat, method: "ROLL_OFF", rounds });
+  } else if (options.firstPlayer !== undefined) {
     activeSeat = input.findIndex((p) => p.id === options.firstPlayer);
     emit(d, { type: "FIRST_PLAYER_CHOSEN", seat: activeSeat, method: "CONFIGURED", rounds: [] });
   } else {

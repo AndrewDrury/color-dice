@@ -32,7 +32,14 @@ import type {
   TurnState,
 } from "./types";
 
-export { type CreateGameOptions, createGame, type PlayerInput } from "./setup";
+export {
+  type CreateGameOptions,
+  createGame,
+  isValidRollOff,
+  MAX_ROLL_OFF_ROUNDS,
+  type PlayerInput,
+  rollFace,
+} from "./setup";
 
 const fail = (error: EngineError): Result => ({ ok: false, error });
 

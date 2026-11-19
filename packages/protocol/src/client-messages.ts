@@ -11,6 +11,14 @@ export const AuthMsgSchema = z.object({ type: z.literal("auth"), token: TokenSch
 
 export const RollMsgSchema = z.object({ type: z.literal("roll"), turn: TurnSchema }).strict();
 
+/**
+ * Opening roll-off (T-NEW-2): the seat asks the server to roll its one die for `round`.
+ * The value is never sent by the client; stale or repeated rounds are rejected.
+ */
+export const RollOffMsgSchema = z
+  .object({ type: z.literal("rollOff"), round: z.number().int().min(1) })
+  .strict();
+
 export const Action1MsgSchema = z.discriminatedUnion("kind", [
   z.object({ type: z.literal("action1"), turn: TurnSchema, kind: z.literal("PASS") }).strict(),
   z
@@ -81,6 +89,7 @@ export const ReactMsgSchema = z
 export const ClientMessageSchema = z.discriminatedUnion("type", [
   AuthMsgSchema,
   RollMsgSchema,
+  RollOffMsgSchema,
   Action1MsgSchema,
   Action2MsgSchema,
   TurnMsgSchema,

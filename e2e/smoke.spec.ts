@@ -1,4 +1,13 @@
-import { codeOf, createGame, expect, joinGame, newPlayer, startGame, test } from "./fixtures";
+import {
+  codeOf,
+  createGame,
+  expect,
+  joinGame,
+  newPlayer,
+  playRollOff,
+  startGame,
+  test,
+} from "./fixtures";
 
 test("host creates, guest joins via the list, host starts", async ({ browser }) => {
   const roomName = `Smoke ${Date.now() % 100000}`;
@@ -10,6 +19,7 @@ test("host creates, guest joins via the list, host starts", async ({ browser }) 
     await joinGame(guest, code, "secret1", roomName);
     await expect(host.page.getByText("Gus").first()).toBeVisible();
     await startGame(host);
+    await playRollOff([host, guest]);
     for (const p of [host, guest]) {
       await expect(p.page.locator(".g-main")).toBeVisible();
       await expect(p.page.locator("[data-die]").first()).toBeVisible();
