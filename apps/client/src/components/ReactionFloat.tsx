@@ -7,7 +7,7 @@ import { CatReaction } from "./CatReaction";
 
 /** Rise + hold + fade, then removal (K5.2). Reduced motion: no movement, same lifetime. */
 export const FLOAT_MS = 3500;
-const FLOAT_SIZE = 64;
+const FLOAT_SIZE = 140;
 
 function anchorRect(seatId: string, mine: boolean): DOMRect | null {
   const esc = (s: string) => s.replace(/["\\]/g, "");
@@ -23,8 +23,13 @@ export function ReactionFloat({ entry, mine }: { entry: ReactionEntry; mine: boo
     const t = setTimeout(() => dropFloat(entry.id), FLOAT_MS);
     return () => clearTimeout(t);
   }, [entry.id]);
+  // Keep the (wide) GIF fully on screen: clamp its centre to half its width from each edge.
+  const half = FLOAT_SIZE / 2 + 4;
+  const cx = rect
+    ? Math.min(Math.max(rect.left + rect.width / 2, half), window.innerWidth - half)
+    : 0;
   const style = rect
-    ? { left: `${rect.left + rect.width / 2}px`, top: `${rect.bottom + 6}px` } // below the chip, never over its name
+    ? { left: `${cx}px`, top: `${rect.bottom + 6}px` } // below the chip, never over its name
     : { right: "16px", top: "calc(env(safe-area-inset-top) + 60px)" };
   return (
     <span class={`rx-float${reduced ? " is-static" : ""}`} style={style} aria-hidden="true">

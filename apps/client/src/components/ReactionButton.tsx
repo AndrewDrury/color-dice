@@ -3,6 +3,7 @@ import type { ClientMessage } from "@cd/protocol";
 import { useState } from "preact/hooks";
 import { useExitAnimation } from "../fx/motion";
 import { t, useT } from "../i18n";
+import { REACTION_BUTTON_IMAGE, reactionUrl } from "./CatReaction";
 import { ReactionPicker } from "./ReactionPicker";
 
 export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }) {
@@ -22,7 +23,7 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
       >
         <img
           class="rx-btn-gif"
-          src="/reactions/mad-cat.jpg"
+          src={reactionUrl(REACTION_BUTTON_IMAGE)}
           alt=""
           aria-hidden="true"
           width={44}

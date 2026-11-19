@@ -1,13 +1,32 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { REACTIONS } from "@cd/protocol";
 import { cleanup, render } from "@testing-library/preact";
-import { afterEach, describe, expect, it } from "vitest";
-import { CatReaction, catCaption, reactionAsset } from "../src/components/CatReaction";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { CatReaction, catCaption, reactionAsset, reactionUrl } from "../src/components/CatReaction";
 import { LaughingCat } from "../src/components/cats/LaughingCat";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 describe("cat reactions", () => {
+  it("serves GIFs under the deploy base path (Pages lives at /color-dice/)", () => {
+    vi.stubEnv("BASE_URL", "/color-dice/");
+    for (const id of REACTIONS) expect(reactionAsset(id)).toMatch(/^\/color-dice\/reactions\/.+/);
+    expect(reactionUrl("mad-cat.jpg")).toBe("/color-dice/reactions/mad-cat.jpg");
+  });
+
+  it("every allow-listed id points at a file that exists in public/reactions", () => {
+    for (const id of REACTIONS) {
+      const file = decodeURIComponent(reactionAsset(id).split("/reactions/")[1] ?? "");
+      expect(existsSync(resolve(import.meta.dirname, "../public/reactions", file)), id).toBe(true);
+    }
+    expect(existsSync(resolve(import.meta.dirname, "../public/reactions/mad-cat.jpg"))).toBe(true);
+  });
+
   it("draws all eight GIF reactions with a distinct public asset and a caption below", () => {
     const assets = REACTIONS.map((id) =>
       render(<CatReaction id={id} />)

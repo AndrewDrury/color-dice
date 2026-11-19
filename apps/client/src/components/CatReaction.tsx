@@ -49,9 +49,16 @@ export const REACTION_LABELS: Record<Reaction, string> = {
   "surprised-cat-quedado-gif": "surprised",
 };
 
+/** Public URL of a file in /reactions, honouring the deploy base path (Pages serves under /color-dice/). */
+export function reactionUrl(file: string): string {
+  const base = import.meta.env?.BASE_URL ?? "/";
+  return `${base.endsWith("/") ? base : `${base}/`}reactions/${encodeURIComponent(file)}`;
+}
+
+export const REACTION_BUTTON_IMAGE = "mad-cat.jpg";
+
 export function reactionAsset(id: Reaction): string {
-  const asset = REACTION_ASSETS[id];
-  return asset ? `/reactions/${encodeURIComponent(asset)}` : "/reactions/mad-cat.jpg";
+  return reactionUrl(REACTION_ASSETS[id] ?? REACTION_BUTTON_IMAGE);
 }
 
 /** Translated caption for a reaction id; unknown ids fall back to the id itself. */
