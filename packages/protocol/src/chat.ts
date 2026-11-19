@@ -1,18 +1,31 @@
 import { cleanName } from "./names";
 
 /**
- * Allow-listed cat reaction ids (K5.1); order = picker order. Ids, never emoji
- * or free text, go on the wire (the field is still named `emoji`).
+ * Allow-listed reaction ids (K5.1); order = picker order. Stable cat ids,
+ * never filenames or free text, go on the wire (the field is emoji for compatibility).
  */
 export const REACTIONS = [
-  "cat_thumbs",
-  "cat_lol",
-  "cat_shock",
-  "cat_cringe",
-  "cat_fire",
-  "cat_party",
-  "cat_cry",
-  "cat_clap",
+  "angry-cat-disgusted-face-gif",
+  "bruce-lee-fighting-gif",
+  "cat-dancing-gif-by-unscreen",
+  "cat-emoji-gif",
+  "cat-gif-1",
+  "cat-gif",
+  "cat-holding-sword-gif",
+  "cat-laugh-gif",
+  "cat-meme-gif-1",
+  "cat-meme-gif-2",
+  "cat-meme-gif",
+  "cat-peeking-gif",
+  "cat-reaction-gif-gif",
+  "cat-screaming-gif",
+  "dance-cat-gif",
+  "happy-black-cat-gif-by-sou-eu-na-vida",
+  "in-love-cat-gif",
+  "kitty-cute-cat-gif",
+  "mad-the-internet-gif-by-moodman",
+  "shocked-cat-gif",
+  "surprised-cat-quedado-gif",
 ] as const;
 export type Reaction = (typeof REACTIONS)[number];
 

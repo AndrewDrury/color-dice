@@ -2,7 +2,6 @@ export const waiting = {
   "waiting.title": "Waiting room",
   "waiting.leave": "Leave",
   "waiting.inviteAria": "Invite",
-  "waiting.gameCode": "Game code",
   "waiting.shareTitle": "Join my Color Dice game",
   "waiting.invite": "Copy invite link",
   "waiting.linkCopied": "Copied!",

@@ -291,13 +291,12 @@ function Board({
         <button type="button" class="btn g-home" onClick={() => setLeaving(true)}>
           {t("game.home")}
         </button>
-        <span
-          class="g-code"
-          title={g.turn ? `${view.code} · ${t("game.turn", { n: g.turn.number })}` : view.code}
-        >
-          <span class="num g-code-room">{view.code}</span>
+        <span class="g-code">
+          {view.room.name ? <span class="g-code-room">{view.room.name}</span> : null}
           {g.turn ? (
-            <span class="g-code-turn">{` · ${t("game.turn", { n: g.turn.number })}`}</span>
+            <span class="g-code-turn">
+              {`${view.room.name ? " · " : ""}${t("game.turn", { n: g.turn.number })}`}
+            </span>
           ) : null}
         </span>
         <span class="row">

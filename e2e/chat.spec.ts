@@ -61,10 +61,10 @@ test("chat: toast + reaction reach others without blocking input; history surviv
     await expect(b.page.getByText(/Waiting|Everyone/).first()).toBeVisible();
 
     // A: reaction.
-    await a.page.getByRole("button", { name: "Send reaction" }).click();
-    await a.page.getByRole("button", { name: "React: nice" }).click();
+    await a.page.getByRole("banner").getByRole("button", { name: "Send reaction" }).click();
+    await a.page.getByRole("button", { name: "React dance cat" }).click();
     for (const p of [b, c]) {
-      await expect(p.page.locator(".rx-float", { hasText: "nice" }).first()).toBeVisible();
+      await expect(p.page.locator(".rx-float", { hasText: "dance cat" }).first()).toBeVisible();
     }
 
     // XSS: markup in chat is text, in the toast and in the log.

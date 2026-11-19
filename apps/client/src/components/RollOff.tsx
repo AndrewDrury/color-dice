@@ -3,7 +3,7 @@ import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 import type { Face } from "../fx/dice-math";
 import { useReducedMotion } from "../fx/motion";
-import type { RollPhase } from "../fx/useRollAnimation";
+import { ROLL_TIMING, type RollPhase } from "../fx/useRollAnimation";
 import { roundCaption } from "../game/flow";
 import { seatName } from "../game/model";
 import { t, useT } from "../i18n";
@@ -32,6 +32,7 @@ export function RollOff({ view, rounds, onDone }: RollOffProps) {
   useT();
   const reduced = useReducedMotion();
   const last = rounds.length - 1;
+  const seatCount = view.game?.players.length ?? 2;
   const [round, setRound] = useState(0);
   const [phase, setPhase] = useState<RollPhase>(reduced ? "settled" : "idle");
 
@@ -40,11 +41,13 @@ export function RollOff({ view, rounds, onDone }: RollOffProps) {
       const timer = setTimeout(onDone, 3500);
       return () => clearTimeout(timer);
     }
-    const d = roundMs(round);
+    // Dice land left to right (seat order); the round lasts until the last one has settled.
+    const spread = Math.max(0, seatCount - 1) * ROLL_TIMING.stagger;
+    const d = Math.max(roundMs(round), roundMs(round) * 0.45 + spread + ROLL_TIMING.settle + 80);
     const timers = [
       setTimeout(() => setPhase("tumbling"), 20),
-      setTimeout(() => setPhase("settling"), d * 0.5),
-      setTimeout(() => setPhase("settled"), d * 0.85),
+      setTimeout(() => setPhase("settling"), roundMs(round) * 0.45),
+      setTimeout(() => setPhase("settled"), roundMs(round) * 0.45 + spread + ROLL_TIMING.settle),
       setTimeout(
         () => {
           if (round >= last) onDone();
@@ -59,7 +62,7 @@ export function RollOff({ view, rounds, onDone }: RollOffProps) {
     return () => {
       for (const x of timers) clearTimeout(x);
     };
-  }, [round, reduced]);
+  }, [round, reduced, seatCount]);
 
   const seats = view.game?.players.map((p) => p.seat) ?? [];
   const showRound = (r: number, live: boolean) => {

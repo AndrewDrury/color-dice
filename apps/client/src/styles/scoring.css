@@ -15,11 +15,11 @@
   display: inline-flex;
   align-items: baseline;
   gap: 2px;
-  padding: 1px 0.45em;
+  padding: 2px 0.55em;
   border-radius: var(--r-pill);
   background: var(--row-pattern), var(--row-tint);
   color: var(--row-ink);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--row-color) 70%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--row-color) 75%, transparent);
   white-space: nowrap;
 }
 .g-eq .g-score abbr {
@@ -66,8 +66,8 @@
   flex-direction: column;
   align-items: center;
   margin-left: 0.1em;
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
+  padding: 4px 11px;
+  border-radius: 14px;
   background: var(--ink);
   color: var(--paper);
   font-size: 1.2em;
@@ -109,8 +109,8 @@
   color: var(--ink-muted);
 }
 .g-foot .g-pbox {
-  width: 1.75em;
-  height: 1.5em;
+  width: 2.2em;
+  height: 1.75em;
   font-size: 0.75em;
 }
 
@@ -131,11 +131,11 @@
     gap: 0.18em;
   }
   .g-eq .g-score {
-    padding-inline: 0.35em;
+    padding-inline: 0.45em;
   }
   .g-total--xl {
     font-size: 1.15em;
-    padding-inline: 6px;
+    padding-inline: 8px;
   }
   .g-total--xl .g-arrow {
     font-size: 0.6em;
@@ -144,8 +144,8 @@
     gap: 2px;
   }
   .g-foot .g-pbox {
-    width: 1.5em;
-    height: 1.45em;
+    width: 2.4em;
+    height: 1.8em;
     font-size: 0.7em;
   }
 }
@@ -159,11 +159,11 @@
   align-self: center;
   justify-self: stretch;
   min-width: 0;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: var(--r-pill);
   background: var(--row-tint);
   color: var(--row-ink);
-  box-shadow: inset 0 0 0 1.5px var(--row-color);
+  box-shadow: inset 0 0 0 2px var(--row-color);
   font-size: 13px;
   line-height: 1.2;
   font-weight: var(--fw-heavy);

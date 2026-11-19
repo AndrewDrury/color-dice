@@ -18,7 +18,7 @@ const SETTLE_MS = 350;
 export const ROLL_TIMING = Object.freeze({
   minTumble: 550,
   settle: SETTLE_MS,
-  stagger: 45,
+  stagger: 70,
   /** First contact inside the settle: the short bounce (≤ 120 ms, K3.1) follows it. */
   landAt: SETTLE_MS - BOUNCE_MS,
   slowAfter: 3000,

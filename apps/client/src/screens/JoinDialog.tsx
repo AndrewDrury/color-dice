@@ -109,9 +109,6 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
       title={roomName ? t("join.titleNamed", { room: roomName }) : t("join.title")}
       onClose={onClose}
     >
-      <p class="muted">
-        {t("field.gameCode.label")} <span class="num">{code}</span>
-      </p>
       {gone ? (
         <p role="status" style={{ fontWeight: "var(--fw-bold)" }}>
           {t("join.gone")}

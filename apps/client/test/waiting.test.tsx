@@ -139,10 +139,10 @@ afterEach(() => {
 });
 
 describe("WaitingRoom", () => {
-  it("connects with the saved session and shows the code", () => {
+  it("connects with the saved session and never renders the code", () => {
     expect(socket().connected).toEqual([CODE, TOKEN]);
     show(view());
-    expect(screen.getByText(CODE)).toBeTruthy();
+    expect(screen.queryByText(CODE)).toBeNull();
     expect(screen.getByText("Anyone with this link can join. No password needed.")).toBeTruthy();
     expect(screen.getByText("(you)")).toBeTruthy();
     expect(screen.getByText("Host")).toBeTruthy();
@@ -262,7 +262,7 @@ describe("WaitingRoom", () => {
     v.seats[1] = { ...v.seats[1], name: evil } as ViewMessage["seats"][number];
     show(v);
     expect(screen.getByText(evil)).toBeTruthy();
-    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelector("img[src='x']")).toBeNull();
   });
 });
 
@@ -270,13 +270,13 @@ describe("Invite", () => {
   const touch = (on: boolean) =>
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: on && q.includes("coarse") }));
 
-  it("loads the key and shows 'Copy invite link' with the code as small text", async () => {
+  it("loads the key and shows 'Copy invite link' without rendering the code", async () => {
     show(view());
     await flush();
     expect(api.getInvite).toHaveBeenCalledWith(CODE, TOKEN);
     const btn = screen.getByRole("button", { name: "Copy invite link" }) as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
-    expect(screen.getByText(CODE).tagName).toBe("SPAN");
+    expect(screen.queryByText(CODE)).toBeNull();
     expect(screen.queryByRole("heading", { name: CODE })).toBeNull();
   });
 

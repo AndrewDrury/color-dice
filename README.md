@@ -1,10 +1,8 @@
 # Color Dice
 
-An online dice game for 2 to 5 players. Create a room, share the 5-character code (or let it show up in the public room list), and play in real time from any browser. Rooms can be password protected. No accounts.
+An online dice game for 2 to 5 players. Create a room, share the invite link (or let it show up in the public room list), and play in real time from any browser. Rooms can be password protected. No accounts.
 
 Play: https://andrewdrury.github.io/color-dice/
-
-Server: https://color-dice.andrewjdrury.workers.dev
 
 ## Features
 
@@ -53,7 +51,7 @@ The first `npm run e2e` may need the Playwright browsers installed (`npx playwri
 ## Deploy
 
 - Server (Cloudflare Worker with Durable Objects): sign in once with `npx wrangler login`, then `npm run deploy -w apps/server`.
-- Client (static files): `npm run build` produces `apps/client/dist`, which is published to GitHub Pages. At build time it reads `VITE_SERVER_URL` (the deployed Worker URL, no trailing slash). Set it as a repository variable in GitHub: Settings, Secrets and variables, Actions, Variables. `VITE_BASE` sets the Pages sub-path (for example `/color-dice/`).
+- Client (static files): `npm run build` produces `apps/client/dist`, which is published to GitHub Pages. At build time it reads `VITE_SERVER_URL` (the deployed Worker address, no trailing slash). Set it as a repository variable in GitHub: Settings, Secrets and variables, Actions, Variables. `VITE_BASE` sets the Pages sub-path (for example `/color-dice/`).
 - Set the Worker's `ALLOWED_ORIGINS` in `apps/server/wrangler.jsonc` to the Pages origin so browsers may connect.
 
 ## Free-plan limits
