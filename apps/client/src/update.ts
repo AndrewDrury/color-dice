@@ -178,7 +178,7 @@ export function createUpdater(overrides: Partial<UpdateEnv> = {}) {
   /** A lazy chunk failed to load (stale index.html): reload onto the live build, same guard. */
   async function recover(): Promise<void> {
     if (pending) return;
-    pending = (await fetchBuild()) ?? `r${env.now().toString(36)}`;
+    pending = (await fetchBuild()) ?? "recover"; // constant so the reload-loop guard applies
     tryApply();
   }
 
