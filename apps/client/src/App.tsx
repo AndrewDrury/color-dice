@@ -1,6 +1,7 @@
 import { useEffect } from "preact/hooks";
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
+import { UpdateToast } from "./components/UpdateToast";
 import { useLocale } from "./i18n";
 import { getPrefs, onPrefs } from "./prefs";
 import { useRoute } from "./router";
@@ -62,6 +63,7 @@ export function App() {
       {screen}
       <ConnectionBanner />
       <Toast />
+      <UpdateToast />
     </div>
   );
 }

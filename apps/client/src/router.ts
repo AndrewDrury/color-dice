@@ -54,6 +54,7 @@ function syncUrl(code: string | null): void {
     const url = new URL(globalThis.location.href);
     if (code) url.searchParams.set(GAME_PARAM, code);
     else url.searchParams.delete(GAME_PARAM);
+    url.searchParams.delete("v"); // auto-update cache-bust param (T-UX-18)
     if (url.href !== globalThis.location.href) globalThis.history.replaceState(null, "", url);
   } catch {
     // No location/history (tests, sandboxed frames): the in-memory route still works.

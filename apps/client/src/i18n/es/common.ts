@@ -98,4 +98,6 @@ export const common: Record<keyof typeof en, string> = {
   "field.yourName": "Tu nombre",
   "field.roomName.label": "Nombre de la sala",
   "field.gameCode.label": "Código de partida",
+  "update.done": "Actualizado a la última versión",
+  "update.updating": "Nueva versión — actualizando…",
 };

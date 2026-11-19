@@ -7,6 +7,7 @@ import { forgetRoom, toastSessionEnded } from "../roomEnd";
 import { navigate } from "../router";
 import { getSession } from "../session";
 import { applyView, clearView, getState, setStatus, showToast } from "../store";
+import { checkForUpdateNow } from "../update";
 import { type EndReason, GameSocket } from "../ws";
 
 export interface GameConnection {
@@ -51,8 +52,12 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
     const offMsg = s.onMessage((msg) => {
       if (msg.type === "view") applyView(msg);
       else if (routeChat(msg) || routeChatError(msg)) return;
-      else if (msg.type === "error") errRef.current(msg);
-      else if (msg.type === "kicked") exitHome(t("toast.kicked"));
+      else if (msg.type === "error") {
+        // Unknown/invalid command can mean this tab is running an older build.
+        if (msg.code === "E_INVALID_COMMAND" || msg.code === "E_NOT_IMPLEMENTED")
+          checkForUpdateNow();
+        errRef.current(msg);
+      } else if (msg.type === "kicked") exitHome(t("toast.kicked"));
       else if (msg.type === "sessionEnded") exitEnded();
     });
     const offStatus = s.onStatus((status, reason?: EndReason) => {

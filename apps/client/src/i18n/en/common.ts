@@ -95,4 +95,6 @@ export const common = {
   "field.yourName": "Your name",
   "field.roomName.label": "Room name",
   "field.gameCode.label": "Game code",
+  "update.done": "Updated to the latest version",
+  "update.updating": "New version — updating…",
 } as const;
