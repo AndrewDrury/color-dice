@@ -68,7 +68,9 @@ test("chat: toast + reaction reach others without blocking input; history surviv
       await expect(float).toBeVisible();
       // The GIF really loaded (not a broken image) and is shown large.
       const img = float.locator("img.cat-gif");
-      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+      await expect
+        .poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth))
+        .toBeGreaterThan(0);
       expect((await img.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(120);
     }
 
