@@ -5,7 +5,7 @@ import { closePanel, seatName, setDraft, setSending, useChat } from "../chat/sto
 import { chatErrorText, t, useT } from "../i18n";
 import { getState } from "../store";
 import { BottomSheet } from "./BottomSheet";
-import { CatReaction } from "./CatReaction";
+import { CatReaction, REACTION_BUTTON_IMAGE, reactionUrl } from "./CatReaction";
 import { ReactionPicker } from "./ReactionPicker";
 
 export function ChatPanel({
@@ -66,7 +66,7 @@ export function ChatPanel({
               ) : (
                 <>
                   <span class="chat-who">{seatName(m.seatId)}</span> ·
-                  <CatReaction id={m.emoji} size={32} />
+                  <CatReaction id={m.emoji} size={72} />
                 </>
               )}
             </p>
@@ -97,7 +97,13 @@ export function ChatPanel({
             aria-expanded={reactionPicker ? "true" : "false"}
             onClick={() => setReactionPicker((open) => !open)}
           >
-            <img src="/reactions/mad-cat.jpg" alt="" aria-hidden="true" width={28} height={28} />
+            <img
+              src={reactionUrl(REACTION_BUTTON_IMAGE)}
+              alt=""
+              aria-hidden="true"
+              width={28}
+              height={28}
+            />
           </button>
           <button type="submit" class="btn" disabled={sending || draft.trim() === ""}>
             {t("chat.send")}

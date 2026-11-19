@@ -135,6 +135,13 @@
   /* Gentle rise, long hold, fade: 3.5 s in total (K5.2). */
   animation: rx-rise 3.5s ease-out forwards;
 }
+.rx-float .cat-gif {
+  max-width: 140px;
+  max-height: 140px;
+  width: 140px;
+  height: 140px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+}
 .rx-float .cat-cap {
   padding: 1px 6px;
   border-radius: var(--r-pill);

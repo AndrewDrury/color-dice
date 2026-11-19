@@ -64,7 +64,12 @@ test("chat: toast + reaction reach others without blocking input; history surviv
     await a.page.getByRole("banner").getByRole("button", { name: "Send reaction" }).click();
     await a.page.getByRole("button", { name: "React dance cat" }).click();
     for (const p of [b, c]) {
-      await expect(p.page.locator(".rx-float", { hasText: "dance cat" }).first()).toBeVisible();
+      const float = p.page.locator(".rx-float", { hasText: "dance cat" }).first();
+      await expect(float).toBeVisible();
+      // The GIF really loaded (not a broken image) and is shown large.
+      const img = float.locator("img.cat-gif");
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+      expect((await img.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(120);
     }
 
     // XSS: markup in chat is text, in the toast and in the log.
