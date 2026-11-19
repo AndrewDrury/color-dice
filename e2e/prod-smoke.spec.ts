@@ -1,4 +1,4 @@
-import { codeOf, expect, newPlayer, test } from "./fixtures";
+import { codeOf, expect, newPlayer, playRollOff, test } from "./fixtures";
 
 // Runs against the real production site (see playwright.prod.config.ts). No test hooks,
 // no scripted dice, no CF-Connecting-IP trick: only the public UI.
@@ -41,7 +41,9 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     // 4-player room with 2 seated: the host starts it (a full room would start by itself).
     const start = h.getByRole("button", { name: "Start game" });
     if (await start.isVisible()) await start.click();
-    // Both see the game screen.
+    // Opening roll-off: each player rolls their own server-generated die until one 6 wins,
+    // then both see the game screen.
+    await playRollOff([host, guest]);
     for (const p of [host, guest]) {
       await expect(p.page.locator(".g-main")).toBeVisible();
     }
