@@ -146,8 +146,8 @@ export async function gameApiHandler(
     // The secret (password or invite) is passed on, never echoed or logged.
     const cred = credentialOf(body.value);
     return route.action === "join"
-      ? respond(await stub.join(body.value.name, cred), 201)
-      : respond(await stub.reclaim(body.value.name, cred), 200);
+      ? respond(await stub.join(body.value.name, cred, body.value.profile), 201)
+      : respond(await stub.reclaim(body.value.name, cred, body.value.profile), 200);
   }
   const token = bearer(req);
   if (!token) return error("E_NOT_AUTHED", 401);

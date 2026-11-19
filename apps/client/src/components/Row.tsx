@@ -9,7 +9,7 @@ import {
   rowScore,
 } from "@cd/engine";
 import type { ViewRow } from "@cd/protocol";
-import { memo } from "preact/compat";
+import { Component } from "preact";
 import { COLORS, cssColor, markCount } from "../game/model";
 import { colorLetter, colorName, t, useT } from "../i18n";
 import { Box } from "./Box";
@@ -160,21 +160,28 @@ function RowImpl(p: RowProps) {
 }
 
 const same = (a: readonly number[], b: readonly number[]) => a.join() === b.join();
-export const Row = memo(
-  RowImpl,
-  (a, b) =>
-    a.color === b.color &&
-    a.row.marked.join() === b.row.marked.join() &&
-    a.row.lockCrossed === b.row.lockCrossed &&
-    a.lockedColors.join() === b.lockedColors.join() &&
-    same(a.legal, b.legal) &&
-    same(a.flash, b.flash) &&
-    a.stagedNumbers.join() === b.stagedNumbers.join() &&
-    a.stagedSteps?.join() === b.stagedSteps?.join() &&
-    a.ghostNumbers.join() === b.ghostNumbers.join() &&
-    a.disabled === b.disabled &&
-    a.shake === b.shake &&
-    a.glint === b.glint &&
-    a.onPick === b.onPick,
-);
+const rowEqual = (a: RowProps, b: RowProps) =>
+  a.color === b.color &&
+  a.row.marked.join() === b.row.marked.join() &&
+  a.row.lockCrossed === b.row.lockCrossed &&
+  a.lockedColors.join() === b.lockedColors.join() &&
+  same(a.legal, b.legal) &&
+  same(a.flash, b.flash) &&
+  a.stagedNumbers.join() === b.stagedNumbers.join() &&
+  a.stagedSteps?.join() === b.stagedSteps?.join() &&
+  a.ghostNumbers.join() === b.ghostNumbers.join() &&
+  a.disabled === b.disabled &&
+  a.shake === b.shake &&
+  a.glint === b.glint &&
+  a.onPick === b.onPick;
+
+/** Re-renders only when a prop that changes the row changed (preact/compat's memo is not worth its bytes). */
+export class Row extends Component<RowProps> {
+  override shouldComponentUpdate(next: RowProps): boolean {
+    return !rowEqual(this.props, next);
+  }
+  override render() {
+    return <RowImpl {...this.props} />;
+  }
+}
 export { COLORS };

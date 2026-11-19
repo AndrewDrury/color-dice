@@ -51,4 +51,9 @@ export const waiting: Record<keyof typeof en, string> = {
   "invite.invalid": "Le lien n'est pas valide ou a expiré.",
   "toast.sessionEnded":
     "Ta session est terminée (tu as peut-être rejoint depuis un autre appareil).",
+  "profile.title": "Ton style",
+  "profile.colors": "Corail,Ambre,Citron vert,Sarcelle,Ciel,Indigo,Violet,Rose,Ardoise,Marron",
+  "profile.cats": "Choisir ton chat",
+  "profile.colorGroup": "Couleur",
+  "profile.catGroup": "Chat",
 };

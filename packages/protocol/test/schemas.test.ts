@@ -17,6 +17,8 @@ import {
   MIN_PLAYERS,
   PatchRoomReqSchema,
   PLAYER_NAME_MAX,
+  type ProfileCat,
+  type ProfileColor,
   PublicGameSchema,
   parseClientMessage,
   ReclaimReqSchema,
@@ -230,6 +232,7 @@ describe("constants", () => {
       name: string;
       password?: string | undefined;
       invite?: string | undefined;
+      profile?: { color: ProfileColor; cat: ProfileCat } | undefined;
     }>();
   });
 });

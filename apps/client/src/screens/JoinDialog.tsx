@@ -5,8 +5,9 @@ import { Button } from "../components/Button";
 import { Dialog } from "../components/Dialog";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { ProfileField } from "../components/ProfileField";
 import { t, useT } from "../i18n";
-import { getRoomPassword, rememberedName, rememberSubmit } from "../remembered";
+import { getRoomPassword, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -32,6 +33,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
   const [password, setPassword] = useState(() => getRoomPassword(code));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [profile, setProfile] = useState(rememberedProfile);
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
   const [roomName, setRoomName] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
     e.preventDefault();
     if (busy || locked) return;
     setFormError(null);
-    const parsed = JoinReqSchema.safeParse({ name, password });
+    const parsed = JoinReqSchema.safeParse({ name, password, profile });
     if (!parsed.success) {
       setErrors(issuesByField(parsed.error.issues, fieldText()));
       return;
@@ -93,6 +95,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         name: parsed.data.name,
         ...(roomName ? { roomName } : {}),
         password: parsed.data.password ?? password,
+        profile,
       });
       navigate("waiting", res.code);
     } catch (err) {
@@ -125,6 +128,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
           autocomplete="nickname"
           enterkeyhint="next"
         />
+        <ProfileField value={profile} onChange={setProfile} />
         <PasswordField value={password} onValue={setPassword} error={errors.password} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>

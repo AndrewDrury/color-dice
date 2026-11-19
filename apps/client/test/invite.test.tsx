@@ -112,7 +112,11 @@ describe("InviteJoin", () => {
     expect(api.joinGame).toHaveBeenCalledTimes(1);
     const [code, body] = vi.mocked(api.joinGame).mock.calls[0] ?? [];
     expect(code).toBe(CODE);
-    expect(body).toEqual({ name: "Cleo", invite: KEY });
+    expect(body).toEqual({
+      name: "Cleo",
+      invite: KEY,
+      profile: expect.objectContaining({ cat: "mad-cat" }),
+    });
     expect(body).not.toHaveProperty("password");
     expect(getSession(CODE)?.token).toBe(TOKEN);
     expect(getRoute().screen).toBe("waiting");
@@ -149,7 +153,11 @@ describe("InviteJoin", () => {
     open();
     type("Cleo");
     await click("Join");
-    expect(api.reclaimSeat).toHaveBeenCalledWith(CODE, { name: "Cleo", invite: KEY });
+    expect(api.reclaimSeat).toHaveBeenCalledWith(CODE, {
+      name: "Cleo",
+      invite: KEY,
+      profile: expect.objectContaining({ cat: "mad-cat" }),
+    });
     expect(getRoute().screen).toBe("game");
   });
 });

@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { ApiError, getMe, joinGame, reclaimSeat } from "../api";
 import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
+import { ProfileField } from "../components/ProfileField";
 import { errorText, t, useT } from "../i18n";
-import { rememberedName, rememberSubmit } from "../remembered";
+import { rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { getPendingInvite, navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -17,6 +18,7 @@ export function InviteJoin({ code }: { code: string }) {
   const [name, setName] = useState(rememberedName);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [profile, setProfile] = useState(rememberedProfile);
   const [busy, setBusy] = useState(false);
   const alive = useRef(true);
   const [key] = useState(() => getPendingInvite(code));
@@ -38,7 +40,7 @@ export function InviteJoin({ code }: { code: string }) {
     e.preventDefault();
     if (busy) return;
     setFormError(null);
-    const parsed = JoinReqSchema.safeParse({ name, invite: key });
+    const parsed = JoinReqSchema.safeParse({ name, invite: key, profile });
     if (!parsed.success) {
       setErrors(
         issuesByField(parsed.error.issues, { name: t("field.name", { max: PLAYER_NAME_MAX }) }),
@@ -69,7 +71,7 @@ export function InviteJoin({ code }: { code: string }) {
         name: parsed.data.name,
         roomName: "",
       });
-      rememberSubmit({ code: res.code, name: parsed.data.name });
+      rememberSubmit({ code: res.code, name: parsed.data.name, profile });
       let screen: "waiting" | "game" = started ? "game" : "waiting";
       if (!started) {
         try {
@@ -112,6 +114,7 @@ export function InviteJoin({ code }: { code: string }) {
           enterkeyhint="go"
           autofocus
         />
+        <ProfileField value={profile} onChange={setProfile} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           {t("common.join")}

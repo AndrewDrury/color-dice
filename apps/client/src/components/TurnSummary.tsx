@@ -9,6 +9,7 @@ import { cssColor } from "../game/model";
 import type { TurnSummary as Summary } from "../game/turnSummary";
 import { colorName, t, useT } from "../i18n";
 import "../styles/game.css";
+import { Avatar } from "./Avatar";
 import { Die } from "./Die";
 import { LockIcon } from "./icons";
 
@@ -46,6 +47,7 @@ export function TurnSummary({ summary, onClose }: { summary: Summary; onClose: (
           {summary.players.map((p) => (
             <li key={p.seat} class="ts-player" data-seat={p.seat}>
               <div class="ts-head">
+                <Avatar profile={p.profile} size={20} />
                 <span class="g-name ts-name">{p.name}</span>
                 {p.locks.map((c) => (
                   <span key={c} class={`ts-lock c-${cssColor(c)}`} data-testid="ts-lock">

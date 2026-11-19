@@ -4,7 +4,14 @@
  * a socket. The game part comes only from the engine's `viewFor(state, seat)`.
  */
 import { type GameState, legalEarlyAction2Options, viewFor } from "@cd/engine";
-import type { ViewGame, ViewMessage, ViewRollOff, ViewSeat, ViewYou } from "@cd/protocol";
+import {
+  defaultProfile,
+  type ViewGame,
+  type ViewMessage,
+  type ViewRollOff,
+  type ViewSeat,
+  type ViewYou,
+} from "@cd/protocol";
 import { pausedSeatIds } from "./pause";
 import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
 import type { RollOffState, RoomMeta, SeatRecord } from "./room-store";
@@ -17,6 +24,7 @@ function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
     online: isOnline(sockets, s.seatId),
     away: s.away,
     left: s.left === true,
+    profile: s.profile ?? defaultProfile(s.joinOrder),
     record: {
       wins: s.record?.wins ?? 0,
       ties: s.record?.ties ?? 0,

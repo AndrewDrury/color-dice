@@ -179,6 +179,7 @@ describe("CreateGame", () => {
       password: " pw 1 ",
       maxPlayers: 3,
       listed: false,
+      profile: expect.objectContaining({ cat: "mad-cat" }),
     });
     expect(listSessions()).toEqual([
       { code: CODE, token: TOKEN, seatId: SEAT, name: "Andrew", roomName: "Friday dice" },

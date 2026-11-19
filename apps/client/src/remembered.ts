@@ -9,6 +9,9 @@ import {
   MIN_PLAYERS,
   PASSWORD_MAX,
   PLAYER_NAME_MAX,
+  PROFILE_COLORS,
+  type Profile,
+  ProfileSchema,
   ROOM_NAME_MAX,
 } from "@cd/protocol";
 import { getPrefs, setPrefs } from "./prefs";
@@ -34,6 +37,8 @@ export interface Remembered {
   maxPlayers: number;
   /** Oldest first; the last entry is the most recent. */
   rooms: RoomPassword[];
+  /** Last chosen colour + cat (T-NEW-13); absent until first chosen. */
+  profile?: Profile;
 }
 
 const EMPTY: Readonly<Remembered> = Object.freeze({
@@ -73,6 +78,8 @@ export function sanitizeRemembered(data: unknown): Remembered {
   out.roomName = str(d.roomName, ROOM_NAME_MAX);
   out.password = str(d.password, PASSWORD_MAX);
   out.maxPlayers = validMaxPlayers(d.maxPlayers);
+  const prof = ProfileSchema.safeParse(d.profile);
+  if (prof.success) out.profile = prof.data;
   if (Array.isArray(d.rooms)) {
     const byCode = new Map<string, string>();
     for (const r of d.rooms) {
@@ -117,6 +124,7 @@ function save(r: Remembered): void {
       !r.roomName &&
       !r.password &&
       r.rooms.length === 0 &&
+      !r.profile &&
       r.maxPlayers === DEFAULT_MAX_PLAYERS;
     if (empty) ls.removeItem(REMEMBERED_KEY);
     else ls.setItem(REMEMBERED_KEY, JSON.stringify(r));
@@ -144,6 +152,25 @@ export function rememberedName(): string {
   return getRemembered().name || getPrefs().lastName;
 }
 
+let firstRun: Profile | null = null;
+
+/** Profile to pre-fill: the remembered one, else a random colour with the default cat (stable per tab). */
+export function rememberedProfile(): Profile {
+  const p = getRemembered().profile;
+  if (p) return p;
+  firstRun ??= {
+    color: PROFILE_COLORS[Math.floor(Math.random() * PROFILE_COLORS.length)] ?? "coral",
+    cat: "mad-cat",
+  };
+  return firstRun;
+}
+
+/** Keep a profile changed in the waiting room for the next create/join. */
+export function rememberProfile(profile: Profile): void {
+  const r = load();
+  save({ ...r, profile });
+}
+
 /** Password saved for a room this device is seated in, else "". */
 export function getRoomPassword(code: string): string {
   return getRemembered().rooms.find((x) => x.code === code)?.password ?? "";
@@ -158,6 +185,8 @@ export interface RememberInput {
   password?: string;
   /** Last chosen player count (Create Game only). */
   maxPlayers?: number;
+  /** Colour + cat used for this seat; last selection wins. */
+  profile?: Profile;
 }
 
 /**
@@ -175,6 +204,7 @@ export function rememberSubmit(input: RememberInput): void {
       password: input.password ?? r.password,
       maxPlayers: input.maxPlayers ?? r.maxPlayers,
       rooms,
+      profile: input.profile ?? r.profile,
     }),
   );
   setPrefs({ lastName: input.name });
@@ -204,4 +234,5 @@ export function clearRemembered(): void {
 /** Test helper: drop the in-memory copy. */
 export function _resetRememberedForTests(): void {
   memory = null;
+  firstRun = null;
 }

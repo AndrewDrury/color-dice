@@ -1,8 +1,9 @@
 /** T-NEW-9: persistent "whose turn / which step / what to press" strip under the top bar. */
 import type { ViewMessage } from "@cd/protocol";
-import { seatName } from "../game/model";
+import { seatName, seatProfile } from "../game/model";
 import { canPass, currentStep, type Mark, noWhiteSumMove, passLabel } from "../game/staging";
 import { t, useT } from "../i18n";
+import { Avatar } from "./Avatar";
 
 export interface TurnBannerProps {
   view: ViewMessage;
@@ -44,7 +45,9 @@ export function TurnBanner({ view, staged, noMove, s1 }: TurnBannerProps) {
       aria-label={t("turn.aria")}
       data-testid="turn-banner"
     >
-      <span class="g-turnbar-who">{title}</span>
+      <span class="g-turnbar-who">
+        <Avatar profile={seatProfile(view, g.turn.activeSeat)} size={16} /> {title}
+      </span>
       <span class="g-turnbar-step">{step}</span>
       {cta ? <span class="g-turnbar-cta">{cta}</span> : null}
     </section>

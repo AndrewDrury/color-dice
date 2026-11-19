@@ -3,7 +3,7 @@
  * `commit` is the only way to record an accepted change: it bumps `version`
  * and `lastActivityAt` and writes the keys in one batch.
  */
-import type { ChatEntry, MaxPlayers, RoomStatus } from "@cd/protocol";
+import type { ChatEntry, MaxPlayers, Profile, RoomStatus } from "@cd/protocol";
 import type { StoredPassword } from "./crypto";
 
 export interface RoomMeta {
@@ -45,6 +45,8 @@ export interface SeatRecord {
   lastSeenAt: number;
   /** Win/loss tally across rematches (J5). Absent = 0-0. Dies with the seat. */
   record?: { wins: number; ties: number; losses: number };
+  /** Public cosmetic profile (T-NEW-13). Absent on older seats: the view fills a default. */
+  profile?: Profile;
 }
 
 /** Storage key `"chat"`: persisted id counter + ring buffer of text messages. */

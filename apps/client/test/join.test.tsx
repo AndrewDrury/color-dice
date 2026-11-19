@@ -83,7 +83,11 @@ describe("JoinDialog", () => {
     render(<JoinDialog code={CODE} games={[ROOM]} onClose={() => {}} />);
     fill("Cleo", "nope");
     await submit();
-    expect(api.joinGame).toHaveBeenCalledWith(CODE, { name: "Cleo", password: "nope" });
+    expect(api.joinGame).toHaveBeenCalledWith(CODE, {
+      name: "Cleo",
+      password: "nope",
+      profile: expect.objectContaining({ cat: "mad-cat" }),
+    });
     expect(screen.getByText("Wrong password.")).toBeTruthy();
     const button = screen.getByRole("button", { name: "Join" }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);

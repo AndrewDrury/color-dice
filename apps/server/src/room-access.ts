@@ -3,7 +3,7 @@
  * Both share one 10-strike lockout and return the same null (→ 401) for an
  * unknown room, a locked room or a wrong secret. Secrets are never logged.
  */
-import { LOCKOUT_FAILED_ATTEMPTS, LOCKOUT_MS } from "@cd/protocol";
+import { defaultProfile, LOCKOUT_FAILED_ATTEMPTS, LOCKOUT_MS, type Profile } from "@cd/protocol";
 import { hashToken, inviteKeyEquals, newSeatId, verifyPassword } from "./crypto";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 
@@ -82,6 +82,7 @@ export async function newSeat(
   host: boolean,
   token: string,
   now: number,
+  profile: Profile = defaultProfile(joinOrder),
 ): Promise<SeatRecord> {
   return {
     seatId: newSeatId(),
@@ -92,5 +93,6 @@ export async function newSeat(
     tokenHash: await hashToken(token),
     away: false,
     lastSeenAt: now,
+    profile,
   };
 }

@@ -11,6 +11,7 @@ import {
 } from "./common";
 import { ErrorCodeSchema } from "./errors";
 import { INVITE_KEY_LENGTH, PLAYER_NAME_MAX, ROOM_NAME_MAX } from "./limits";
+import { ProfileSchema } from "./profile";
 
 /** Invite key (K2.1): base64url, 43 chars. Travels only in the URL fragment and request bodies. */
 export const InviteKeySchema = z
@@ -27,6 +28,7 @@ export const CreateGameReqSchema = z
     password: PasswordSchema,
     maxPlayers: MaxPlayersSchema,
     listed: z.boolean(),
+    profile: ProfileSchema.optional(),
   })
   .strict();
 export type CreateGameReq = z.input<typeof CreateGameReqSchema>;
@@ -38,6 +40,7 @@ function credentialBody() {
       name: PlayerNameSchema,
       password: PasswordSchema.optional(),
       invite: InviteKeySchema.optional(),
+      profile: ProfileSchema.optional(),
     })
     .strict()
     .refine((b) => (b.password === undefined) !== (b.invite === undefined), {

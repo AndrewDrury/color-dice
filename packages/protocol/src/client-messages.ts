@@ -2,6 +2,7 @@ import { z } from "zod";
 import { REACTIONS } from "./chat";
 import { ColorSchema, SeatIdSchema, TokenSchema } from "./common";
 import { CHAT_RAW_MAX } from "./limits";
+import { ProfileSchema } from "./profile";
 
 /** Must equal the current engine `turnNumber` (else `E_STALE_TURN`). */
 const TurnSchema = z.number().int().min(1);
@@ -81,6 +82,11 @@ export const ReactMsgSchema = z
   .object({ type: z.literal("react"), emoji: z.enum(REACTIONS) })
   .strict();
 
+/** Lobby only: change the seat's colour and cat (T-NEW-13). */
+export const ProfileMsgSchema = z
+  .object({ type: z.literal("profile"), profile: ProfileSchema })
+  .strict();
+
 /** Every game-socket message a client may send. */
 export const ClientMessageSchema = z.discriminatedUnion("type", [
   AuthMsgSchema,
@@ -94,6 +100,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   PingMsgSchema,
   ChatMsgSchema,
   ReactMsgSchema,
+  ProfileMsgSchema,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 export type ClientMessageType = ClientMessage["type"];

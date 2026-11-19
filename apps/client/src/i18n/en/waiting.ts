@@ -47,4 +47,9 @@ export const waiting = {
   "invite.intro": "You've been invited. Type your name to sit down.",
   "invite.invalid": "Link is invalid or expired.",
   "toast.sessionEnded": "Your session ended (maybe you joined from another device).",
+  "profile.title": "Your look",
+  "profile.colors": "Coral,Amber,Lime,Teal,Sky,Indigo,Violet,Pink,Slate,Brown",
+  "profile.cats": "Pick your cat",
+  "profile.colorGroup": "Color",
+  "profile.catGroup": "Cat",
 } as const;

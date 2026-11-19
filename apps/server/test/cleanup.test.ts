@@ -72,7 +72,7 @@ describe("leave during play", () => {
     // No hidden info added: seat entries carry only the allow-listed keys.
     for (const s of v.seats)
       expect(Object.keys(s).sort()).toEqual(
-        ["away", "host", "left", "name", "online", "record", "seatId"].sort(),
+        ["away", "host", "left", "name", "online", "profile", "record", "seatId"].sort(),
       );
     expect(((await (await me(room.code, p1.token)).json()) as MeRes).host).toBe(true);
     // The left seat can't come back.

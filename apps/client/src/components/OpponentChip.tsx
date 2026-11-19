@@ -2,6 +2,7 @@
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { seatInfo } from "../game/model";
 import { t, tn, useT } from "../i18n";
+import { Avatar } from "./Avatar";
 import { CheckIcon, CloseIcon, DotsIcon, WarningIcon } from "./icons";
 
 export interface OpponentState {
@@ -93,6 +94,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
       })}
     >
       <span class="g-chip-top">
+        <Avatar profile={seat?.profile} size={16} />
         <span class="g-name">{name}</span>
         <StatusGlyph state={st} />
       </span>

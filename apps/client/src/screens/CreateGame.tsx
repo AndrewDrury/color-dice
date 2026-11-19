@@ -11,9 +11,10 @@ import { createGame } from "../api";
 import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
+import { ProfileField } from "../components/ProfileField";
 import { t, useT } from "../i18n";
 import { primeInvite } from "../invite";
-import { getRemembered, rememberedName, rememberSubmit } from "../remembered";
+import { getRemembered, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -47,6 +48,7 @@ export function CreateGame() {
   const [password, setPassword] = useState(initial.password);
   const [maxPlayers, setMaxPlayers] = useState(initial.maxPlayers);
   const [listed, setListed] = useState(true);
+  const [profile, setProfile] = useState(rememberedProfile);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -63,7 +65,14 @@ export function CreateGame() {
     e.preventDefault();
     if (busy) return;
     setFormError(null);
-    const parsed = CreateGameReqSchema.safeParse({ roomName, name, password, maxPlayers, listed });
+    const parsed = CreateGameReqSchema.safeParse({
+      roomName,
+      name,
+      password,
+      maxPlayers,
+      listed,
+      profile,
+    });
     if (!parsed.success) {
       setErrors(issuesByField(parsed.error.issues, fieldText()));
       return;
@@ -84,6 +93,7 @@ export function CreateGame() {
         roomName: parsed.data.roomName,
         password: parsed.data.password,
         maxPlayers: parsed.data.maxPlayers,
+        profile,
       });
       primeInvite(res.code, res.inviteKey);
       // navigate() writes ?game=CODE with history.replaceState.
@@ -123,6 +133,7 @@ export function CreateGame() {
           autocomplete="nickname"
           enterkeyhint="next"
         />
+        <ProfileField value={profile} onChange={setProfile} />
         <PasswordField
           value={password}
           onValue={setPassword}

@@ -50,4 +50,9 @@ export const waiting: Record<keyof typeof en, string> = {
   "invite.intro": "Te han invitado. Escribe tu nombre para sentarte.",
   "invite.invalid": "El enlace no es válido o ha caducado.",
   "toast.sessionEnded": "Tu sesión terminó (quizá entraste desde otro dispositivo).",
+  "profile.title": "Tu estilo",
+  "profile.colors": "Coral,Ámbar,Lima,Turquesa,Cielo,Índigo,Violeta,Rosa,Pizarra,Marrón",
+  "profile.cats": "Elige tu gato",
+  "profile.colorGroup": "Color",
+  "profile.catGroup": "Gato",
 };

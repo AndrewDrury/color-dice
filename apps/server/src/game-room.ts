@@ -7,6 +7,7 @@ import {
   type InviteRes,
   type MaxPlayers,
   type MeRes,
+  type Profile,
   TokenSchema,
 } from "@cd/protocol";
 import {
@@ -54,6 +55,7 @@ export interface InitInput {
   password: string;
   maxPlayers: MaxPlayers;
   listed: boolean;
+  profile?: Profile;
 }
 
 export interface PatchInput {
@@ -171,13 +173,13 @@ export class GameRoom extends DurableObject<Env> {
         version: 0,
       };
       const token = newToken();
-      const seat = await newSeat(input.name, 1, true, token, now);
+      const seat = await newSeat(input.name, 1, true, token, now, input.profile);
       await this.commit(meta, [seat]);
       return ok({ code: meta.code, token, seatId: seat.seatId, inviteKey: meta.inviteKey });
     });
   }
 
-  join(name: string, cred: Credential): Promise<OpResult<AuthRes>> {
+  join(name: string, cred: Credential, profile?: Profile): Promise<OpResult<AuthRes>> {
     return this.serial(async () => {
       const meta = await this.checkCredentials(cred);
       if (!meta) return BAD_CREDENTIALS;
@@ -187,7 +189,7 @@ export class GameRoom extends DurableObject<Env> {
       if (findByName(seats, name)) return fail(409, "E_NAME_TAKEN");
       const token = newToken();
       const order = Math.max(0, ...seats.map((s) => s.joinOrder)) + 1;
-      const seat = await newSeat(name, order, false, token, this.now());
+      const seat = await newSeat(name, order, false, token, this.now(), profile);
       const all = [...seats, seat];
       // T-UX-17: the seat that fills the room starts the game, same path as the host's Start.
       const started = isRoomFull(meta, all)
@@ -201,7 +203,7 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /** code + password/invite + name of an offline seat → new token; old sessions end. */
-  reclaim(name: string, cred: Credential): Promise<OpResult<AuthRes>> {
+  reclaim(name: string, cred: Credential, profile?: Profile): Promise<OpResult<AuthRes>> {
     return this.serial(async () => {
       const meta = await this.checkCredentials(cred);
       if (!meta) return BAD_CREDENTIALS;
@@ -213,6 +215,7 @@ export class GameRoom extends DurableObject<Env> {
       const token = newToken();
       seat.tokenHash = await hashToken(token);
       seat.lastSeenAt = this.now();
+      if (profile) seat.profile = profile;
       this.closeSeat(seat.seatId, CLOSE.SESSION_ENDED, "sessionEnded");
       await this.commit(meta, seats);
       return ok({ code: meta.code, token, seatId: seat.seatId });

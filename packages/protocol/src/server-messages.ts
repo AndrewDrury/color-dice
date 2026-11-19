@@ -24,6 +24,7 @@ import {
 import { type ErrorCode, ErrorCodeSchema } from "./errors";
 import { type PublicGame, PublicGameSchema } from "./http";
 import { PLAYER_NAME_MAX, PUBLIC_LIST_MAX, ROOM_NAME_MAX, VIEW_EVENTS } from "./limits";
+import { type Profile, ProfileSchema } from "./profile";
 
 /* ---------- The per-player view (C7) ---------- */
 
@@ -46,6 +47,8 @@ export interface ViewSeat {
   left: boolean;
   /** Wins/ties/losses in this room across rematches. Public. */
   record: { wins: number; ties: number; losses: number };
+  /** Public cosmetic profile (T-NEW-13); absent only from an older server. */
+  profile?: Profile;
 }
 
 export interface ViewRow {
@@ -317,6 +320,7 @@ export const ViewMessageSchema = z
             away: z.boolean(),
             left: z.boolean(),
             record: z.object({ wins: NonNegInt, ties: NonNegInt, losses: NonNegInt }).strict(),
+            profile: ProfileSchema.optional(),
           })
           .strict(),
       )
@@ -365,6 +369,7 @@ export const ErrorMessageSchema = z
         "ping",
         "chat",
         "react",
+        "profile",
       ] as const satisfies readonly ClientMessageType[])
       .nullable(),
   })

@@ -1,0 +1,50 @@
+/* Profile avatar (T-NEW-13): round cat GIF with a ring in the profile colour. */
+.pc-coral {
+  --pc: #d9442f;
+}
+.pc-amber {
+  --pc: #b87400;
+}
+.pc-lime {
+  --pc: #5c8a00;
+}
+.pc-teal {
+  --pc: #0f8b8d;
+}
+.pc-sky {
+  --pc: #1b7fc4;
+}
+.pc-indigo {
+  --pc: #4a4ae0;
+}
+.pc-violet {
+  --pc: #8a3fd0;
+}
+.pc-pink {
+  --pc: #d0338f;
+}
+.pc-slate {
+  --pc: #5b6b7e;
+}
+.pc-brown {
+  --pc: #8a5230;
+}
+.av {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--pc);
+  background: var(--paper);
+  overflow: hidden;
+  vertical-align: middle;
+}
+.av img {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.g-chip .av,
+.g-turnbar .av {
+  box-shadow: 0 0 0 1.5px var(--pc);
+  line-height: 0;
+}

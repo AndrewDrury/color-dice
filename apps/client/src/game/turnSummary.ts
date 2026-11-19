@@ -1,7 +1,7 @@
 /** T-NEW-12: what every player did last turn, built only from events already in the view. */
 import type { Color, GameEvent } from "@cd/engine";
-import type { ViewMessage } from "@cd/protocol";
-import { seatName, seatOfPlayer } from "./model";
+import type { Profile, ViewMessage } from "@cd/protocol";
+import { seatName, seatOfPlayer, seatProfile } from "./model";
 
 type Face = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -20,6 +20,7 @@ export interface SummaryMark {
 export interface SummaryPlayer {
   seat: number;
   name: string;
+  profile?: Profile;
   marks: SummaryMark[];
   penalty: boolean;
   locks: Color[];
@@ -55,6 +56,8 @@ export function summarizeTurn(view: ViewMessage, fresh: readonly GameEvent[]): T
     let p = by.get(seat);
     if (!p) {
       p = { seat, name: seatName(view, seat), marks: [], penalty: false, locks: [] };
+      const prof = seatProfile(view, seat);
+      if (prof) p.profile = prof;
       by.set(seat, p);
     }
     return p;

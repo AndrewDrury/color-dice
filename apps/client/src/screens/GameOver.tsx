@@ -1,6 +1,7 @@
 /** Results card (H7) over the dimmed board: winners, reason, ranked table, Rematch / Back home. */
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { Avatar } from "../components/Avatar";
 import { Button } from "../components/Button";
 import { Celebration, celebrationKey, claimCelebration } from "../components/Celebration";
 import { ChatControls } from "../components/ChatButton";
@@ -131,6 +132,7 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
             >
               <h3 class="g-final-head">
                 <span class="num">{ranks.get(p.seat)}.</span>{" "}
+                <Avatar profile={seatInfo(view, p)?.profile} size={28} />{" "}
                 <span class="g-name">
                   {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
                 </span>

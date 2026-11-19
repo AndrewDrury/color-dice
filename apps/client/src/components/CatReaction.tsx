@@ -1,83 +1,38 @@
 /** Static GIF asset and meme caption for an allow-listed reaction id. */
-import type { Reaction } from "@cd/protocol";
+import type { ProfileCat, Reaction } from "@cd/protocol";
 
-const REACTION_ASSETS: Partial<Record<Reaction, string>> = {
-  "angry-cat-disgusted-face-gif": "Angry Cat Disgusted Face GIF.gif",
-  "bruce-lee-fighting-gif": "Bruce Lee Fighting GIF.gif",
-  "cat-dancing-gif-by-unscreen": "Cat Dancing GIF by Unscreen.gif",
-  "cat-emoji-gif": "Cat Emoji GIF.gif",
-  "cat-gif-1": "Cat GIF (1).gif",
-  "cat-gif": "Cat GIF.gif",
-  "cat-holding-sword-gif": "Cat Holding Sword GIF.gif",
-  "cat-laugh-gif": "Cat Laugh GIF.gif",
-  "cat-meme-gif-1": "Cat Meme GIF (1).gif",
-  "cat-meme-gif-2": "Cat Meme GIF (2).gif",
-  "cat-meme-gif": "Cat Meme GIF.gif",
-  "cat-peeking-gif": "Cat Peeking GIF.gif",
-  "cat-reaction-gif-gif": "Cat Reaction Gif GIF.gif",
-  "cat-screaming-gif": "Cat Screaming GIF.gif",
-  "dance-cat-gif": "Dance Cat GIF.gif",
-  "happy-black-cat-gif-by-sou-eu-na-vida": "Happy Black Cat GIF by Sou Eu Na Vida.gif",
-  "in-love-cat-gif": "In Love Cat GIF.gif",
-  "kitty-cute-cat-gif": "Kitty Cute Cat GIF.gif",
-  "mad-the-internet-gif-by-moodman": "Mad The Internet GIF by MOODMAN.gif",
-  "shocked-cat-gif": "Shocked Cat GIF.gif",
-  "surprised-cat-quedado-gif": "Surprised Cat Quedado GIF.gif",
-};
-
-export const REACTION_LABELS: Record<Reaction, string> = {
-  "angry-cat-disgusted-face-gif": "angry cat",
-  "bruce-lee-fighting-gif": "fighting",
-  "cat-dancing-gif-by-unscreen": "dancing cat",
-  "cat-emoji-gif": "cat emoji",
-  "cat-gif-1": "cat",
-  "cat-gif": "cat gif",
-  "cat-holding-sword-gif": "sword cat",
-  "cat-laugh-gif": "laugh",
-  "cat-meme-gif-1": "cat meme",
-  "cat-meme-gif-2": "cat meme two",
-  "cat-meme-gif": "cat meme",
-  "cat-peeking-gif": "peeking",
-  "cat-reaction-gif-gif": "cat reaction",
-  "cat-screaming-gif": "screaming",
-  "dance-cat-gif": "dance cat",
-  "happy-black-cat-gif-by-sou-eu-na-vida": "happy cat",
-  "in-love-cat-gif": "in love",
-  "kitty-cute-cat-gif": "cute kitty",
-  "mad-the-internet-gif-by-moodman": "mad the internet",
-  "shocked-cat-gif": "shocked",
-  "surprised-cat-quedado-gif": "surprised",
-};
-
-/** Display order of the pickers, grouped by mood (display only: the protocol REACTIONS order is unchanged). */
-export const REACTION_MOOD_ORDER: readonly Reaction[] = [
-  // happy / love / cute / dancing
-  "happy-black-cat-gif-by-sou-eu-na-vida",
-  "in-love-cat-gif",
-  "kitty-cute-cat-gif",
-  "cat-dancing-gif-by-unscreen",
-  "dance-cat-gif",
-  // laughing / funny / memes
-  "cat-laugh-gif",
-  "cat-meme-gif",
-  "cat-meme-gif-1",
-  "cat-meme-gif-2",
-  "cat-reaction-gif-gif",
-  // surprised / shocked / screaming
-  "surprised-cat-quedado-gif",
-  "shocked-cat-gif",
-  "cat-screaming-gif",
-  // angry / mad / disgusted / fighting / sword
-  "angry-cat-disgusted-face-gif",
-  "mad-the-internet-gif-by-moodman",
-  "bruce-lee-fighting-gif",
-  "cat-holding-sword-gif",
-  // neutral / peeking / other
-  "cat-peeking-gif",
-  "cat-gif",
-  "cat-gif-1",
-  "cat-emoji-gif",
+/** Allow-listed cat GIFs in picker order (grouped by mood): id, file in /reactions, caption. */
+const CATS: readonly (readonly [Reaction, string, string])[] = [
+  [
+    "happy-black-cat-gif-by-sou-eu-na-vida",
+    "Happy Black Cat GIF by Sou Eu Na Vida.gif",
+    "happy cat",
+  ],
+  ["in-love-cat-gif", "In Love Cat GIF.gif", "in love"],
+  ["kitty-cute-cat-gif", "Kitty Cute Cat GIF.gif", "cute kitty"],
+  ["cat-dancing-gif-by-unscreen", "Cat Dancing GIF by Unscreen.gif", "dancing cat"],
+  ["dance-cat-gif", "Dance Cat GIF.gif", "dance cat"],
+  ["cat-laugh-gif", "Cat Laugh GIF.gif", "laugh"],
+  ["cat-meme-gif", "Cat Meme GIF.gif", "cat meme"],
+  ["cat-meme-gif-1", "Cat Meme GIF (1).gif", "cat meme"],
+  ["cat-meme-gif-2", "Cat Meme GIF (2).gif", "cat meme two"],
+  ["cat-reaction-gif-gif", "Cat Reaction Gif GIF.gif", "cat reaction"],
+  ["surprised-cat-quedado-gif", "Surprised Cat Quedado GIF.gif", "surprised"],
+  ["shocked-cat-gif", "Shocked Cat GIF.gif", "shocked"],
+  ["cat-screaming-gif", "Cat Screaming GIF.gif", "screaming"],
+  ["angry-cat-disgusted-face-gif", "Angry Cat Disgusted Face GIF.gif", "angry cat"],
+  ["mad-the-internet-gif-by-moodman", "Mad The Internet GIF by MOODMAN.gif", "mad the internet"],
+  ["bruce-lee-fighting-gif", "Bruce Lee Fighting GIF.gif", "fighting"],
+  ["cat-holding-sword-gif", "Cat Holding Sword GIF.gif", "sword cat"],
+  ["cat-peeking-gif", "Cat Peeking GIF.gif", "peeking"],
+  ["cat-gif", "Cat GIF.gif", "cat gif"],
+  ["cat-gif-1", "Cat GIF (1).gif", "cat"],
+  ["cat-emoji-gif", "Cat Emoji GIF.gif", "cat emoji"],
 ];
+
+export const REACTION_MOOD_ORDER: readonly Reaction[] = CATS.map((c) => c[0]);
+
+const catRow = (id: string) => CATS.find((c) => c[0] === id);
 
 /** Public URL of a file in /reactions, honouring the deploy base path (Pages serves under /color-dice/). */
 export function reactionUrl(file: string): string {
@@ -87,15 +42,13 @@ export function reactionUrl(file: string): string {
 
 export const REACTION_BUTTON_IMAGE = "mad-cat.jpg";
 
-export function reactionAsset(id: Reaction): string {
-  return reactionUrl(REACTION_ASSETS[id] ?? REACTION_BUTTON_IMAGE);
+export function reactionAsset(id: ProfileCat): string {
+  return reactionUrl(catRow(id)?.[1] ?? REACTION_BUTTON_IMAGE);
 }
 
 /** Translated caption for a reaction id; unknown ids fall back to the id itself. */
 export function catCaption(id: string): string {
-  const labels: Record<string, string> = REACTION_LABELS;
-  if (labels[id]) return labels[id];
-  return id;
+  return catRow(id)?.[2] ?? id;
 }
 
 export function CatReaction({

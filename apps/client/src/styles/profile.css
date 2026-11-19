@@ -1,0 +1,78 @@
+/* Profile picker (lazy chunk). */
+.pp {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  gap: var(--s2);
+}
+.pp-legend {
+  font-weight: var(--fw-bold);
+  padding: 0;
+}
+.pp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.pp-colors,
+.pp-cats {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.pp-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.pp-swatch {
+  position: relative;
+  display: block;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--pc);
+  box-shadow: inset 0 0 0 3px var(--paper);
+}
+.pp-swatch:has(input:checked) {
+  outline: 3px solid var(--ink);
+  outline-offset: -1px;
+}
+.pp-swatch:has(input:focus-visible),
+.pp-cat:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.pp-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tap), 1fr));
+  gap: var(--s2);
+}
+.pp-cat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: var(--r-box);
+  cursor: pointer;
+}
+.pp-cat:has(input:checked) {
+  border-color: var(--ink);
+}
+.pp-cat .av {
+  box-shadow: none;
+}
+.pp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}

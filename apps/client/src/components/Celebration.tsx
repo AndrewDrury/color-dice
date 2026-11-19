@@ -12,6 +12,7 @@ import { jingleFor, playDrumRoll, playJingle, playLaugh, type SoundHandle } from
 import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
+import { Avatar } from "./Avatar";
 import "../styles/motion.css";
 import { reactionAsset } from "./CatReaction";
 import { LaughingCat } from "./cats/LaughingCat";
@@ -243,6 +244,7 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
             >
               <h3 class="cel-reveal-head">
                 <span class="num">{rowRanks.get(cur.seat)}.</span>{" "}
+                <Avatar profile={seatInfo(view, cur)?.profile} size={32} />{" "}
                 <span class="g-name cel-pname">{name(cur)}</span>
               </h3>
               {hasCard(cur) ? (
@@ -271,6 +273,7 @@ export function Celebration({ view, onDone }: { view: ViewMessage; onDone: () =>
                     class={`cel-row is-in${win ? " is-winner" : " is-dim"}`}
                     data-seat={p.seat}
                   >
+                    <Avatar profile={seatInfo(view, p)?.profile} size={28} />
                     <span class="g-name cel-pname">{name(p)}</span>
                     <ResultEquation player={p} name={name(p)} ms={1} />
                   </li>

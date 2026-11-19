@@ -30,6 +30,11 @@ export function seatName(view: ViewMessage, seat: number): string {
   return s?.name ?? t("player.fallback", { n: seat + 1 });
 }
 
+export function seatProfile(view: ViewMessage, seat: number): ViewSeat["profile"] {
+  const player = view.game?.players.find((p) => p.seat === seat);
+  return view.seats.find((s) => s.seatId === player?.seatId)?.profile;
+}
+
 export function seatInfo(view: ViewMessage, p: ViewPlayer): ViewSeat | undefined {
   return view.seats.find((s) => s.seatId === p.seatId);
 }

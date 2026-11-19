@@ -3,6 +3,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { recordLabel, recordText } from "../game/model";
 import { t, useT } from "../i18n";
+import { Avatar } from "./Avatar";
 
 export type Seat = ViewMessage["seats"][number];
 
@@ -71,6 +72,7 @@ function SeatRow({
             border: `2px solid ${seat.online ? "var(--row-green)" : "var(--ink-muted)"}`,
           }}
         />
+        <Avatar profile={seat.profile} />
         <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{seat.name}</span>
         {you ? <span class="muted">{t("waiting.you")}</span> : null}
         {showRecord ? (

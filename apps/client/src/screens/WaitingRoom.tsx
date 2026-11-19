@@ -8,10 +8,12 @@ import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { InviteButton } from "../components/CopyButton";
 import { Dialog } from "../components/Dialog";
 import { FieldError, requestErrorText } from "../components/Field";
+import { ProfileField } from "../components/ProfileField";
 import { RoomSettings } from "../components/RoomSettings";
 import { type Seat, SeatList } from "../components/SeatList";
 import { feedback } from "../fx/feedback";
 import { clockTime, t, tn, useT } from "../i18n";
+import { rememberProfile } from "../remembered";
 import { forgetRoom, toastSessionEnded } from "../roomEnd";
 import { navigate } from "../router";
 import { getSession } from "../session";
@@ -157,6 +159,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   };
 
   const isHost = view?.you.host ?? false;
+  const mine = view?.seats.find((s) => s.seatId === view.you.seatId);
   const players = view?.seats.length ?? 0;
   const maxPlayers = view?.room.maxPlayers ?? 0;
   // T-UX-17: a full room starts by itself, so the host's Start gives way to a notice.
@@ -193,6 +196,20 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
           {t("waiting.inviteNote")}
         </p>
       </section>
+
+      {view ? (
+        <section class="card" aria-label={t("profile.title")}>
+          {mine?.profile ? (
+            <ProfileField
+              value={mine.profile}
+              onChange={(p) => {
+                send({ type: "profile", profile: p });
+                rememberProfile(p);
+              }}
+            />
+          ) : null}
+        </section>
+      ) : null}
 
       {showLock && lockedUntil !== null ? (
         <p role="alert" class="card" style={{ color: "var(--danger)" }}>

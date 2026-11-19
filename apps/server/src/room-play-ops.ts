@@ -19,6 +19,7 @@ import {
   type ClientMessageType,
   type ErrorCode,
   type ErrorMessage,
+  type Profile,
   parseClientMessage,
 } from "@cd/protocol";
 import { autopass } from "./autopass";
@@ -274,6 +275,8 @@ export class RoomPlay {
         return this.command(ws, att.seatId, msg);
       case "rematch":
         return this.rematch(ws, att.seatId);
+      case "profile":
+        return this.setProfile(ws, att.seatId, msg.profile);
       case "chat":
       case "react": {
         const r = await this.chat.handle(att.seatId, msg);
@@ -402,6 +405,15 @@ export class RoomPlay {
   }
 
   /** Host only, at GAME_OVER: a new game with the same seats and seat indexes. */
+  /** Lobby only (T-NEW-13). Duplicate colours are allowed and kept (the client numbers them). */
+  private async setProfile(ws: WebSocket, seatId: string, profile: Profile): Promise<void> {
+    const l = await this.load(ws, seatId);
+    if (!l) return;
+    if (l.meta.status !== "lobby") return sendError(ws, "E_WRONG_PHASE", "profile");
+    l.me.profile = profile;
+    await this.d.commit(l.meta, l.seats);
+  }
+
   private async rematch(ws: WebSocket, seatId: string): Promise<void> {
     const l = await this.load(ws, seatId);
     if (!l) return;
