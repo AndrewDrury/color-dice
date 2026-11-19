@@ -79,12 +79,11 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
       password: "pw-mob",
       max: 2,
     });
-    await joinGame(b, code, "pw-mob");
     await expectNoHScroll(a.page, "waiting room");
-    await expectNoHScroll(b.page, "waiting room (guest)");
 
     // Simultaneous roll-off (spec §17 A-1): Mara 6, Milo 1 → Mara starts; whites 6+1 = 7, colors 1.
     await queueDice(code, [6, 1, ...rollFaces(7)]);
+    await joinGame(b, code, "pw-mob"); // fills the room: the game auto-starts
     await startGame(a);
     expect(await waitForRoller(players)).toBe(a);
     for (const p of players) {

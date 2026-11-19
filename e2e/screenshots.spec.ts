@@ -45,13 +45,12 @@ test.describe("screenshots @shots", () => {
             password: "pw-shots",
             max: 2,
           });
-          await joinGame(b, code, "pw-shots");
-          await expect(a.page.getByText("Boris").first()).toBeVisible();
           await shot(a, "waiting");
 
           // Turn t: white sum S[t]; everyone marks Red S[t]. Turn 6 (sum 12) locks Red.
           const sums = [2, 3, 4, 5, 6, 12];
           await queueDice(code, [6, 1, ...sums.flatMap((s) => rollFaces(s))]);
+          await joinGame(b, code, "pw-shots"); // fills the room: the game auto-starts
           await startGame(a);
           expect(await waitForRoller(players)).toBe(a);
           await shot(a, "await-roll");

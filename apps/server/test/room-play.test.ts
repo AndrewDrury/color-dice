@@ -123,31 +123,35 @@ interface Room {
 /** Creates a room with `n` seats, starts it, and connects + authenticates every seat. */
 async function setup(n: number, opts: { start?: boolean } = {}): Promise<Room> {
   const cr = await api("POST", "/api/games", {
-    body: { roomName: "Play", name: "P0", password: PW, maxPlayers: Math.max(n, 2), listed: false },
+    body: {
+      roomName: "Play",
+      name: "P0",
+      password: PW,
+      maxPlayers: Math.max(opts.start === false ? n + 1 : n, 2),
+      listed: false,
+    },
   });
   expect(cr.status).toBe(201);
   const host = (await cr.json()) as AuthRes;
   const players = [host];
+  const clock = { now: Date.now() };
+  await hooksInRoom(host.code, clock);
   for (let i = 1; i < n; i++) {
+    if (i === n - 1 && opts.start !== false) {
+      // The last join fills the room and auto-starts it (T-UX-17); seat 0 rolls a 6
+      // in the first-player roll-off, so it is always the active seat.
+      hooks(true);
+      const d = await api("POST", `/api/games/${host.code}/__test/dice`, {
+        body: { faces: [6, ...Array(n - 1).fill(1)] },
+      });
+      hooks(false);
+      expect(d.status).toBe(204);
+    }
     const r = await api("POST", `/api/games/${host.code}/join`, {
       body: { name: `P${i}`, password: PW },
     });
     expect(r.status).toBe(201);
     players.push((await r.json()) as AuthRes);
-  }
-  const clock = { now: Date.now() };
-  await hooksInRoom(host.code, clock);
-  if (opts.start !== false) {
-    // Seat 0 rolls a 6 in the first-player roll-off, so it is always the active seat.
-    hooks(true);
-    const d = await api("POST", `/api/games/${host.code}/__test/dice`, {
-      body: { faces: [6, ...Array(n - 1).fill(1)] },
-    });
-    hooks(false);
-    expect(d.status).toBe(204);
-    expect((await api("POST", `/api/games/${host.code}/start`, { token: host.token })).status).toBe(
-      204,
-    );
   }
   const clients: Client[] = [];
   for (const p of players) {

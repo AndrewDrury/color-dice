@@ -13,8 +13,8 @@ async function setup(browser: import("@playwright/test").Browser, dice: number[]
     password: "pw-flow",
     max: 2,
   });
-  await joinGame(b, code, "pw-flow");
   await queueDice(code, [6, 1, ...dice]); // roll-off: Alma rolls the only 6
+  await joinGame(b, code, "pw-flow");
   await startGame(a);
   return { a, b };
 }

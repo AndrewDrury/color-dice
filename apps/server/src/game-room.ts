@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { createGame, fromJSON, toJSON } from "@cd/engine";
+import { fromJSON } from "@cd/engine";
 import {
   type AuthRes,
   CLOSE,
@@ -7,7 +7,6 @@ import {
   type InviteRes,
   type MaxPlayers,
   type MeRes,
-  MIN_PLAYERS,
   TokenSchema,
 } from "@cd/protocol";
 import {
@@ -38,20 +37,14 @@ import {
   NOT_IN_LOBBY,
   type OpResult,
   ok,
-  playerId,
   publicEntry,
   removeSeat,
   seatIdOf,
 } from "./room-lobby-ops";
 import { endSocket, RoomPlay } from "./room-play-ops";
+import { isRoomFull, startLobbyGame } from "./room-start";
 import { type RoomMeta, RoomStore, type SeatRecord } from "./room-store";
-import {
-  applyTestHook,
-  CLOCK_KEY,
-  hooksEnabled,
-  startDice,
-  type TestHookInput,
-} from "./test-hooks";
+import { applyTestHook, CLOCK_KEY, hooksEnabled, type TestHookInput } from "./test-hooks";
 import { broadcastViews } from "./views";
 
 export interface InitInput {
@@ -188,7 +181,13 @@ export class GameRoom extends DurableObject<Env> {
       const token = newToken();
       const order = Math.max(0, ...seats.map((s) => s.joinOrder)) + 1;
       const seat = await newSeat(name, order, false, token, this.now());
-      await this.commit(meta, [...seats, seat]);
+      const all = [...seats, seat];
+      // T-UX-17: the seat that fills the room starts the game, same path as the host's Start.
+      const started = isRoomFull(meta, all)
+        ? await startLobbyGame(this.env, this.ctx.storage, meta, all)
+        : null;
+      if (started?.ok) await this.commit(meta, started.value.seats, started.value.state);
+      else await this.commit(meta, all);
       return ok({ code: meta.code, token, seatId: seat.seatId });
     });
   }
@@ -306,22 +305,9 @@ export class GameRoom extends DurableObject<Env> {
       if (!a.ok) return a;
       const { meta, seats } = a.value;
       if (meta.status !== "lobby") return NOT_IN_LOBBY;
-      if (seats.length < MIN_PLAYERS || seats.length > meta.maxPlayers) {
-        return fail(422, "E_PLAYER_COUNT");
-      }
-      const ordered = [...seats].sort((x, y) => x.joinOrder - y.joinOrder);
-      ordered.forEach((s, i) => {
-        s.seatIndex = i;
-      });
-      const dice = await startDice(this.env, this.ctx.storage, diceOverride);
-      const res = createGame(
-        ordered.map((s) => ({ id: playerId(s.seatIndex as number), displayName: s.name })),
-        { dice: dice.dice },
-      );
-      if (!res.ok) return fail(422, res.error.code);
-      meta.status = "playing";
-      await dice.save();
-      await this.commit(meta, ordered, toJSON(res.state));
+      const res = await startLobbyGame(this.env, this.ctx.storage, meta, seats, diceOverride);
+      if (!res.ok) return res;
+      await this.commit(meta, res.value.seats, res.value.state);
       return ok(null);
     });
   }

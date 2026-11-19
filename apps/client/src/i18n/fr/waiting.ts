@@ -17,6 +17,7 @@ export const waiting: Record<keyof typeof en, string> = {
   "waiting.start.need_one": "Il manque {count} joueur",
   "waiting.start.need_other": "Il manque {count} joueurs",
   "waiting.start.go": "Lancer la partie",
+  "waiting.full": "Salle pleine — la partie démarre…",
   "waiting.waitingHost": "En attente du lancement par l'hôte…",
   "waiting.leaveTitle": "Quitter cette partie ?",
   "waiting.leaveBody": "Ta place sera libérée pour quelqu'un d'autre.",

@@ -37,7 +37,10 @@ test("invite link: copy, open in another browser, type only a name, land in the 
     expect(guest.page.url()).not.toContain(key);
     await guest.page.getByLabel("Your name").fill("Gus");
     await guest.page.getByRole("button", { name: "Join", exact: true }).click();
-    await expect(guest.page.getByRole("button", { name: "Leave" })).toBeVisible();
+    // The guest fills the room, so the game starts and they may land on the game screen.
+    await expect(
+      guest.page.getByRole("button", { name: "Leave" }).or(guest.page.locator(".g-main")).first(),
+    ).toBeVisible();
     await expect(host.page.getByText("Gus").first()).toBeVisible();
     expect(guest.page.url()).not.toContain(key);
     const stored = await guest.page.evaluate(() => JSON.stringify({ ...localStorage }));
@@ -81,7 +84,10 @@ test("both players leave mid-game: the room is gone from the list and /me no lon
     await guest.page.goto(link);
     await guest.page.getByLabel("Your name").fill("Gus");
     await guest.page.getByRole("button", { name: "Join", exact: true }).click();
-    await expect(guest.page.getByRole("button", { name: "Leave" })).toBeVisible();
+    // The guest fills the room, so the game starts and they may land on the game screen.
+    await expect(
+      guest.page.getByRole("button", { name: "Leave" }).or(guest.page.locator(".g-main")).first(),
+    ).toBeVisible();
     await startGame(host);
     for (const p of [host, guest]) await expect(p.page.locator(".g-main")).toBeVisible();
 

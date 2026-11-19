@@ -39,12 +39,11 @@ test("five players: a double lock in one Action 1 ends the game with 3 locked ro
       password: "pw-five",
       max: 5,
     });
-    for (const p of ps.slice(1)) await joinGame(p, code, "pw-five");
-
     // Roll-off: seat 0 rolls a 6. Turns 1..11 roll 6 dice, turn 12 five (green is gone).
     const dice = [6, 1, 1, 1, 1];
     for (const [i, s] of SUMS.entries()) dice.push(...rollFaces(s, i < 11 ? 4 : 3));
     await queueDice(code, dice);
+    for (const p of ps.slice(1)) await joinGame(p, code, "pw-five"); // the 5th join auto-starts
     await startGame(ps[0]!);
 
     for (let turn = 1; turn <= SUMS.length; turn++) {

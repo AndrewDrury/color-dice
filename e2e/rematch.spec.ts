@@ -23,8 +23,8 @@ test("rematch keeps names, restarts at turn 1 with zero scores", async ({ browse
       password: "pw-rema",
       max: 2,
     });
-    await joinGame(b, code, "pw-rema");
     await queueDice(code, [6, 1]);
+    await joinGame(b, code, "pw-rema");
     await startGame(a);
     for (let turn = 1; turn <= 7; turn++) {
       const active = turn % 2 === 1 ? a : b;

@@ -73,11 +73,27 @@ async function fillJoin(player: Player, password: string) {
   await dialog.getByLabel("Your name").fill(player.name);
   await dialog.getByLabel("Password", { exact: true }).fill(password);
   await dialog.getByRole("button", { name: "Join", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Leave" })).toBeVisible();
+  // Joining the last free seat starts the game, so the guest may land on the game screen.
+  await expect(
+    page.getByRole("button", { name: "Leave" }).or(page.locator(".g-main")).first(),
+  ).toBeVisible();
 }
 
+/**
+ * Starts the game from the host's waiting room. A room that is full starts by itself
+ * (T-UX-17), so this only clicks Start for a part-full room; queue scripted dice BEFORE
+ * the join that fills the room, because that join rolls the opening dice.
+ */
 export async function startGame(host: Player) {
-  await host.page.getByRole("button", { name: /^Start/ }).click();
+  const { page } = host;
+  const start = page.getByRole("button", { name: /^Start/ });
+  const inLobby = page.getByRole("heading", { name: /^Players/ });
+  await expect
+    .poll(async () => (await start.isVisible()) || !(await inLobby.isVisible()), {
+      timeout: 15_000,
+    })
+    .toBe(true);
+  if (await start.isVisible()) await start.click();
 }
 
 /** Queue scripted dice (server must run with ALLOW_TEST_HOOKS=1). */

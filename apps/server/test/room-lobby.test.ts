@@ -201,9 +201,10 @@ describe("join rules", () => {
     expect(dup.status).toBe(409);
     expect(await dup.json()).toEqual({ code: "E_NAME_TAKEN" });
     await joinOk(host.code, "Bob");
+    // The join that fills the room auto-starts it (T-UX-17), so a late join is "not in lobby".
     const full = await join(host.code, "Carol");
     expect(full.status).toBe(409);
-    expect(await full.json()).toEqual({ code: "E_ROOM_FULL" });
+    expect(await full.json()).toEqual({ code: "E_NOT_IN_LOBBY" });
     expect((await lobbyList()).some((g) => g.code === host.code)).toBe(false);
 
     const h2 = await create();

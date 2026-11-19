@@ -40,8 +40,8 @@ test("hidden info: A receives neither B's nor C's Action 1 choice before the rev
       max: 3,
     });
     await joinGame(b!, code, "pw-hide");
-    await joinGame(c!, code, "pw-hide");
     await queueDice(code, [6, 1, 1, ...rollFaces(7)]); // Ada starts; white sum 7
+    await joinGame(c!, code, "pw-hide");
     await startGame(a!);
 
     expect(await waitForRoller(players)).toBe(a);
@@ -117,8 +117,8 @@ test("hidden info: opponent cards are not rendered or sent before game over, all
       password: "pw-card",
       max: 2,
     });
-    await joinGame(b, code, "pw-card");
     await queueDice(code, [6, 1]);
+    await joinGame(b, code, "pw-card");
     await startGame(a);
     for (let turn = 1; turn <= 7; turn++) {
       const active = turn % 2 === 1 ? a : b;

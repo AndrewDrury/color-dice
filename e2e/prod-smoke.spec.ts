@@ -38,8 +38,7 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     await expect(g.getByRole("button", { name: "Leave" })).toBeVisible();
     await expect(h.getByText(guest.name).first()).toBeVisible();
 
-    // Host starts; both see the game screen.
-    await h.getByRole("button", { name: /^Start/ }).click();
+    // The guest filled the room, so the game starts by itself; both see the game screen.
     for (const p of [host, guest]) {
       await expect(p.page.locator(".g-main")).toBeVisible();
     }

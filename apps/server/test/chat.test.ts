@@ -84,7 +84,7 @@ async function setup(n: number, opts: { start?: boolean; listed?: boolean } = {}
       roomName: "Chat",
       name: "P0",
       password: PW,
-      maxPlayers: Math.max(n, 2),
+      maxPlayers: Math.max(opts.start ? n : n + 1, 2),
       listed: opts.listed ?? false,
     },
   });
@@ -95,11 +95,6 @@ async function setup(n: number, opts: { start?: boolean; listed?: boolean } = {}
       body: { name: `P${i}`, password: PW },
     });
     players.push((await r.json()) as AuthRes);
-  }
-  if (opts.start) {
-    expect((await api("POST", `/api/games/${host.code}/start`, { token: host.token })).status).toBe(
-      204,
-    );
   }
   const clients: Client[] = [];
   for (const p of players) clients.push(await connect(host.code, p.token));

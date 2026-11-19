@@ -176,6 +176,19 @@ describe("WaitingRoom", () => {
     expect(api.startGame).toHaveBeenCalledWith(CODE, TOKEN);
   });
 
+  it("a full room shows the starting notice instead of Start / the waiting line", () => {
+    const v = view({ seats: 2 });
+    v.room.maxPlayers = 2;
+    show(v);
+    expect(screen.getByText("Room full — starting…")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Start game|Need/ })).toBeNull();
+    const g = view({ host: false, seats: 2 });
+    g.room.maxPlayers = 2;
+    show(g);
+    expect(screen.getByText("Room full — starting…")).toBeTruthy();
+    expect(screen.queryByText("Waiting for the host to start…")).toBeNull();
+  });
+
   it("startLabel covers the bounds", () => {
     expect(startLabel(1, 4)).toBe("Need 1 more player");
     expect(startLabel(0, 4)).toBe("Need 2 more players");

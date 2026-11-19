@@ -67,8 +67,8 @@ test("375 px game screen in English, French and Spanish: nothing overflows", asy
       password: "pw-i18n",
       max: 2,
     });
-    await joinGame(b, code, "pw-i18n");
     await queueDice(code, [6, 1, ...rollFaces(7)]);
+    await joinGame(b, code, "pw-i18n");
     await startGame(a);
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);

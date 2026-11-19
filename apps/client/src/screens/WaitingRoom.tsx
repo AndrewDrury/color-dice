@@ -159,6 +159,8 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const isHost = view?.you.host ?? false;
   const players = view?.seats.length ?? 0;
   const maxPlayers = view?.room.maxPlayers ?? 0;
+  // T-UX-17: a full room starts by itself, so the host's Start gives way to a notice.
+  const full = maxPlayers > 0 && players >= maxPlayers;
   const canStart = players >= MIN_PLAYERS && players <= maxPlayers;
   const lockedUntil = view?.room.joinLockedUntil ?? null;
   const [, setNow] = useState(0);
@@ -226,7 +228,11 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
       </section>
 
       {view ? (
-        isHost ? (
+        full ? (
+          <p class="muted" role="status" data-testid="room-full">
+            {t("waiting.full")}
+          </p>
+        ) : isHost ? (
           <Button
             variant="primary"
             block

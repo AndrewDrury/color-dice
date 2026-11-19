@@ -108,6 +108,8 @@ export interface TestRoom {
   code: string;
   players: AuthRes[];
   clock: { now: number };
+  /** Last seat, joined by `startGame` (the join that fills the room auto-starts it). */
+  pendingJoin?: string;
 }
 
 const roomStub = (code: string) => env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code));
@@ -130,7 +132,8 @@ export async function createRoom(n: number): Promise<TestRoom> {
   expect(cr.status).toBe(201);
   const host = (await cr.json()) as AuthRes;
   const room: TestRoom = { code: host.code, players: [host], clock: { now: Date.now() } };
-  for (let i = 1; i < n; i++) room.players.push(await joinRoom(host.code, `P${i}`));
+  for (let i = 1; i < n - 1; i++) room.players.push(await joinRoom(host.code, `P${i}`));
+  if (n > 1) room.pendingJoin = `P${n - 1}`;
   await runInDurableObject(roomStub(host.code), async (r: GameRoom) => {
     const x = r as unknown as { env: Record<string, unknown> };
     x.env = { ...x.env, ALLOW_TEST_HOOKS: "1" };
@@ -155,13 +158,19 @@ export async function queueDice(code: string, faces: number[]): Promise<void> {
   }
 }
 
+/**
+ * Starts the game. Rooms fill to `maxPlayers` and auto-start (T-UX-17), so this joins the
+ * held-back last seat; dice queued before the call drive the opening roll-off.
+ */
 export async function startGame(room: TestRoom): Promise<void> {
-  const host = room.players[0] as AuthRes;
-  const r = await api("POST", `/api/games/${room.code}/start`, { token: host.token });
-  expect(r.status).toBe(204);
+  if (room.pendingJoin) {
+    room.players.push(await joinRoom(room.code, room.pendingJoin));
+    room.pendingJoin = undefined;
+  }
 }
 
 export async function connectAll(room: TestRoom): Promise<Conn[]> {
+  if (room.pendingJoin) await startGame(room);
   const conns: Conn[] = [];
   for (const p of room.players) conns.push(await connect(room.code, p.token));
   // Settle: every client has seen every seat online.

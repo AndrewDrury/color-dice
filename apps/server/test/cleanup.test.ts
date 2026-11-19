@@ -107,7 +107,7 @@ describe("leave during play", () => {
   });
 
   it("lobby seats report left=false; a lobby leave removes the seat", async () => {
-    const room = await createRoom(2);
+    const room = await createRoom(3); // third seat held back: a full room would auto-start
     const [host, p1] = room.players as [AuthRes, AuthRes];
     const c0 = await connect(room.code, host.token);
     const v0 = await c0.until(() => (c0.view().seats.length === 2 ? c0.view() : undefined));

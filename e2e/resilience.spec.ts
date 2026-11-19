@@ -10,8 +10,8 @@ async function startTwo(browser: Parameters<typeof newPlayer>[0], tag: string) {
     password: "pw-resil",
     max: 2,
   });
-  await joinGame(b, code, "pw-resil");
   await queueDice(code, [6, 1, ...rollFaces(7)]); // Rhea starts; white sum 7
+  await joinGame(b, code, "pw-resil");
   await startGame(a);
   expect(await waitForRoller([a, b])).toBe(a);
   await roll(a.page);

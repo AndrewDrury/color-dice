@@ -28,8 +28,8 @@ test("host marks an offline player away; the game goes on with their penalties",
       max: 3,
     });
     await joinGame(b!, code, "pw-away");
-    await joinGame(c!, code, "pw-away");
     await queueDice(code, [6, 1, 1, ...rollFaces(7)]);
+    await joinGame(c!, code, "pw-away");
     await startGame(a!);
     expect(await waitForRoller(players)).toBe(a);
 

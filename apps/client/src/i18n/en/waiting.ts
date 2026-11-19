@@ -14,6 +14,7 @@ export const waiting = {
   "waiting.start.need_one": "Need {count} more player",
   "waiting.start.need_other": "Need {count} more players",
   "waiting.start.go": "Start game",
+  "waiting.full": "Room full — starting…",
   "waiting.waitingHost": "Waiting for the host to start…",
   "waiting.leaveTitle": "Leave this game?",
   "waiting.leaveBody": "Your seat will be freed for someone else.",
