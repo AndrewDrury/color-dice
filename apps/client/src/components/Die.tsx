@@ -262,6 +262,7 @@ export function Die(props: DieProps) {
       role="img"
       data-die={props.id ?? color}
       data-color={color}
+      data-order={removed ? undefined : (props.index ?? 0)}
       data-face={phase === "settled" && !removed ? String(face) : undefined}
       aria-label={dieLabel(color, face, phase, removed)}
     >

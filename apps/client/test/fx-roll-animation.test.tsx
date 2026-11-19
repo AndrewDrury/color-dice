@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   _resetPlayedRollsForTests,
+  ROLL_TIMING,
   type RollAnimInput,
   useRollAnimation,
 } from "../src/fx/useRollAnimation";
@@ -67,6 +68,21 @@ describe("useRollAnimation", () => {
     expect(onLanded).toHaveBeenCalledTimes(1);
   });
 
+  it("dice land left to right, one stagger apart, and the roll stays short", async () => {
+    const { result, rerender, onDieLand } = setup({ code: "S", turnNumber: 1, roll: null });
+    act(() => result.current.throwDice());
+    rerender({ code: "S", turnNumber: 1, roll: ROLL });
+    await step(550);
+    const order: number[] = [];
+    onDieLand.mockImplementation((i: number) => order.push(i));
+    await step(ROLL_TIMING.landAt + 5 * ROLL_TIMING.stagger);
+    expect(order).toEqual([0, 1, 2, 3, 4, 5]);
+    await step(ROLL_TIMING.settle);
+    expect(result.current.phase).toBe("settled");
+    // tumble + all six settle windows: well under a second and a half
+    expect(550 + 5 * ROLL_TIMING.stagger + ROLL_TIMING.settle).toBeLessThan(1300);
+  });
+
   it("a result arriving at 2 s settles then", async () => {
     const { result, rerender } = setup({ code: "A", turnNumber: 1, roll: null });
     act(() => result.current.throwDice());
@@ -75,7 +91,7 @@ describe("useRollAnimation", () => {
     rerender({ code: "A", turnNumber: 1, roll: ROLL });
     await step(0);
     expect(result.current.phase).toBe("settling");
-    await step(600);
+    await step(800);
     expect(result.current.phase).toBe("settled");
   });
 

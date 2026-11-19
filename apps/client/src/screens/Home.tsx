@@ -66,8 +66,7 @@ function YourGames() {
               <span class="stack" style={{ gap: 0, flex: "1 1 10rem", minWidth: 0 }}>
                 <strong style={{ overflowWrap: "anywhere" }}>{s.roomName || s.code}</strong>
                 <span class="muted" style={{ fontSize: "var(--fs-small)" }}>
-                  <span class="num">{s.code}</span>
-                  {` · ${t("home.asName", { name: s.name })}`}
+                  {t("home.asName", { name: s.name })}
                   {st ? ` · ${t(STATUS_KEY[st])}` : ""}
                 </span>
               </span>

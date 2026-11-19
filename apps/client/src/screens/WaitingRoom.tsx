@@ -192,9 +192,6 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
           {t("waiting.inviteNote")}
         </p>
-        <p class="muted" style={{ fontSize: "var(--fs-small)" }}>
-          {t("waiting.gameCode")} <span class="num">{code}</span>
-        </p>
       </section>
 
       {showLock && lockedUntil !== null ? (

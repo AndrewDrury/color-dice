@@ -4,7 +4,6 @@ export const waiting: Record<keyof typeof en, string> = {
   "waiting.title": "Salle d'attente",
   "waiting.leave": "Quitter",
   "waiting.inviteAria": "Invitation",
-  "waiting.gameCode": "Code de partie",
   "waiting.shareTitle": "Rejoins ma partie de Color Dice",
   "waiting.invite": "Copier le lien d'invitation",
   "waiting.linkCopied": "Copié !",

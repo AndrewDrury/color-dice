@@ -145,7 +145,7 @@ describe("App", () => {
     startRouter();
     render(<App />);
     expect(screen.getByRole("dialog", { name: "Join game" })).toBeTruthy();
-    expect(screen.getByText(CODE)).toBeTruthy();
+    expect(screen.queryByText(CODE)).toBeNull();
     expect(location.search).toBe(`?game=${CODE}`);
   });
 });
