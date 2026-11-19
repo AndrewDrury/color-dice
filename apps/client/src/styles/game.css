@@ -235,6 +235,20 @@
   opacity: 0.85;
   stroke-width: 3;
 }
+.g-step {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid currentColor;
+  font: 700 10px / 11px var(--font);
+  text-align: center;
+  animation: g-pop var(--t-med) var(--ease-spring);
+}
 .g-box.is-flash {
   animation: g-pop var(--t-med) var(--ease-spring);
 }

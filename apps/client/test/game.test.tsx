@@ -144,11 +144,13 @@ describe("Game screen", () => {
     fireEvent.click(box);
     expect(screen.getByText("Mark Green 9")).toBeTruthy();
     expect(sent).toHaveLength(0);
-    expect(screen.getByLabelText("Green 9, can mark").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("Green 9, can mark, step 2").getAttribute("aria-pressed")).toBe(
+      "true",
+    );
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByText("Mark Green 9")).toBeNull();
     fireEvent.click(screen.getByLabelText("Green 9, can mark"));
-    fireEvent.click(screen.getByLabelText("Green 9, can mark"));
+    fireEvent.click(screen.getByLabelText("Green 9, can mark, step 2"));
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
   });
 
@@ -253,7 +255,7 @@ describe("Game screen", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    fireEvent.click(screen.getByLabelText("Red 8, can mark, step 1"));
     expect(sent).toEqual([{ type: "action1", turn: 9, kind: "MARK", color: "RED" }]);
     cleanup();
     sent.length = 0;
@@ -276,7 +278,7 @@ describe("Game screen", () => {
     mount();
     expect(status()).toContain("Step 2 of 2");
     fireEvent.click(screen.getByLabelText("Green 11, can mark"));
-    fireEvent.click(screen.getByLabelText("Green 11, can mark"));
+    fireEvent.click(screen.getByLabelText("Green 11, can mark, step 2"));
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
   });
 

@@ -94,6 +94,7 @@ export const game: Record<keyof typeof en, string> = {
   "box.skipped": "{color} {n}, saltada",
   "box.closed": "{color} {n}, cerrada",
   "box.gated": "{color} {n}, necesita 5 marcas",
+  "box.step": ", paso {s}",
   "box.canMark": "{color} {n}, se puede marcar",
   "box.open": "{color} {n}, libre",
 

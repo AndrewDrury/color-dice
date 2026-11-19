@@ -25,7 +25,7 @@ export interface SheetProps {
   lockedColors: readonly Color[];
   legal: ReadonlySet<string>;
   /** Staged marks in order (step 1, then step 2). */
-  staged: readonly { color: Color; number: number }[];
+  staged: readonly { color: Color; number: number; step?: 1 | 2 }[];
   /** Sent / decided marks waiting for the reveal (50 % ✕). */
   ghost: readonly { color: Color; number: number }[];
   disabled: boolean;
@@ -128,6 +128,7 @@ export function Sheet(p: SheetProps) {
           lockedColors={p.lockedColors}
           legal={allLegal(c)}
           stagedNumbers={numbersOf(p.staged, c)}
+          stagedSteps={p.staged.filter((m) => m.color === c && m.step).map((m) => m.step as 1 | 2)}
           ghostNumbers={numbersOf(p.ghost, c)}
           flash={p.fx.flash[c] ?? []}
           disabled={p.disabled || !!p.readOnly}

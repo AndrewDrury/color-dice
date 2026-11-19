@@ -23,6 +23,8 @@ export interface RowProps {
   legal: readonly number[];
   /** Staged numbers in the order they would be marked (step 1, then step 2). */
   stagedNumbers: readonly number[];
+  /** Step (1/2) of each staged number, same order; empty for non-active players. */
+  stagedSteps?: readonly (1 | 2)[];
   ghostNumbers: readonly number[];
   flash: readonly number[];
   disabled: boolean;
@@ -115,6 +117,7 @@ function RowImpl(p: RowProps) {
             status={boxStatus(engineRow, i, p.lockedColors)}
             legal={p.legal.includes(n)}
             staged={p.stagedNumbers.includes(n)}
+            step={p.stagedSteps?.[p.stagedNumbers.indexOf(n)]}
             ghost={p.ghostNumbers.includes(n)}
             flash={p.flash.includes(i)}
             disabled={p.disabled}
@@ -167,6 +170,7 @@ export const Row = memo(
     same(a.legal, b.legal) &&
     same(a.flash, b.flash) &&
     a.stagedNumbers.join() === b.stagedNumbers.join() &&
+    a.stagedSteps?.join() === b.stagedSteps?.join() &&
     a.ghostNumbers.join() === b.ghostNumbers.join() &&
     a.disabled === b.disabled &&
     a.shake === b.shake &&

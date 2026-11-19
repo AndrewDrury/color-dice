@@ -30,7 +30,7 @@ import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
 import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
-import { canPass, decidedMarks, legalBoxes } from "../game/staging";
+import { canPass, decidedMarks, isActive, legalBoxes } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
 import { type TurnSummary as Summary, summarizeTurn } from "../game/turnSummary";
 import { useBackGuard } from "../game/useBackGuard";
@@ -223,7 +223,10 @@ function Board({
   const me = youPlayer(view);
   const g = game as NonNullable<typeof game>;
   const legal = landed && !st.sent ? legalBoxes(view, st.s1) : new Set<string>();
-  const staged = [st.s1, st.s2].filter((m) => m !== null);
+  const act = isActive(view);
+  const staged = [st.s1 && { ...st.s1, step: 1 as const }, st.s2 && { ...st.s2, step: 2 as const }]
+    .filter((m) => m !== null)
+    .map((m) => (act ? m : { color: m.color, number: m.number }));
   const ghost = [...(st.sent ? [st.sent.s1, st.sent.s2] : decidedMarks(view))].filter(
     (m) => m !== null,
   );

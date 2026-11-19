@@ -10,6 +10,8 @@ export interface BoxProps {
   status: BoxStatus;
   legal: boolean;
   staged: boolean;
+  /** Active player only: which step the staged mark is for (badge instead of the corner ✕). */
+  step?: 1 | 2;
   /** Optimistic ✕ after you confirmed (50 % until the next view). */
   ghost: boolean;
   /** Newly marked: pop / flash. */
@@ -29,7 +31,13 @@ export function Cross() {
   );
 }
 
-export function boxLabel(color: Color, number: number, status: BoxStatus, legal: boolean): string {
+export function boxLabel(
+  color: Color,
+  number: number,
+  status: BoxStatus,
+  legal: boolean,
+  step?: number,
+): string {
   const v = { color: colorName(color), n: number };
   switch (status) {
     case "MARKED":
@@ -41,7 +49,9 @@ export function boxLabel(color: Color, number: number, status: BoxStatus, legal:
     case "OPEN_LOCK_GATED":
       return t("box.gated", v);
     default:
-      return legal ? t("box.canMark", v) : t("box.open", v);
+      return (
+        (legal ? t("box.canMark", v) : t("box.open", v)) + (step ? t("box.step", { s: step }) : "")
+      );
   }
 }
 
@@ -63,7 +73,7 @@ export function Box(p: BoxProps) {
     <button
       type="button"
       class={cls}
-      aria-label={boxLabel(p.color, p.number, status, legal)}
+      aria-label={boxLabel(p.color, p.number, status, legal, staged ? p.step : undefined)}
       aria-pressed={staged ? "true" : undefined}
       disabled={p.disabled || !legal}
       onClick={p.onPick}
@@ -80,7 +90,13 @@ export function Box(p: BoxProps) {
       ) : (
         <span class="num g-num">{p.number}</span>
       )}
-      {p.ghost || staged ? <Cross /> : null}
+      {staged && p.step && !p.ghost ? (
+        <span class="g-step" aria-hidden="true">
+          {p.step}
+        </span>
+      ) : p.ghost || staged ? (
+        <Cross />
+      ) : null}
     </button>
   );
 }

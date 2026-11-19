@@ -93,6 +93,7 @@ export const game = {
   "box.skipped": "{color} {n}, skipped",
   "box.closed": "{color} {n}, closed",
   "box.gated": "{color} {n}, needs 5 marks",
+  "box.step": ", step {s}",
   "box.canMark": "{color} {n}, can mark",
   "box.open": "{color} {n}, open",
 
