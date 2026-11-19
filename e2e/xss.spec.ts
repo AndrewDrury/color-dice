@@ -1,4 +1,4 @@
-import { createGame, expect, joinGame, startGame, test } from "./fixtures";
+import { createGame, expect, joinGame, playRollOff, startGame, test } from "./fixtures";
 import { closeAll, newPlayer } from "./helpers";
 
 const PAYLOAD = "<img src=x onerror=alert(1)>";
@@ -22,6 +22,7 @@ test("room and player names render as text and never run script", async ({ brows
     await joinGame(b, code, "pw-xss1", PAYLOAD);
     await expect(b.page.getByText(PAYLOAD).first()).toBeVisible();
     await startGame(a);
+    await playRollOff([a, b]);
     for (const p of [a, b]) {
       await expect(p.page.locator(".g-main")).toBeVisible();
       expect(await p.page.locator("img[src='x']").count()).toBe(0);

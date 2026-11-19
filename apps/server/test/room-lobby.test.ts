@@ -249,7 +249,7 @@ describe("host-only actions", () => {
     await runInDurableObject(
       roomStub(host.code),
       async (room: GameRoom, state: DurableObjectState) => {
-        expect(await room.start(host.token, [6])).toEqual({ ok: true, value: null });
+        expect(await room.start(host.token)).toEqual({ ok: true, value: null });
         const seats = (await state.storage.get<SeatRecord[]>("seats")) as SeatRecord[];
         expect(seats.map((s) => [s.seatId, s.seatIndex])).toEqual([
           [host.seatId, 0],

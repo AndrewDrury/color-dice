@@ -1,5 +1,14 @@
 import type { Player } from "./fixtures";
-import { boxLocator, createGame, expect, joinGame, queueDice, startGame, test } from "./fixtures";
+import {
+  boxLocator,
+  createGame,
+  expect,
+  joinGame,
+  playRollOff,
+  queueDice,
+  startGame,
+  test,
+} from "./fixtures";
 import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
 
 const PAYLOAD = "<img src=x onerror=alert(1)>";
@@ -180,6 +189,7 @@ test("chat: every reaction in the picker is on screen at 390 px", async ({ brows
     });
     await joinGame(b, code, "pw-rx");
     await startGame(a);
+    await playRollOff([a, b]);
     await expect(a.page.locator(".g-main")).toBeVisible();
     await a.page.getByRole("button", { name: "Send reaction" }).click();
     for (const pick of await a.page.locator(".rx-pick").all()) {

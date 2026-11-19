@@ -1,6 +1,6 @@
 import { request } from "@playwright/test";
 import type { Player } from "./fixtures";
-import { createGame, expect, SERVER, startGame, test } from "./fixtures";
+import { createGame, expect, playRollOff, SERVER, startGame, test } from "./fixtures";
 import { closeAll, newPlayer, uniqueIp } from "./helpers";
 
 const ORIGIN = "http://localhost:5173";
@@ -39,7 +39,11 @@ test("invite link: copy, open in another browser, type only a name, land in the 
     await guest.page.getByRole("button", { name: "Join", exact: true }).click();
     // The guest fills the room, so the game starts and they may land on the game screen.
     await expect(
-      guest.page.getByRole("button", { name: "Leave" }).or(guest.page.locator(".g-main")).first(),
+      guest.page
+        .getByRole("button", { name: "Leave" })
+        .or(guest.page.locator(".g-main"))
+        .or(guest.page.getByTestId("rolloff-roll"))
+        .first(),
     ).toBeVisible();
     await expect(host.page.getByText("Gus").first()).toBeVisible();
     expect(guest.page.url()).not.toContain(key);
@@ -86,9 +90,14 @@ test("both players leave mid-game: the room is gone from the list and /me no lon
     await guest.page.getByRole("button", { name: "Join", exact: true }).click();
     // The guest fills the room, so the game starts and they may land on the game screen.
     await expect(
-      guest.page.getByRole("button", { name: "Leave" }).or(guest.page.locator(".g-main")).first(),
+      guest.page
+        .getByRole("button", { name: "Leave" })
+        .or(guest.page.locator(".g-main"))
+        .or(guest.page.getByTestId("rolloff-roll"))
+        .first(),
     ).toBeVisible();
     await startGame(host);
+    await playRollOff([host, guest]);
     for (const p of [host, guest]) await expect(p.page.locator(".g-main")).toBeVisible();
 
     const token = async (p: Player) =>

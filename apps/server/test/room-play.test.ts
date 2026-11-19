@@ -83,8 +83,8 @@ class Client {
   send(msg: unknown): void {
     this.ws.send(JSON.stringify(msg));
   }
-  close(): void {
-    this.ws.close(1000, "bye");
+  close(code = 1000): void {
+    this.ws.close(code, "bye");
   }
   async until<T>(fn: () => T | undefined | false, ms = 3000): Promise<T> {
     const end = Date.now() + ms;
@@ -306,6 +306,18 @@ describe("away and rematch", () => {
     c0.send({ type: "roll", turn: 1 });
     await c0.until(() => c0.view()?.game?.phase === "ACTION_1");
     back.close();
+  });
+
+  it("a going-away close (1001) pauses the game just like a normal close", async () => {
+    const r = await setup(3);
+    const [c0, c1] = r.clients as [Client, Client, Client];
+    const away = r.players[1]?.seatId as string;
+    c1.close(1001);
+    const paused = await c0.until(() => {
+      const v = c0.view();
+      return v?.pausedSeatIds?.length ? v : undefined;
+    });
+    expect(paused.pausedSeatIds).toEqual([away]);
   });
 
   it("two seats offline pause together and resume only when both are back", async () => {

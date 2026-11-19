@@ -105,28 +105,61 @@ export interface NetControl {
  */
 export async function controlNetwork(player: Player): Promise<NetControl> {
   let offline = false;
-  const open = new Set<{ close: () => void }>();
+  // Every real server leg still open. The page closing its (mock) side does NOT close the
+  // server leg, and the client reopens its socket on remounts, so a stale leg keeps the seat
+  // "online" on the server: track the legs themselves and close them all.
+  const open = new Set<{ ready: Promise<void>; close: () => Promise<void> }>();
   await player.page.routeWebSocket(/\/ws\/game\//, (ws) => {
     if (offline) {
       ws.close();
       return;
     }
     const server = ws.connectToServer();
-    const both = {
-      close: () => {
-        server.close({ code: 1001 });
+    let serverClosed: () => void = () => {};
+    const closed = new Promise<void>((resolve) => {
+      serverClosed = resolve;
+    });
+    // The first server frame (the view) means the leg is authenticated: the server only knows
+    // the seat is online from then on. The client also reconnects once when the game starts,
+    // so a leg dropped before this point is not yet "a connected player going away".
+    let authed: () => void = () => {};
+    const ready = new Promise<void>((resolve) => {
+      authed = resolve;
+    });
+    // A server onMessage handler replaces the automatic forwarding, so forward by hand.
+    server.onMessage((m) => {
+      authed();
+      ws.send(m);
+    });
+    const leg = {
+      ready,
+      // Resolves once the server has acknowledged, i.e. the Durable Object really saw the
+      // socket go away (bounded, never hangs the test).
+      close: async () => {
+        // No explicit code on the server leg: with `{ code: 1001 }` the close was never
+        // acknowledged by the dev server (seat stayed online, nothing paused).
+        server.close();
         ws.close({ code: 1001 });
+        await Promise.race([closed, new Promise<void>((r) => setTimeout(r, 3_000))]);
       },
     };
-    open.add(both);
-    ws.onClose(() => open.delete(both));
+    open.add(leg);
+    server.onClose(() => {
+      open.delete(leg);
+      serverClosed();
+    });
   });
   return {
     async goOffline() {
       offline = true;
+      // Sever first, THEN cut the network: with the context already offline the close frame
+      // would never leave the browser and the server would keep the seat online.
+      const legs = [...open];
+      await Promise.all(
+        legs.map((l) => Promise.race([l.ready, new Promise<void>((r) => setTimeout(r, 5_000))])),
+      );
+      await Promise.all(legs.map((l) => l.close()));
       await player.context.setOffline(true);
-      for (const s of [...open]) s.close();
-      open.clear();
     },
     async goOnline() {
       offline = false;

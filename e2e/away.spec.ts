@@ -20,6 +20,10 @@ test("a dropped connection pauses the game for everyone; it resumes when the pla
     await startGame(a!);
     expect(await waitForRoller(players)).toBe(a);
 
+    // Cleo must be fully in (board shown, authenticated) before her link drops; dropping it
+    // mid-handshake is a different scenario than "a player's connection dropped".
+    await expect(c!.page.locator(".g-main")).toBeVisible();
+    for (const p of [a!, b!]) await expect(p.page.getByTestId("paused-banner")).toHaveCount(0);
     await net.goOffline();
     for (const p of [a!, b!]) {
       await expect(p.page.getByTestId("paused-banner")).toContainText("Cleo");

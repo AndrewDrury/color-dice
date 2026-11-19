@@ -74,8 +74,13 @@ async function fillJoin(player: Player, password: string) {
   await dialog.getByLabel("Password", { exact: true }).fill(password);
   await dialog.getByRole("button", { name: "Join", exact: true }).click();
   // Joining the last free seat starts the game, so the guest may land on the game screen.
+  // (or the opening roll-off, T-NEW-2, for an unscripted game).
   await expect(
-    page.getByRole("button", { name: "Leave" }).or(page.locator(".g-main")).first(),
+    page
+      .getByRole("button", { name: "Leave" })
+      .or(page.locator(".g-main"))
+      .or(page.getByTestId("rolloff-roll"))
+      .first(),
   ).toBeVisible();
 }
 

@@ -1,4 +1,4 @@
-import { createGame, expect, joinGame, newPlayer, queueDice, test } from "./fixtures";
+import { createGame, expect, joinGame, newPlayer, playRollOff, queueDice, test } from "./fixtures";
 import { closeAll } from "./helpers";
 
 test("a 2-player room starts the moment the guest joins, with no Start press", async ({
@@ -40,6 +40,7 @@ test("a 3-player room with 2 joined waits for Start; the host can start it short
     await expect(a.page.getByText("Room full — starting…")).toHaveCount(0);
     await expect(a.page.locator(".g-main")).toHaveCount(0);
     await a.page.getByRole("button", { name: "Start game" }).click();
+    await playRollOff([a, b]);
     for (const p of [a, b]) await expect(p.page.locator(".g-main")).toBeVisible();
   } finally {
     await closeAll([a, b]);
