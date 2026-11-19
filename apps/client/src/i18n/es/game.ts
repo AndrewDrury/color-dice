@@ -51,6 +51,7 @@ export const game: Record<keyof typeof en, string> = {
   "action.waiting": "Espera…",
   "action.pass": "Pasar",
   "action.passPenalty": "Pasar (penalización −5)",
+  "action.undo": "Deshacer",
 
   "away.title": "Jugadores ausentes",
   "away.back": "Ya volví",

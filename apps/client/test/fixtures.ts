@@ -37,6 +37,7 @@ export function makeView(version: number): ViewMessage {
       legalAction1: [],
       legalAction2: [],
       canRoll: false,
+      canUndo: false,
     },
   };
 }

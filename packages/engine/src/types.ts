@@ -55,6 +55,8 @@ export interface TurnState {
    */
   pendingAction2: Action2Decision | null;
   activeMarkedThisTurn: boolean;
+  /** Marks applied during this turn, newest last. Used only for in-turn undo. */
+  appliedMarks: { playerId: PlayerId; action: 1 | 2; color: Color; index: number }[];
 }
 
 export type EndReason =
@@ -118,6 +120,13 @@ export type GameEvent =
   | { type: "ACTION2_VOIDED"; playerId: PlayerId; reason: IllegalReason }
   | { type: "PENALTY"; playerId: PlayerId; total: number }
   | {
+      type: "UNDO";
+      playerId: PlayerId;
+      kind: "ACTION1" | "ACTION2" | "MARK";
+      color?: Color;
+      index?: number;
+    }
+  | {
       type: "GAME_ENDED";
       reason: EndReason;
       /** In seat order. */
@@ -142,5 +151,6 @@ export type Command =
   | { type: "ROLL"; playerId: PlayerId }
   | { type: "ACTION1"; playerId: PlayerId; decision: Action1Decision }
   | { type: "ACTION2"; playerId: PlayerId; decision: Action2Decision }
+  | { type: "UNDO"; playerId: PlayerId }
   /** Active player's Action 1 + early Action 2 in one command (spec §17 A-2). */
   | { type: "TURN"; playerId: PlayerId; action1: Action1Decision; action2: Action2Decision };

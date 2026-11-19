@@ -7,6 +7,7 @@ import { COLORS } from "./constants";
 import { canMark } from "./rules";
 import { rollFace } from "./setup";
 import {
+  activePlayer,
   applyAction2,
   type Draft,
   emit,
@@ -73,6 +74,7 @@ export function roll(state: GameState, actorId: PlayerId, dice: DiceSource): Res
   turn.action1Decisions = {};
   turn.pendingAction2 = null;
   turn.activeMarkedThisTurn = false;
+  turn.appliedMarks = [];
   s.phase = "ACTION_1";
   emit(d, {
     type: "DICE_ROLLED",
@@ -191,6 +193,62 @@ export function submitAction2(
   return done(d);
 }
 
+/** Undo the player's most recent reversible effect from the current turn only. */
+export function undo(state: GameState, playerId: PlayerId): Result {
+  if (state.phase === "GAME_OVER") return fail({ code: "E_GAME_OVER" });
+  const player = findPlayer(state, playerId);
+  if (!player) return fail({ code: "E_UNKNOWN_PLAYER" });
+  const turn = state.turn;
+  if (!turn) return fail({ code: "E_WRONG_PHASE" });
+
+  const d = draft(state);
+  const t = d.state.turn as TurnState;
+
+  if (d.state.phase === "ACTION_1") {
+    if (player.seat === turn.activeSeat && t.pendingAction2) {
+      t.pendingAction2 = null;
+      emit(d, { type: "UNDO", playerId, kind: "ACTION2" });
+      return done(d);
+    }
+    if (Object.hasOwn(t.action1Decisions, playerId)) {
+      delete t.action1Decisions[playerId];
+      emit(d, { type: "UNDO", playerId, kind: "ACTION1" });
+      return done(d);
+    }
+    return fail({ code: "E_NOTHING_TO_UNDO" });
+  }
+
+  if (d.state.phase === "ACTION_2") {
+    let i = t.appliedMarks.length - 1;
+    while (i >= 0 && t.appliedMarks[i]!.playerId !== playerId) i--;
+    if (i < 0) return fail({ code: "E_NOTHING_TO_UNDO" });
+    const mark = t.appliedMarks[i]!;
+    t.appliedMarks.splice(i, 1);
+    const row = d.state.players.find((p) => p.id === playerId)?.sheet.rows[mark.color];
+    if (row) {
+      row.marked[mark.index] = false;
+      if (mark.index === 10) row.lockCrossed = false;
+    }
+    d.state.lockedColors = d.state.lockedColors.filter((color) =>
+      d.state.players.some((p) => p.sheet.rows[color].lockCrossed),
+    );
+    const active = activePlayer(d.state);
+    if (active) {
+      t.activeMarkedThisTurn = t.appliedMarks.some((m) => m.playerId === active.id);
+    }
+    emit(d, {
+      type: "UNDO",
+      playerId,
+      kind: "MARK",
+      color: mark.color,
+      index: mark.index,
+    });
+    return done(d);
+  }
+
+  return fail({ code: "E_WRONG_PHASE" });
+}
+
 /** Early Action 2 during ACTION_1 (spec §17 A-2). */
 function submitEarlyAction2(state: GameState, playerId: PlayerId, decision: unknown): Result {
   const pre = precheck(state, "ACTION_1", playerId);
@@ -224,6 +282,8 @@ export function dispatch(state: GameState, cmd: Command, dice: DiceSource): Resu
       return submitAction2(state, cmd.playerId, cmd.decision);
     case "TURN":
       return submitTurn(state, cmd.playerId, cmd.action1, cmd.action2);
+    case "UNDO":
+      return undo(state, cmd.playerId);
     default:
       if (state.phase === "GAME_OVER") return fail({ code: "E_GAME_OVER" });
       return fail({ code: "E_INVALID_COMMAND" });

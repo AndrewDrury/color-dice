@@ -69,6 +69,7 @@ export interface EngineViewYou {
   legalAction1: Action1Decision[];
   legalAction2: EngineLegalAction2[];
   canRoll: boolean;
+  canUndo: boolean;
 }
 
 export interface EngineView {
@@ -158,6 +159,12 @@ export function copyEvent(e: GameEvent): GameEvent {
       return { type: e.type, playerId: e.playerId, reason: e.reason };
     case "PENALTY":
       return { type: e.type, playerId: e.playerId, total: e.total };
+    case "UNDO": {
+      const out: GameEvent = { type: e.type, playerId: e.playerId, kind: e.kind };
+      if (e.color !== undefined) out.color = e.color;
+      if (e.index !== undefined) out.index = e.index;
+      return out;
+    }
     case "GAME_ENDED":
       return {
         type: e.type,
@@ -223,6 +230,14 @@ export function viewFor(state: GameState, seatIndex: number): EngineView {
   // The early Action 2 belongs to the active player alone.
   const pending =
     state.phase === "ACTION_1" && isActive && turn ? (turn.pendingAction2 ?? null) : null;
+  const canUndo =
+    state.phase === "ACTION_1"
+      ? !!turn &&
+        (Object.prototype.hasOwnProperty.call(turn.action1Decisions, me.id) ||
+          (isActive && turn.pendingAction2 !== null))
+      : state.phase === "ACTION_2"
+        ? !!turn && turn.appliedMarks.some((mark) => mark.playerId === me.id)
+        : false;
 
   const you: EngineViewYou = {
     seat: me.seat,
@@ -238,6 +253,7 @@ export function viewFor(state: GameState, seatIndex: number): EngineView {
         : { kind: "MARK", whiteDie: o.whiteDie, color: o.color, number: o.number },
     ),
     canRoll: state.phase === "AWAIT_ROLL" && isActive,
+    canUndo,
   };
 
   return { game, you };

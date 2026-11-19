@@ -34,6 +34,7 @@ function lobbyYou(seat: SeatRecord): ViewYou {
     legalAction1: [],
     legalAction2: [],
     canRoll: false,
+    canUndo: false,
   };
 }
 
@@ -91,6 +92,7 @@ export function buildView(
       legalAction1: v.you.legalAction1,
       legalAction2: legalAction2For(state, seat.seatIndex, v.you.legalAction2),
       canRoll: v.you.canRoll,
+      canUndo: v.you.canUndo,
     };
   }
   return {

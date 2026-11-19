@@ -75,6 +75,7 @@ const fixture: ViewMessage = {
     legalAction1: [{ kind: "PASS" }, { kind: "MARK", color: "RED" }],
     legalAction2: [{ kind: "PASS" }, { kind: "MARK", whiteDie: 0, color: "GREEN", number: 9 }],
     canRoll: false,
+    canUndo: false,
   },
 };
 

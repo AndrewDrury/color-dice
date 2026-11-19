@@ -50,6 +50,7 @@ export const game = {
   "action.waiting": "Waiting…",
   "action.pass": "Pass",
   "action.passPenalty": "Pass (−5 penalty)",
+  "action.undo": "Undo",
 
   "away.title": "Away players",
   "away.back": "I'm back",

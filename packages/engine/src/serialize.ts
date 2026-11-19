@@ -133,6 +133,7 @@ export function fromJSON(text: string): GameState {
       corrupt("turn.activeSeat out of range");
     }
     checkPendingAction2(turn, phase);
+    if (turn.appliedMarks === undefined) turn.appliedMarks = [];
   }
   log.forEach(checkFirstPlayerEvent);
   return parsed as unknown as GameState;

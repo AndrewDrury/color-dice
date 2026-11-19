@@ -71,6 +71,7 @@ export function makeTurn(partial: Partial<TurnState> = {}): TurnState {
     roll: null,
     action1Decisions: {},
     activeMarkedThisTurn: false,
+    appliedMarks: [],
     ...partial,
     pendingAction2: partial.pendingAction2 ?? null,
   };

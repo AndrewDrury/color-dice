@@ -48,6 +48,7 @@ export interface Opts {
   pass1?: boolean;
   pass2?: boolean;
   canRoll?: boolean;
+  canUndo?: boolean;
   lockedColors?: Color[];
   events?: unknown[];
   winners?: string[] | null;
@@ -117,6 +118,7 @@ export function makeGameView(o: Opts = {}): ViewMessage {
         ...(o.pass2 === false ? [] : phase === "ACTION_2" ? [{ kind: "PASS" as const }] : []),
       ],
       canRoll: o.canRoll ?? false,
+      canUndo: o.canUndo ?? false,
     },
   };
 }

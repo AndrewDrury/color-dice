@@ -53,6 +53,7 @@ export const common = {
   "err.E_UNKNOWN_PLAYER": "You're not seated in this game.",
   "err.E_NOT_ACTIVE_PLAYER": "Only the active player can do that.",
   "err.E_ALREADY_DECIDED": "You've already made your choice this turn.",
+  "err.E_NOTHING_TO_UNDO": "There's nothing from this turn to undo.",
   "err.E_DIE_NOT_IN_PLAY": "That die has been removed from the game.",
   "err.E_BAD_DIE": "That die can't be used.",
   "err.E_ILLEGAL_MARK": "You can't mark that box.",

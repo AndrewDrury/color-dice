@@ -119,6 +119,16 @@ describe("Game screen", () => {
     expect(status()).toBe("Waiting for Cleo and Dev");
   });
 
+  it("staged move Undo removes one staged mark", () => {
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Red 8, can mark"));
+    expect(screen.getByText("Mark Red 8")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.queryByText("Mark Red 8")).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
   it("ACTION_2: tap stages, second tap sends with turn and whiteDie, Esc cancels", () => {
     show(
       makeGameView({

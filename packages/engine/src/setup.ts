@@ -125,6 +125,7 @@ export function createGame(players: readonly PlayerInput[], options: CreateGameO
     action1Decisions: {},
     pendingAction2: null,
     activeMarkedThisTurn: false,
+    appliedMarks: [],
   };
   return { ok: true, state, events: d.events };
 }

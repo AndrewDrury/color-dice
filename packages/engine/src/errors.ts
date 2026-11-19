@@ -11,6 +11,7 @@ export const ERROR_CODES = [
   "E_BAD_DIE",
   "E_ILLEGAL_MARK",
   "E_INVALID_COMMAND",
+  "E_NOTHING_TO_UNDO",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

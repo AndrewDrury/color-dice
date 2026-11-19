@@ -190,6 +190,21 @@ describe("auth", () => {
 });
 
 describe("commands", () => {
+  it("undoes a submitted Action 1 decision and publishes a new view", async () => {
+    const r = await setup(2);
+    const c0 = r.clients[0] as Client;
+    const c1 = r.clients[1] as Client;
+    const t = turnOf(c0.view() as ViewMessage);
+    c0.send({ type: "roll", turn: t });
+    await c0.until(() => c0.view()?.game?.phase === "ACTION_1");
+    c0.send({ type: "action1", turn: t, kind: "PASS" });
+    await c0.until(() => c0.view()?.you.canUndo === true);
+    const before = (c0.view() as ViewMessage).version;
+    c0.send({ type: "undo", turn: t });
+    await c0.until(() => c0.view()?.you.canUndo === false && (c0.view()?.version ?? 0) > before);
+    expect(c0.view()?.you.action1Decision).toBeNull();
+  });
+
   it("passive roll → E_NOT_ACTIVE_PLAYER, version unchanged; stale turn → E_STALE_TURN", async () => {
     const r = await setup(3);
     const c1 = r.clients[1] as Client;

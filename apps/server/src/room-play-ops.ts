@@ -101,7 +101,7 @@ function endSession(ws: WebSocket): void {
   endSocket(ws, CLOSE.SESSION_ENDED, "sessionEnded");
 }
 
-type PlayMsg = Extract<ClientMessage, { type: "roll" | "action1" | "action2" | "turn" }>;
+type PlayMsg = Extract<ClientMessage, { type: "roll" | "action1" | "action2" | "turn" | "undo" }>;
 
 function toCommand(msg: PlayMsg, id: string): Command {
   switch (msg.type) {
@@ -136,6 +136,8 @@ function toCommand(msg: PlayMsg, id: string): Command {
             : { kind: "MARK", whiteDie: a2.whiteDie, color: a2.color },
       };
     }
+    case "undo":
+      return { type: "UNDO", playerId: id };
   }
 }
 
@@ -256,6 +258,7 @@ export class RoomPlay {
       case "action1":
       case "action2":
       case "turn":
+      case "undo":
         return this.command(ws, att.seatId, msg);
       case "setAway":
         return this.setAway(ws, att.seatId, msg.seatId, msg.away);

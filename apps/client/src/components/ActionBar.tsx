@@ -20,6 +20,7 @@ export interface ActionBarProps {
   noMove: boolean;
   onPass: () => void;
   onConfirm: () => void;
+  onUndo: () => void;
 }
 
 export function ActionBar(p: ActionBarProps) {
@@ -29,6 +30,7 @@ export function ActionBar(p: ActionBarProps) {
   const last = s2 ?? s1;
   const showPass = canPass(view, s1) && !view.you.canRoll && !p.noMove;
   const penalty = passTakesPenalty(view, s1);
+  const canUndo = !!(p.s1 || p.s2 || view.you.canUndo);
 
   let primary: preact.JSX.Element | null = null;
   if (p.noMove) {
@@ -74,6 +76,11 @@ export function ActionBar(p: ActionBarProps) {
               onClick={p.onPass}
             >
               {passLabel(view, s1)}
+            </button>
+          ) : null}
+          {canUndo ? (
+            <button type="button" class="btn g-undo" disabled={p.sent} onClick={p.onUndo}>
+              {t("action.undo")}
             </button>
           ) : null}
           {primary}

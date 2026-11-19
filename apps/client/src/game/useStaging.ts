@@ -129,6 +129,23 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
   };
 
   const cancel = () => setStaged(NONE);
+  const undo = () => {
+    const s = latest.current.staged;
+    if (s.s2) {
+      setStaged({ s1: s.s1, s2: null });
+      return;
+    }
+    if (s.s1) {
+      setStaged(NONE);
+      return;
+    }
+    const v = latest.current.view;
+    const turn = v.game?.turn?.number;
+    if (turn && v.you.canUndo && send({ type: "undo", turn })) {
+      latest.current.sent = null;
+      setSent(null);
+    }
+  };
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -163,6 +180,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
     pass,
     confirm,
     cancel,
+    undo,
     fail,
     highlight: highlightFor(view, staged.s1, staged.s2),
   };

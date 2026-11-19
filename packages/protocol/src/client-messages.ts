@@ -64,6 +64,7 @@ export const SetAwayMsgSchema = z
   .strict();
 
 export const RematchMsgSchema = z.object({ type: z.literal("rematch") }).strict();
+export const UndoMsgSchema = z.object({ type: z.literal("undo"), turn: TurnSchema }).strict();
 
 export const PingMsgSchema = z.object({ type: z.literal("ping") }).strict();
 
@@ -83,6 +84,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   Action1MsgSchema,
   Action2MsgSchema,
   TurnMsgSchema,
+  UndoMsgSchema,
   SetAwayMsgSchema,
   RematchMsgSchema,
   PingMsgSchema,

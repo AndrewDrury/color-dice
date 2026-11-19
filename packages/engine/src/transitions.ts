@@ -97,6 +97,12 @@ export function resolveAction1(d: Draft): void {
     if (dec?.kind !== "MARK") continue;
     const { row, lockedNow } = applyMark(p.sheet.rows[dec.color], whiteSum);
     p.sheet.rows[dec.color] = row;
+    turn.appliedMarks.push({
+      playerId: p.id,
+      action: 1,
+      color: dec.color,
+      index: indexOf(dec.color, whiteSum),
+    });
     if (p.seat === turn.activeSeat) turn.activeMarkedThisTurn = true;
     emit(d, {
       type: "MARKED",
@@ -149,6 +155,12 @@ export function applyAction2(d: Draft, dec: Action2Decision): void {
   const { row, lockedNow } = applyMark(active.sheet.rows[dec.color], n);
   active.sheet.rows[dec.color] = row;
   t.activeMarkedThisTurn = true;
+  t.appliedMarks.push({
+    playerId: active.id,
+    action: 2,
+    color: dec.color,
+    index: indexOf(dec.color, n),
+  });
   emit(d, {
     type: "MARKED",
     playerId: active.id,
@@ -197,6 +209,7 @@ function advanceTurn(d: Draft): void {
     action1Decisions: {},
     pendingAction2: null,
     activeMarkedThisTurn: false,
+    appliedMarks: [],
   };
   s.phase = "AWAIT_ROLL";
   emit(d, { type: "TURN_STARTED", turnNumber: s.turn.turnNumber, activeSeat: s.turn.activeSeat });

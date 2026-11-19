@@ -208,6 +208,7 @@ describe("viewFor shape", () => {
       [
         "action1Decision",
         "canRoll",
+        "canUndo",
         "legalAction1",
         "legalAction2",
         "pendingAction2",

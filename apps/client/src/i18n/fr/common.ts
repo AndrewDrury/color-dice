@@ -55,6 +55,7 @@ export const common: Record<keyof typeof en, string> = {
   "err.E_UNKNOWN_PLAYER": "Tu n'as pas de place dans cette partie.",
   "err.E_NOT_ACTIVE_PLAYER": "Seul le joueur actif peut faire ça.",
   "err.E_ALREADY_DECIDED": "Tu as déjà fait ton choix ce tour-ci.",
+  "err.E_NOTHING_TO_UNDO": "Il n'y a rien à annuler dans ce tour.",
   "err.E_DIE_NOT_IN_PLAY": "Ce dé a été retiré de la partie.",
   "err.E_BAD_DIE": "Ce dé n'est pas utilisable.",
   "err.E_ILLEGAL_MARK": "Tu ne peux pas cocher cette case.",

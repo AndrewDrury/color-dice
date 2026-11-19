@@ -111,6 +111,7 @@ export interface ViewYou {
    */
   legalAction2: LegalAction2[];
   canRoll: boolean;
+  canUndo: boolean;
 }
 
 export interface ViewMessage {
@@ -180,6 +181,7 @@ const GAME_EVENT_TYPES = [
   "ACTION2_PASSED",
   "ACTION2_VOIDED",
   "PENALTY",
+  "UNDO",
   "GAME_ENDED",
 ] as const satisfies readonly GameEventType[];
 // Compile-time check that the list above is exhaustive.
@@ -307,6 +309,7 @@ export const ViewMessageSchema = z
         legalAction1: z.array(Action1DecisionSchema),
         legalAction2: z.array(LegalAction2Schema),
         canRoll: z.boolean(),
+        canUndo: z.boolean(),
       })
       .strict(),
   })
@@ -324,6 +327,7 @@ export const ErrorMessageSchema = z
         "action1",
         "action2",
         "turn",
+        "undo",
         "setAway",
         "rematch",
         "ping",

@@ -55,6 +55,7 @@ export const common: Record<keyof typeof en, string> = {
   "err.E_UNKNOWN_PLAYER": "No tienes asiento en esta partida.",
   "err.E_NOT_ACTIVE_PLAYER": "Solo el jugador activo puede hacer eso.",
   "err.E_ALREADY_DECIDED": "Ya elegiste en este turno.",
+  "err.E_NOTHING_TO_UNDO": "No hay nada de este turno que deshacer.",
   "err.E_DIE_NOT_IN_PLAY": "Ese dado se retiró de la partida.",
   "err.E_BAD_DIE": "Ese dado no se puede usar.",
   "err.E_ILLEGAL_MARK": "No puedes marcar esa casilla.",

@@ -6,6 +6,8 @@ export interface KeyActions {
   canPass: boolean;
   roll: () => void;
   pass: () => void;
+  canUndo: boolean;
+  undo: () => void;
   /** Escape: cancel staging (dialogs close themselves). */
   cancel: () => void;
   mute: () => void;
@@ -81,6 +83,12 @@ const ARROWS: Record<string, "left" | "right" | "up" | "down"> = {
 
 /** Returns true when the key was handled (and default prevented). */
 export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+    if (isTyping(e.target) || !a.canUndo) return false;
+    e.preventDefault();
+    a.undo();
+    return true;
+  }
   if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return false;
   const k = e.key;
   const done = () => {
@@ -100,6 +108,11 @@ export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
   if (k === "p" || k === "P") {
     if (!a.canPass) return false;
     a.pass();
+    return done();
+  }
+  if (k === "u" || k === "U") {
+    if (!a.canUndo) return false;
+    a.undo();
     return done();
   }
   if (k === "m" || k === "M") {

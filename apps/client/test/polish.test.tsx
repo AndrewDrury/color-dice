@@ -83,6 +83,8 @@ describe("keyboard", () => {
     return {
       canRoll: false,
       canPass: false,
+      canUndo: false,
+      undo: vi.fn(),
       roll: vi.fn(),
       pass: vi.fn(),
       cancel: vi.fn(),

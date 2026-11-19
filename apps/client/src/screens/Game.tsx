@@ -242,6 +242,8 @@ function Board({
       panel === null &&
       !leaving &&
       !gameOver,
+    canUndo: st.s1 !== null || st.s2 !== null || view.you.canUndo,
+    undo: st.undo,
     roll: onRoll,
     pass: st.pass,
     cancel: st.cancel,
@@ -265,6 +267,7 @@ function Board({
         noMove={noMove}
         onPass={st.pass}
         onConfirm={st.confirm}
+        onUndo={st.undo}
       />
     </>
   );
