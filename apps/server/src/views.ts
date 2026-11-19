@@ -82,6 +82,7 @@ export function buildView(
         sheet: p.sheet,
         score: p.score,
         action1Submitted: p.action1Submitted,
+        decided: p.decided,
       })),
     };
     you = {

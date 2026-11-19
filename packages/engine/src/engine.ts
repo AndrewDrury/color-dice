@@ -7,7 +7,6 @@ import { COLORS } from "./constants";
 import { canMark } from "./rules";
 import { rollFace } from "./setup";
 import {
-  activePlayer,
   applyAction2,
   type Draft,
   emit,
@@ -226,6 +225,9 @@ export function undo(state: GameState, playerId: PlayerId): Result {
   }
 
   if (d.state.phase === "ACTION_2") {
+    // Action 1 is revealed and never reopened. Only the active player may take back
+    // their own applied mark(s), one at a time, until the turn ends.
+    if (player.seat !== turn.activeSeat) return fail({ code: "E_NOTHING_TO_UNDO" });
     let i = t.appliedMarks.length - 1;
     while (i >= 0 && t.appliedMarks[i]!.playerId !== playerId) i--;
     if (i < 0) return fail({ code: "E_NOTHING_TO_UNDO" });
@@ -239,10 +241,7 @@ export function undo(state: GameState, playerId: PlayerId): Result {
     d.state.lockedColors = d.state.lockedColors.filter((color) =>
       d.state.players.some((p) => p.sheet.rows[color].lockCrossed),
     );
-    const active = activePlayer(d.state);
-    if (active) {
-      t.activeMarkedThisTurn = t.appliedMarks.some((m) => m.playerId === active.id);
-    }
+    t.activeMarkedThisTurn = t.appliedMarks.some((m) => m.playerId === playerId);
     emit(d, {
       type: "UNDO",
       playerId,

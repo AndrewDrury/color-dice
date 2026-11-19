@@ -216,7 +216,7 @@ describe("viewFor shape", () => {
       ].sort(),
     );
     expect(Object.keys(must(view.game.players[0])).sort()).toEqual(
-      ["action1Submitted", "score", "seat", "sheet"].sort(),
+      ["action1Submitted", "decided", "score", "seat", "sheet"].sort(),
     );
     expect(Object.keys(sheetOf(must(view.game.players[0])).rows.RED).sort()).toEqual([
       "lockCrossed",

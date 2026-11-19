@@ -39,6 +39,11 @@ export interface EngineViewPlayer {
   score: { rows: Record<Color, number> | null; penalties: number; total: number };
   /** Boolean only, never the choice. */
   action1Submitted: boolean;
+  /**
+   * Boolean only: this seat has an Action 1 decision for the current turn (ACTION_1 and
+   * ACTION_2). While the turn is ongoing it can still be taken back via UNDO.
+   */
+  decided: boolean;
 }
 
 export interface EngineViewGame {
@@ -191,6 +196,10 @@ function viewPlayer(state: GameState, p: Player, reveal: boolean): EngineViewPla
     sheet: reveal ? { rows, penalties: p.sheet.penalties } : null,
     score: { rows: reveal ? scoreRows : null, penalties: s.penalties, total: s.total },
     action1Submitted: submitted,
+    decided:
+      (state.phase === "ACTION_1" || state.phase === "ACTION_2") &&
+      turn !== null &&
+      !!getDecision(turn, p.id),
   };
 }
 
@@ -231,12 +240,10 @@ export function viewFor(state: GameState, seatIndex: number): EngineView {
   const pending =
     state.phase === "ACTION_1" && isActive && turn ? (turn.pendingAction2 ?? null) : null;
   const canUndo =
-    state.phase === "ACTION_1"
-      ? !!turn &&
-        (Object.prototype.hasOwnProperty.call(turn.action1Decisions, me.id) ||
-          (isActive && turn.pendingAction2 !== null))
-      : state.phase === "ACTION_2"
-        ? !!turn && turn.appliedMarks.some((mark) => mark.playerId === me.id)
+    state.phase === "ACTION_1" && turn
+      ? Object.hasOwn(turn.action1Decisions, me.id) || (isActive && turn.pendingAction2 !== null)
+      : state.phase === "ACTION_2" && turn
+        ? isActive && turn.appliedMarks.some((mark) => mark.playerId === me.id)
         : false;
 
   const you: EngineViewYou = {

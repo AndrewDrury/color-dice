@@ -64,6 +64,8 @@ export interface ViewPlayer {
   score: { rows: Record<Color, number> | null; penalties: number; total: number };
   /** Boolean only — never the choice. */
   action1Submitted: boolean;
+  /** Has an Action 1 decision this turn (ACTION_1/ACTION_2); booleans only. Optional for old clients. */
+  decided?: boolean;
 }
 
 /** A player entry whose card is visible (your own, or anyone's at GAME_OVER). */
@@ -257,6 +259,7 @@ const ViewPlayerSchema = z
       })
       .strict(),
     action1Submitted: z.boolean(),
+    decided: z.boolean().optional(),
   })
   .strict();
 
