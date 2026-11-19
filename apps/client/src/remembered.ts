@@ -24,7 +24,7 @@ export interface RoomPassword {
 }
 
 /** Player count pre-selected on Create Game when nothing valid is stored. */
-export const DEFAULT_MAX_PLAYERS = 4;
+export const DEFAULT_MAX_PLAYERS = 2;
 
 export interface Remembered {
   name: string;

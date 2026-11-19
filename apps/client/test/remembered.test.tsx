@@ -68,7 +68,7 @@ describe("remembered store", () => {
       name: "",
       roomName: "",
       password: "",
-      maxPlayers: 4,
+      maxPlayers: 2,
       rooms: [],
     });
     _resetRememberedForTests();
@@ -172,25 +172,25 @@ describe("CreateGame", () => {
       inviteKey: INVITE,
     });
     render(<CreateGame />);
-    expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByLabelText("2"));
+    expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText("4"));
     type("Room name", "Lunch");
     type("Your name", "Cleo");
     type("Password", "secret");
     await click("Create game");
-    expect(stored()).toMatchObject({ maxPlayers: 2 });
+    expect(stored()).toMatchObject({ maxPlayers: 4 });
     cleanup();
     render(<CreateGame />);
-    expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
   });
 
   it.each([9, 1, 2.5, "x", "3", null])(
-    "an invalid stored player count (%s) falls back to 4",
+    "an invalid stored player count (%s) falls back to 2",
     (bad) => {
       localStorage.setItem(REMEMBERED_KEY, JSON.stringify({ name: "Cleo", maxPlayers: bad }));
-      expect(getRemembered().maxPlayers).toBe(4);
+      expect(getRemembered().maxPlayers).toBe(2);
       render(<CreateGame />);
-      expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
     },
   );
 
@@ -200,7 +200,7 @@ describe("CreateGame", () => {
     expect(getRemembered().maxPlayers).toBe(5);
     render(<Settings onClose={() => {}} onPanel={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Clear saved info" }));
-    expect(getRemembered().maxPlayers).toBe(4);
+    expect(getRemembered().maxPlayers).toBe(2);
     expect(stored()).toBeNull();
   });
 
