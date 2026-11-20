@@ -5,7 +5,7 @@ import { type Conn, connectAll, createRoom, queueDice, startGame } from "./helpe
 const errorOf = (c: Conn) => c.frames.filter((f) => f.type === "error").at(-1);
 
 describe("interactive roll-off", () => {
-  it("rerolls until exactly one 6; shows each face to everyone as soon as it is rolled", async () => {
+  it("highest face wins, ties re-roll only the tied seats; shows each face to everyone as soon as it is rolled", async () => {
     const room = await createRoom(3);
     await startGame(room); // nothing scripted: the players roll off themselves
     const conns = await connectAll(room);
@@ -14,6 +14,7 @@ describe("interactive roll-off", () => {
     expect(c0.view().rollOff).toEqual({
       round: 1,
       rolled: [false, false, false],
+      eligible: [true, true, true],
       faces: [null, null, null],
       completed: [],
     });
@@ -23,8 +24,9 @@ describe("interactive roll-off", () => {
     c0.send({ type: "roll", turn: 1 });
     await c0.until(() => errorOf(c0)?.code === "E_WRONG_PHASE");
 
-    // Round 1 faces by submission order: seat 2, 0, 1 -> 6, 6, 1 (two sixes: reroll).
-    await queueDice(room.code, [6, 6, 1, 3, 6, 2]);
+    // Round 1 faces by submission order: seat 2, 0, 1 -> 6, 6, 1 (seats 0 and 2 tie on top).
+    // Round 2 (only seats 2 and 0 roll, in submission order) -> 3, 5.
+    await queueDice(room.code, [6, 6, 1, 3, 5]);
     c2.send({ type: "rollOff", round: 1 });
     await c0.until(() => c0.view().rollOff?.rolled[2] === true);
     // D-L1: the face is public to every seat right away; seats that haven't rolled stay null.
@@ -48,18 +50,22 @@ describe("interactive roll-off", () => {
     c1.send({ type: "rollOff", round: 1 });
     await c0.until(() => c0.view().rollOff?.round === 2);
     expect(c0.view().rollOff?.completed).toEqual([[6, 1, 6]]);
-    expect(c0.view().rollOff?.rolled).toEqual([false, false, false]);
-    expect(c0.view().rollOff?.faces).toEqual([null, null, null]);
+    // Only the tied seats roll again; seat 1 is out (eligible false, face 0).
+    expect(c0.view().rollOff?.rolled).toEqual([false, true, false]);
+    expect(c0.view().rollOff?.eligible).toEqual([true, false, true]);
+    expect(c0.view().rollOff?.faces).toEqual([null, 0, null]);
     // Round 1 is over: a late submission for it is stale.
     const errs = (c: Conn) => c.frames.filter((f) => f.type === "error").length;
     const before = errs(c1);
     c1.send({ type: "rollOff", round: 1 });
     await c1.until(() => errs(c1) > before && errorOf(c1)?.code === "E_STALE_TURN");
-
-    // Round 2: seat 1 -> 3, seat 0 -> 6, seat 2 -> 2: seat 0 is the unique 6.
+    // An out seat cannot roll in round 2.
     c1.send({ type: "rollOff", round: 2 });
-    c0.send({ type: "rollOff", round: 2 });
+    await c1.until(() => errs(c1) > before + 1 && errorOf(c1)?.code === "E_INVALID_COMMAND");
+    expect(c0.view().rollOff?.faces).toEqual([null, 0, null]);
+
     c2.send({ type: "rollOff", round: 2 });
+    c0.send({ type: "rollOff", round: 2 });
     const v = await c0.until(() => (c0.view().game ? c0.view() : undefined));
     expect(v.rollOff ?? null).toBeNull();
     expect(v.game?.turn?.activeSeat).toBe(0);
@@ -70,7 +76,7 @@ describe("interactive roll-off", () => {
       seat: 0,
       rounds: [
         [6, 1, 6],
-        [6, 3, 2],
+        [5, 0, 3],
       ],
     });
   });

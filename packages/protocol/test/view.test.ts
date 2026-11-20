@@ -128,15 +128,33 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(open).success).toBe(true);
   });
 
-  it("roll-off faces (D-L1): null before a seat rolls, 1–6 after; required", () => {
+  it("roll-off faces (D-L1, A-2): null before a seat rolls, 1–6 after, 0 if out; required", () => {
     const lobby = { ...fixture, game: null };
-    const ro = { round: 2, rolled: [true, false], faces: [6, null], completed: [[1, 2]] };
+    const ro = {
+      round: 2,
+      rolled: [true, false],
+      eligible: [true, true],
+      faces: [6, null],
+      completed: [[2, 2]],
+    };
     expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: ro }).success).toBe(true);
+    const out = {
+      ...ro,
+      eligible: [true, false],
+      faces: [6, 0],
+      completed: [
+        [2, 2, 1],
+        [0, 0],
+      ],
+    };
+    expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: out }).success).toBe(true);
+    const { eligible: _e, ...noElig } = ro;
+    expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: noElig }).success).toBe(false);
     const { faces: _f, ...noFaces } = ro;
     expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: noFaces }).success).toBe(false);
     for (const bad of [
       [7, null],
-      [0, null],
+      [-1, null],
       [2.5, null],
       ["6", null],
       [1, 1, 1, 1, 1, 1],
@@ -170,7 +188,7 @@ describe("ViewMessageSchema", () => {
         method: "ROLL_OFF",
         rounds: [
           [6, 6],
-          [2, 6],
+          [0, 2],
         ],
       },
       { type: "ACTION2_VOIDED", playerId: "seat-0", reason: "ROW_LOCKED" },

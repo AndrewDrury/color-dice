@@ -38,6 +38,7 @@ export {
   MAX_ROLL_OFF_ROUNDS,
   type PlayerInput,
   rollFace,
+  rollOffLeaders,
 } from "./setup";
 
 const fail = (error: EngineError): Result => ({ ok: false, error });

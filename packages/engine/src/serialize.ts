@@ -90,10 +90,11 @@ function checkPendingAction2(turn: Record<string, unknown>, phase: string): void
   corrupt("turn.pendingAction2");
 }
 
-const isFaceValue = (f: unknown) => Number.isInteger(f) && (f as number) >= 1 && (f as number) <= 6;
+/** A roll-off entry: a face, or 0 for a seat that was out of that round (A-2). */
+const isFaceValue = (f: unknown) => Number.isInteger(f) && (f as number) >= 0 && (f as number) <= 6;
 
 /**
- * `FIRST_PLAYER_CHOSEN.rounds` must be face arrays (spec §17 A-1). An older save
+ * `FIRST_PLAYER_CHOSEN.rounds` must be face arrays, 0 = out (spec §17 A-2). An older save
  * with the pre-amendment `rolls` field is migrated to `rounds: []` (the sequential
  * rolls cannot be expressed as simultaneous rounds).
  */

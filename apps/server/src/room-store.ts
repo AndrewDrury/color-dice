@@ -57,7 +57,7 @@ export interface ChatState {
 
 /**
  * Storage key `"rollOff"`: the opening roll-off while it runs (T-NEW-2). `current[seatIndex]`
- * is that seat's face this round (null = not yet rolled); it is never sent to clients until
+ * is that seat's face this round (null = not yet rolled, 0 = out of this round, A-2); it is never sent to clients until
  * the whole round is in. The key is deleted when the game is created.
  */
 export interface RollOffState {

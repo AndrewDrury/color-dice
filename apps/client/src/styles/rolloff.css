@@ -4,7 +4,7 @@
   /* Roll button: bright amber with dark text (≈ 11:1), distinct from the normal primary. */
   --ro-roll-bg: #ffc233;
   --ro-roll-ink: #241a00;
-  --ro-six: #ffb000;
+  --ro-lead: #ffb000;
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -106,31 +106,15 @@
   color: var(--ink-muted);
 }
 
-/* A landed 6: glow + "6!" badge (pop). */
-.ro-seat.is-six {
+/* Highest die(s) once everything has landed: glow. */
+.ro-seat.is-lead {
   box-shadow:
-    0 0 0 3px var(--ro-six),
+    0 0 0 3px var(--ro-lead),
     0 0 24px rgb(255 176 0 / 0.55);
 }
-.ro-badge {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ro-six);
-  color: var(--ro-roll-ink);
-  font-weight: var(--fw-bold);
-  animation: ro-pop 320ms var(--ease-out) both;
-}
-@keyframes ro-pop {
-  from {
-    transform: scale(0.4);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.2);
-  }
+/* Out of this round (not tied for the lead): the die stays, dimmed. */
+.ro-seat.is-out {
+  opacity: 0.45;
 }
 
 /* The winner is celebrated: card enlarged, avatar bigger. */
@@ -209,7 +193,6 @@
 
 /* Reduced motion (setting or OS, via useReducedMotion): no pulse, pop or scale; faces appear instantly. */
 .ro-screen.is-reduced,
-.ro-screen.is-reduced .ro-badge,
 .ro-screen.is-reduced .ro-roll.is-ready {
   animation: none;
 }

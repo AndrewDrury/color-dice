@@ -113,6 +113,7 @@ export function buildView(
       ? {
           round: rollOff.round,
           rolled: rollOff.current.map((f) => f !== null),
+          eligible: rollOff.current.map((f) => f !== 0),
           // D-L1: a seat's face is public as soon as it rolls (server dice, no strategy).
           faces: [...rollOff.current],
           completed: rollOff.completed.map((r) => [...r]),

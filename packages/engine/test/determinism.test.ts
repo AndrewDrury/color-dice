@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGame, dispatch } from "../src/engine";
+import { createGame, dispatch, rollOffLeaders } from "../src/engine";
 import type { Command, GameEvent, GameState } from "../src/index";
 import { toJSON } from "../src/serialize";
 import { mulberry32, randomLegalCommand, SeededDice } from "./helpers/randomPlayer";
@@ -39,7 +39,7 @@ describe("determinism", () => {
     });
   }
 
-  it("roll-off: same seed gives same rounds; winner is the unique 6 of the last round (A-1)", () => {
+  it("roll-off: same seed gives same rounds; winner is the unique highest of the last round (A-2)", () => {
     for (const n of [2, 3, 4, 5]) {
       for (let seed = 1; seed <= 200; seed++) {
         const players = Array.from({ length: n }, (_, i) => ({
@@ -53,12 +53,14 @@ describe("determinism", () => {
         if (ev?.type !== "FIRST_PLAYER_CHOSEN") throw new Error("missing FIRST_PLAYER_CHOSEN");
         expect(JSON.stringify(b.events)).toBe(JSON.stringify(a.events));
         expect(ev.method).toBe("ROLL_OFF");
-        const sixes = (r: number[]) => r.filter((f) => f === 6).length;
         for (const r of ev.rounds) expect(r).toHaveLength(n);
-        for (const r of ev.rounds.slice(0, -1)) expect(sixes(r)).not.toBe(1);
-        const last = ev.rounds.at(-1) ?? [];
-        expect(sixes(last)).toBe(1);
-        expect(last.indexOf(6)).toBe(ev.seat);
+        let eligible = Array.from({ length: n }, (_, i) => i);
+        ev.rounds.forEach((r, i) => {
+          expect(r.map((f, seat) => (f === 0 ? -1 : seat)).filter((x) => x >= 0)).toEqual(eligible);
+          eligible = rollOffLeaders(r);
+          expect(eligible.length > 1).toBe(i < ev.rounds.length - 1);
+        });
+        expect(eligible).toEqual([ev.seat]);
         expect(a.state.turn?.activeSeat).toBe(ev.seat);
       }
     }

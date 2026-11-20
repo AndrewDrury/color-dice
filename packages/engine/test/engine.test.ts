@@ -106,34 +106,46 @@ describe("#13 createGame (§5)", () => {
     });
   });
 
-  it("accepts a played roll-off and rejects malformed ones (T-NEW-2)", () => {
+  it("accepts a played roll-off and rejects malformed ones (T-NEW-2, A-2)", () => {
     const dice = new ScriptedDice([]);
+    // Seats 1 and 2 tie on 6; only they roll again (seat 0 is out = 0); seat 2 wins.
     const rounds = [
       [1, 6, 6],
-      [2, 3, 6],
+      [0, 3, 5],
     ] as const;
     const { state, events } = ok(createGame(players(3), { dice, rollOffRounds: rounds }));
     expect(state.turn?.activeSeat).toBe(2);
     expect(events[1]).toMatchObject({ method: "ROLL_OFF", seat: 2, rounds });
     for (const bad of [
       [],
-      [[1, 2, 3]],
+      [[1, 2, 2]], // tie for the lead, no deciding round
       [
-        [6, 1, 2],
-        [2, 3, 6],
+        [6, 1, 2], // unique leader: the roll-off was over
+        [0, 3, 5],
       ],
-      [[1, 6, 6, 2]],
-      [[1, 6, 6]],
-      [[1, 2, 7]],
+      [[1, 6, 6, 2]], // wrong width
+      [[1, 2, 7]], // not a die face
+      [
+        [1, 6, 6],
+        [2, 3, 5], // seat 0 was out but rolled
+      ],
+      [
+        [1, 6, 6],
+        [0, 0, 5], // seat 1 was tied and must roll
+      ],
+      [
+        [1, 6, 6],
+        [0, 4, 4], // still tied: not finished
+      ],
     ]) {
       const r = createGame(players(3), { dice, rollOffRounds: bad as never });
       expect(r.ok).toBe(false);
     }
   });
 
-  it("simultaneous roll-off: rounds until exactly one 6, seat order inside a round (A-1)", () => {
-    // Round 1: no 6. Round 2: two 6s. Round 3: only seat 2 rolls a 6.
-    const dice = new ScriptedDice([1, 2, 3, 6, 6, 4, 5, 1, 6, 6]);
+  it("simultaneous roll-off: highest wins, only tied seats re-roll, in seat order (A-2)", () => {
+    // R1: seats 1,2 tie on 5. R2 (seats 1,2 only): 3,3 tie. R3: 2 vs 4 -> seat 2 wins.
+    const dice = new ScriptedDice([1, 5, 5, 3, 3, 2, 4]);
     const { state, events } = ok(createGame(players(3), { dice }));
     expect(state.turn?.activeSeat).toBe(2);
     expect(events[1]).toEqual({
@@ -141,17 +153,30 @@ describe("#13 createGame (§5)", () => {
       seat: 2,
       method: "ROLL_OFF",
       rounds: [
-        [1, 2, 3],
-        [6, 6, 4],
-        [5, 1, 6],
+        [1, 5, 5],
+        [0, 3, 3],
+        [0, 2, 4],
       ],
     });
-    expect(dice.remaining).toBe(1);
+    expect(dice.remaining).toBe(0);
+  });
+
+  it("roll-off: a unique highest die wins in one round; an all-way tie re-rolls everyone", () => {
+    const one = ok(createGame(players(3), { dice: new ScriptedDice([2, 6, 5]) }));
+    expect(one.state.turn?.activeSeat).toBe(1);
+    const all = ok(createGame(players(3), { dice: new ScriptedDice([4, 4, 4, 1, 2, 3]) }));
+    expect(all.events[1]).toMatchObject({
+      seat: 2,
+      rounds: [
+        [4, 4, 4],
+        [1, 2, 3],
+      ],
+    });
   });
 
   it("roll-off gives up after 1,000 rounds", () => {
-    const sixes = { rollDie: () => 6 as const };
-    expect(() => createGame(players(2), { dice: sixes })).toThrow(/roll-off/);
+    const same = { rollDie: () => 6 as const };
+    expect(() => createGame(players(2), { dice: same })).toThrow(/roll-off/);
   });
 
   it("copies player input (no aliasing)", () => {

@@ -1,9 +1,9 @@
 /**
  * Opening roll-off (T-NEW-2). Every seated player asks the server to roll their one die;
  * faces come from the server's dice (crypto, or scripted by test hooks), never from a client.
- * Each face is visible to everyone as soon as it is rolled (D-L1). Rounds
- * repeat until exactly one 6 is rolled; that seat starts. Seats that left are rolled by the
- * server so they can't stall the room. Callers run inside the room's serial queue.
+ * Each face is visible to everyone as soon as it is rolled (D-L1). The highest
+ * face starts (A-2); a tie for highest re-rolls with only the tied seats (the others hold 0 =
+ * out). Seats that left are rolled by the server so they can't stall the room. Callers run inside the room's serial queue.
  */
 import {
   createGame,
@@ -12,6 +12,7 @@ import {
   isValidRollOff,
   MAX_ROLL_OFF_ROUNDS,
   rollFace,
+  rollOffLeaders,
 } from "@cd/engine";
 import type { ErrorCode } from "@cd/protocol";
 import { playerId } from "./room-lobby-ops";
@@ -54,6 +55,9 @@ export class RollOffOps {
     if (!ro || me.seatIndex === null) return { code: "E_WRONG_PHASE" };
     if (me.left) return { code: "E_INVALID_COMMAND", reason: "seat left" };
     if (round !== ro.round) return { code: "E_STALE_TURN" };
+    if (ro.current[me.seatIndex] === 0) {
+      return { code: "E_INVALID_COMMAND", reason: "out of this round" };
+    }
     if (ro.current[me.seatIndex] !== null) {
       return { code: "E_INVALID_COMMAND", reason: "already rolled" };
     }
@@ -87,7 +91,8 @@ export class RollOffOps {
       }
       if (ro.current.some((f) => f === null)) break;
       const round = ro.current as number[];
-      if (round.filter((f) => f === 6).length === 1) {
+      const leaders = rollOffLeaders(round);
+      if (leaders.length === 1) {
         const rounds = [...ro.completed, round];
         const ordered = seats
           .filter((s): s is SeatRecord & { seatIndex: number } => s.seatIndex !== null)
@@ -104,7 +109,8 @@ export class RollOffOps {
       }
       ro.completed.push(round);
       ro.round += 1;
-      ro.current = ro.current.map(() => null);
+      // Only the seats tied for the highest face roll again; the rest are out (0).
+      ro.current = round.map((_, seat) => (leaders.includes(seat) ? null : 0));
       if (ro.round > MAX_ROLL_OFF_ROUNDS) break;
     }
     await this.d.storage.put(ROLL_OFF_KEY, ro);

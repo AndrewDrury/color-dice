@@ -6,7 +6,7 @@ import { OpponentChip } from "../src/components/OpponentChip";
 import { _resetRollOffForTests } from "../src/components/RollOff";
 import { Sheet } from "../src/components/Sheet";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
-import { lockMessage, roundCaption } from "../src/game/flow";
+import { lockMessage } from "../src/game/flow";
 import { applyLanguage } from "../src/i18n";
 import { _resetPrefsForTests, getPrefs, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
@@ -60,19 +60,11 @@ const show = (v: ViewMessage) => {
 };
 const view = (o: Parameters<typeof makeGameView>[0] = {}): ViewMessage => makeGameView(o);
 
-describe("roll-off captions (K4.1)", () => {
-  it("no 6, several 6s, the only 6", () => {
-    const v = view({ players: 3 });
-    expect(roundCaption(v, [1, 4, 5])).toBe("No 6 — roll again");
-    expect(roundCaption(v, [6, 2, 6])).toBe("2 sixes — roll again");
-    expect(roundCaption(v, [2, 6, 3])).toBe("Cleo rolled the only 6 — Cleo goes first!");
-  });
-
+describe("roll-off overlay (K4.1)", () => {
   it("the roll-off shows once; tap skips to the result, Let's go closes it", () => {
     const rounds = [
-      [1, 2, 3],
-      [6, 6, 1],
-      [1, 6, 2],
+      [4, 4, 1],
+      [3, 5, 0],
     ];
     const v = view({
       phase: "AWAIT_ROLL",

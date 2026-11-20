@@ -1,7 +1,7 @@
 import { codeOf, createGame, expect, joinGame, playRollOff, startGame, test } from "./fixtures";
 import { newPlayer, uid } from "./helpers";
 
-test("opening roll-off: each player rolls their own die, rerolls until one 6, Let's go starts play @smoke", async ({
+test("opening roll-off: each player rolls their own die, highest die wins (ties re-roll the tied dice), Let's go starts play @smoke", async ({
   browser,
 }) => {
   const roomName = `Roll ${uid()}`;
@@ -27,7 +27,7 @@ test("opening roll-off: each player rolls their own die, rerolls until one 6, Le
     // D-L1: the host's face lands on the guest's screen before the guest rolls.
     await expect(guest.page.locator('[data-testid="rolloff-seat"][data-face]')).toHaveCount(1);
     await playRollOff([host, guest]);
-    // Exactly one of them holds the Roll button (the unique 6).
+    // At most one of them holds the Roll button (the unique highest die).
     const rollers = [host, guest].filter(() => true);
     let n = 0;
     for (const p of rollers) {

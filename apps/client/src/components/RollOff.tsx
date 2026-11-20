@@ -21,10 +21,8 @@ import "../styles/rolloff.css";
 /** Local timing: a face tumbles, then settles (~800 ms from arrival to rest). */
 const TUMBLE_MS = 450;
 const SETTLE_MS = 350;
-/** A finished round without a unique 6 stays this long before it collapses into history. */
+/** A finished tied round stays this long before the tied dice are tossed again. */
 export const ROUND_HOLD_MS = 1400;
-/** History keeps only the newest rounds so the screen never grows. */
-const HISTORY_MAX = 3;
 
 /** Shown once per game: remembers which roll-offs were already played. */
 const played = new Set<string>();
@@ -44,71 +42,71 @@ interface SeatInfo {
   profile: Profile | undefined;
 }
 
-function uniqueSix(faces: readonly (number | null)[]): number | null {
-  const sixes = faces.flatMap((f, seat) => (f === 6 ? [seat] : []));
-  return sixes.length === 1 ? (sixes[0] as number) : null;
-}
-
-function retryCaption(faces: readonly (number | null)[]): string {
-  const n = faces.filter((f) => f === 6).length;
-  return n === 0 ? t("rolloff.none") : t("rolloff.many", { n });
-}
+/** Seats holding the highest face of a round (0 / null = did not roll). */
+const leaders = (faces: readonly (number | null)[]): number[] => {
+  const max = Math.max(0, ...faces.map((f) => f ?? 0));
+  return max === 0 ? [] : faces.flatMap((f, seat) => (f === max ? [seat] : []));
+};
 
 interface CardProps {
   seat: number;
   info: SeatInfo;
+  /** This round: null = not rolled yet, 0 = out of this round, else the new face. */
   face: number | null;
+  /** The face the die already shows (its last roll), kept while it waits or is out. */
+  prev: number | null;
+  /** Round index; with `face` it identifies one toss of this same die. */
+  round: number;
   /** Show a face that is already there at mount without tumbling (reconnect, seen live). */
   instant: boolean;
   skip: boolean;
   reduced: boolean;
+  lead: boolean;
   winner: boolean;
-  onLanded: (seat: number) => void;
+  onLanded: (seat: number, tag: string) => void;
 }
 
-function SeatCard({ seat, info, face, instant, skip, reduced, winner, onLanded }: CardProps) {
-  const [phase, setPhase] = useState<RollPhase>(
-    face !== null && (instant || skip || reduced) ? "settled" : "idle",
-  );
+/** One player's physical die. It stays mounted across rounds and is tossed again on a tie. */
+function SeatCard(p: CardProps) {
+  const { seat, info, face, prev, round, skip, reduced } = p;
+  const shown = face !== null && face > 0 ? face : prev;
+  const first = useRef(true);
+  const [phase, setPhase] = useState<RollPhase>(shown !== null ? "settled" : "idle");
   useEffect(() => {
-    if (face === null) {
-      setPhase("idle");
-      return;
-    }
-    if (reduced || skip) {
+    const isFirst = first.current;
+    first.current = false;
+    if (face === null || face === 0) return;
+    const tag = `${round}:${face}`;
+    if (reduced || skip || (isFirst && p.instant)) {
       setPhase("settled");
+      p.onLanded(seat, tag);
       return;
     }
-    if (phase === "settled") return;
     setPhase("tumbling");
     const a = setTimeout(() => setPhase("settling"), TUMBLE_MS);
-    const b = setTimeout(() => setPhase("settled"), TUMBLE_MS + SETTLE_MS);
+    const b = setTimeout(() => {
+      setPhase("settled");
+      p.onLanded(seat, tag);
+      feedback("land", { semitones: seat });
+    }, TUMBLE_MS + SETTLE_MS);
     return () => {
       clearTimeout(a);
       clearTimeout(b);
     };
-  }, [face, reduced, skip]);
+  }, [round, face, reduced, skip]);
 
-  const landed = face !== null && phase === "settled";
-  const quiet = useRef(landed);
-  useEffect(() => {
-    if (!landed) return;
-    onLanded(seat);
-    if (!quiet.current && !skip) feedback("land", { semitones: seat });
-    quiet.current = false;
-  }, [landed]);
-
-  const six = landed && face === 6;
+  const out = face === 0;
   const cls = ["ro-seat"];
-  if (six) cls.push("is-six");
-  if (winner) cls.push("is-winner");
-  if (face === null) cls.push("is-waiting");
+  if (p.lead) cls.push("is-lead");
+  if (p.winner) cls.push("is-winner");
+  if (out) cls.push("is-out");
+  if (shown === null) cls.push("is-waiting");
   return (
     <li
       class={cls.join(" ")}
       data-testid="rolloff-seat"
       data-seat={seat}
-      data-face={landed ? face : undefined}
+      data-face={phase === "settled" && shown !== null ? shown : undefined}
     >
       <span class="ro-avatar">
         <Avatar profile={info.profile} size={56} />
@@ -117,16 +115,17 @@ function SeatCard({ seat, info, face, instant, skip, reduced, winner, onLanded }
       <span class="ro-die">
         <Die
           color="WHITE"
-          face={(face ?? 1) as Face}
+          face={(shown ?? 1) as Face}
           phase={phase}
           seed={seat * 7 + 3}
           index={0}
-          highlight={six}
+          highlight={p.lead}
           reduced={reduced}
         />
-        {six ? <span class="ro-badge">{t("rolloff.six")}</span> : null}
       </span>
-      <span class="ro-status">{face === null ? t("rolloff.waiting") : " "}</span>
+      <span class="ro-status">
+        {out ? t("rolloff.out") : face === null ? t("rolloff.waiting") : " "}
+      </span>
     </li>
   );
 }
@@ -134,14 +133,18 @@ function SeatCard({ seat, info, face, instant, skip, reduced, winner, onLanded }
 interface StageProps {
   testId: string;
   seats: SeatInfo[];
+  /** Index of the round on screen (history length). */
+  round: number;
+  /** Per seat: this round's face, null before it rolls, 0 if out. */
   faces: readonly (number | null)[];
+  /** Rounds before this one (full-width, 0 = out), for each die's last face. */
   history: readonly (readonly number[])[];
   /** Per seat: show its face at mount without tumbling. */
   instant: (seat: number) => boolean;
   skip: boolean;
   reduced: boolean;
   me: number | null;
-  /** The result (unique 6) may be shown once every die has landed. */
+  /** The unique leader of this round wins (only the deciding round). */
   final: boolean;
   onAllLanded?: () => void;
   onSkip?: () => void;
@@ -149,28 +152,32 @@ interface StageProps {
 }
 
 function Stage(p: StageProps) {
-  const [landed, setLanded] = useState<number[]>([]);
-  const onLanded = (seat: number) => setLanded((l) => (l.includes(seat) ? l : [...l, seat]));
-  const allLanded = p.faces.every((f, seat) => f !== null && landed.includes(seat));
-  const six = allLanded ? uniqueSix(p.faces) : null;
-  const winner = p.final ? six : null;
+  const [landed, setLanded] = useState<Record<number, string>>({});
+  const onLanded = (seat: number, tag: string) => setLanded((l) => ({ ...l, [seat]: tag }));
+  const allLanded = p.faces.every(
+    (f, seat) => f === 0 || (f !== null && landed[seat] === `${p.round}:${f}`),
+  );
+  const lead = allLanded ? leaders(p.faces) : [];
+  const winner = p.final && lead.length === 1 ? (lead[0] as number) : null;
   useEffect(() => {
     if (allLanded) p.onAllLanded?.();
-  }, [allLanded]);
+  }, [allLanded, p.round]);
   useEffect(() => {
     if (winner !== null) feedback("win");
   }, [winner]);
 
-  const first = p.history.length - Math.min(HISTORY_MAX, p.history.length);
-  const history = p.history
-    .slice(first)
-    .map((f, i) => t("rolloff.round", { n: first + i + 1, result: retryCaption(f) }))
-    .join(" · ");
+  const prevFace = (seat: number): number | null => {
+    for (let r = p.history.length - 1; r >= 0; r--) {
+      const f = p.history[r]?.[seat];
+      if (f) return f;
+    }
+    return null;
+  };
   const winnerName = winner === null ? "" : (p.seats[winner]?.name ?? "");
-  let caption = " ";
+  let caption = " ";
   if (winner !== null) {
     caption = winner === p.me ? t("rolloff.youFirst") : t("rolloff.first", { name: winnerName });
-  } else if (allLanded && six === null) caption = retryCaption(p.faces);
+  } else if (lead.length > 1) caption = t("rolloff.tie");
 
   const cls = ["ro-screen"];
   if (p.reduced) cls.push("is-reduced");
@@ -180,11 +187,9 @@ function Stage(p: StageProps) {
     <div class={cls.join(" ")} data-testid={p.testId} onClick={p.onSkip}>
       <div class="ro-body">
         <h1 class="ro-title">{t("rolloff.title")}</h1>
-        {history ? (
-          <p class="ro-history" data-testid="rolloff-history">
-            {history}
-          </p>
-        ) : null}
+        <p class="ro-history" data-testid="rolloff-history">
+          {p.round > 0 ? t("rolloff.round", { n: p.round + 1 }) : t("rolloff.rule")}
+        </p>
         <ul class="ro-seats" data-count={p.seats.length}>
           {p.seats.map((info, seat) => (
             <SeatCard
@@ -192,9 +197,12 @@ function Stage(p: StageProps) {
               seat={seat}
               info={info}
               face={p.faces[seat] ?? null}
+              prev={prevFace(seat)}
+              round={p.round}
               instant={p.instant(seat)}
               skip={p.skip}
               reduced={p.reduced}
+              lead={lead.includes(seat)}
               winner={winner === seat}
               onLanded={onLanded}
             />
@@ -258,9 +266,9 @@ export function RollOff({ view, rounds, live = false, onDone }: RollOffProps) {
   }));
   return (
     <Stage
-      key={shown}
       testId="rolloff"
       seats={seats}
+      round={shown}
       faces={faces}
       history={rounds.slice(0, shown)}
       instant={(seat) => seenNow[seat] === faces[seat]}
@@ -311,7 +319,6 @@ export function RollOffLive({ view, send }: RollOffLiveProps) {
   const done = ro?.completed.length ?? 0;
   /** Index of the round on screen; it lags behind `done` while a finished round is held. */
   const [shown, setShown] = useState(done);
-  const firstShown = useRef(done);
   const [landedRound, setLandedRound] = useState(-1);
   useEffect(() => {
     if (shown >= done) return;
@@ -329,12 +336,12 @@ export function RollOffLive({ view, send }: RollOffLiveProps) {
   const canRoll = current && mySeat !== null && ro.rolled[mySeat] === false;
   return (
     <Stage
-      key={shown}
       testId="rolloff-live"
       seats={seats}
+      round={shown}
       faces={faces}
       history={ro.completed.slice(0, shown)}
-      instant={() => shown === firstShown.current}
+      instant={() => true}
       skip={false}
       reduced={reduced}
       me={mySeat}

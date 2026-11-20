@@ -39,11 +39,3 @@ export function rollOffEvent(view: ViewMessage): FirstChosen | null {
   }
   return ev.slice(i).some((x) => x.type === "DICE_ROLLED") ? null : e;
 }
-
-/** Caption for one round: no 6, several 6s, or the unique 6 (the winner). */
-export function roundCaption(view: ViewMessage, faces: readonly number[]): string {
-  const sixes = faces.flatMap((f, seat) => (f === 6 ? [seat] : []));
-  if (sixes.length === 0) return t("rolloff.none");
-  if (sixes.length > 1) return t("rolloff.many", { n: sixes.length });
-  return t("rolloff.winner", { name: seatName(view, sixes[0] as number) });
-}

@@ -120,18 +120,21 @@ export interface ViewYou {
 }
 
 /**
- * Opening roll-off in progress (T-NEW-2). Dice are server-rolled and carry no strategy, so a
- * seat's face is public as soon as it rolls (D-L1, `faces`); a finished round without a unique
- * 6 moves to `completed` and the next round starts empty.
+ * Opening roll-off in progress (T-NEW-2, spec A-2). Dice are server-rolled and carry no
+ * strategy, so a seat's face is public as soon as it rolls (D-L1, `faces`). When the top
+ * face is tied, the round moves to `completed` and only the tied seats roll the next one;
+ * the others are out of it (`eligible` false, face 0).
  */
 export interface ViewRollOff {
   /** 1-based round being rolled now. */
   round: number;
-  /** Per seat index: has this seat rolled in the current round? */
+  /** Per seat index: has this seat rolled in the current round? (Out seats count as rolled.) */
   rolled: boolean[];
-  /** Per seat index: the face rolled in the current round, or null before that seat rolls. */
+  /** Per seat index: seats rolling this round (the others are out of it). */
+  eligible: boolean[];
+  /** Per seat index: the face rolled this round, null before it rolls, 0 if out of the round. */
   faces: (number | null)[];
-  /** Fully revealed rounds, one face per seat each (all without a unique 6). */
+  /** Fully revealed rounds, one entry per seat each (0 = out); each ended in a tie for highest. */
   completed: number[][];
 }
 
@@ -333,8 +336,9 @@ export const ViewMessageSchema = z
       .object({
         round: z.number().int().min(1),
         rolled: z.array(z.boolean()).max(5),
-        faces: z.array(z.number().int().min(1).max(6).nullable()).max(5),
-        completed: z.array(z.array(z.number().int().min(1).max(6)).max(5)).max(1000),
+        eligible: z.array(z.boolean()).max(5),
+        faces: z.array(z.number().int().min(0).max(6).nullable()).max(5),
+        completed: z.array(z.array(z.number().int().min(0).max(6)).max(5)).max(1000),
       })
       .strict()
       .nullable()

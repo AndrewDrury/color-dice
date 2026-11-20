@@ -29,6 +29,7 @@ afterEach(() => {
 
 type Faces = (number | null)[];
 function liveView(faces: Faces, mySeat: number, completed: number[][] = []): ViewMessage {
+  // Seats out of the current round (0 in `faces`) are not eligible.
   const base = makeGameView({ players: faces.length });
   return {
     ...base,
@@ -36,6 +37,7 @@ function liveView(faces: Faces, mySeat: number, completed: number[][] = []): Vie
     rollOff: {
       round: completed.length + 1,
       rolled: faces.map((f) => f !== null),
+      eligible: faces.map((f) => f !== 0),
       faces,
       completed,
     },
@@ -53,7 +55,7 @@ describe("RollOffLive", () => {
   it("Roll button: amber style class, pulses when ready, sends the round, disabled after I roll", () => {
     const send = vi.fn(() => true);
     const { rerender } = render(
-      <RollOffLive view={liveView([null, null], 1, [[1, 2]])} send={send} />,
+      <RollOffLive view={liveView([null, null], 1, [[3, 3]])} send={send} />,
     );
     const roll = screen.getByTestId("rolloff-roll") as HTMLButtonElement;
     expect(roll.classList.contains("ro-roll")).toBe(true);
@@ -61,12 +63,12 @@ describe("RollOffLive", () => {
     expect(roll.disabled).toBe(false);
     fireEvent.click(roll);
     expect(send).toHaveBeenCalledWith({ type: "rollOff", round: 2 });
-    rerender(<RollOffLive view={liveView([null, 3], 1, [[1, 2]])} send={send} />);
+    rerender(<RollOffLive view={liveView([null, 3], 1, [[3, 3]])} send={send} />);
     const after = screen.getByTestId("rolloff-roll") as HTMLButtonElement;
     expect(after.disabled).toBe(true);
     expect(after.classList.contains("is-ready")).toBe(false);
-    // Earlier rounds collapse into one history line.
-    expect(screen.getByTestId("rolloff-history").textContent).toBe("Round 1: No 6 — roll again");
+    // A re-roll round says which round it is.
+    expect(screen.getByTestId("rolloff-history").textContent).toBe("Round 2");
   });
 
   it("other seats' dice tumble and land on their face as it arrives; idle seats wait", () => {
@@ -82,13 +84,11 @@ describe("RollOffLive", () => {
     expect(faceOf(1)).toBe("4");
     expect(faceOf(0)).toBeNull();
     expect(screen.getAllByText("Waiting…")).toHaveLength(2);
-    rerender(<RollOffLive view={liveView([null, 4, 6], 0)} send={() => true} />);
+    rerender(<RollOffLive view={liveView([3, 4, 6], 0)} send={() => true} />);
     tick(LAND);
-    // A 6 lands with a highlight and a "6!" badge.
-    const six = seats()[2] as HTMLElement;
-    expect(six.classList.contains("is-six")).toBe(true);
-    expect(six.textContent).toContain("6!");
-    expect(seats()[1]?.classList.contains("is-six")).toBe(false);
+    // Everything landed: only the highest die is highlighted.
+    expect(seats()[2]?.classList.contains("is-lead")).toBe(true);
+    expect(seats()[1]?.classList.contains("is-lead")).toBe(false);
   });
 
   it("faces already rolled show at once after a reconnect", () => {
@@ -96,18 +96,54 @@ describe("RollOffLive", () => {
     expect(faceOf(0)).toBe("5");
   });
 
-  it("a finished round is held with every face, then collapses into history", () => {
-    const { rerender } = render(<RollOffLive view={liveView([2, null], 0)} send={() => true} />);
-    // Seat 1 rolls the last die: the server moves round 1 to `completed` in the same view.
-    rerender(<RollOffLive view={liveView([null, null], 0, [[2, 5]])} send={() => true} />);
+  it("a tied round is held with every face, then the SAME dice are tossed again", () => {
+    const { rerender } = render(<RollOffLive view={liveView([5, null, 1], 0)} send={() => true} />);
+    const nodes = () => seats().map((li) => li.querySelector(".die"));
+    const before = nodes();
+    expect(before.every(Boolean)).toBe(true);
+    // Seat 1 rolls the last die: the server moves round 1 to `completed` (seats 0 and 1 tie).
+    rerender(<RollOffLive view={liveView([null, null, 0], 0, [[5, 5, 1]])} send={() => true} />);
     tick(LAND);
     expect(faceOf(1)).toBe("5");
-    expect(screen.getByTestId("rolloff-caption").textContent).toBe("No 6 — roll again");
+    expect(screen.getByTestId("rolloff-caption").textContent).toBe("Tie — roll again");
+    expect(seats()[0]?.classList.contains("is-lead")).toBe(true);
+    expect(seats()[2]?.classList.contains("is-lead")).toBe(false);
     expect((screen.getByTestId("rolloff-roll") as HTMLButtonElement).disabled).toBe(true);
     tick(ROUND_HOLD_MS);
-    expect(faceOf(0)).toBeNull();
-    expect(screen.getByTestId("rolloff-history").textContent).toContain("Round 1");
+    // Round 2: tied dice keep their face while waiting; the loser's die stays, dimmed + "Out".
+    expect(faceOf(0)).toBe("5");
+    expect(faceOf(2)).toBe("1");
+    expect(seats()[2]?.classList.contains("is-out")).toBe(true);
+    expect(seats()[2]?.textContent).toContain("Out");
+    expect(screen.getByTestId("rolloff-history").textContent).toBe("Round 2");
     expect((screen.getByTestId("rolloff-roll") as HTMLButtonElement).disabled).toBe(false);
+    // Seat 0 re-rolls the same 5: tossed again (not frozen), and still the identical node.
+    rerender(<RollOffLive view={liveView([5, null, 0], 0, [[5, 5, 1]])} send={() => true} />);
+    expect(faceOf(0)).toBeNull(); // in the air
+    expect(seats()[0]?.querySelector(".die")?.classList.contains("is-moving")).toBe(true);
+    tick(LAND);
+    rerender(<RollOffLive view={liveView([5, 2, 0], 0, [[5, 5, 1]])} send={() => true} />);
+    tick(LAND);
+    expect(faceOf(1)).toBe("2");
+    expect(faceOf(0)).toBe("5");
+    // The die elements never changed: no unmount/remount, no fresh die per round.
+    expect(nodes()).toEqual(before);
+    nodes().forEach((n, i) => {
+      expect(n).toBe(before[i]);
+    });
+    expect(seats()[1]?.querySelector(".die")?.getAttribute("data-face")).toBe("2");
+  });
+
+  it("reduced motion: a tied die changes face instantly on the same element", () => {
+    setPrefs({ motion: "reduced" });
+    const { rerender } = render(<RollOffLive view={liveView([5, 5, 1], 0)} send={() => true} />);
+    const die = seats()[1]?.querySelector(".die");
+    rerender(<RollOffLive view={liveView([null, null, 0], 0, [[5, 5, 1]])} send={() => true} />);
+    tick(ROUND_HOLD_MS);
+    rerender(<RollOffLive view={liveView([null, 3, 0], 0, [[5, 5, 1]])} send={() => true} />);
+    expect(seats()[1]?.querySelector(".die")).toBe(die);
+    expect(die?.getAttribute("data-face")).toBe("3");
+    expect(faceOf(1)).toBe("3");
   });
 
   it("reduced motion: no tumble, faces appear instantly", () => {
@@ -116,14 +152,13 @@ describe("RollOffLive", () => {
     expect(screen.getByTestId("rolloff-live").classList.contains("is-reduced")).toBe(true);
     rerender(<RollOffLive view={liveView([null, 6], 0)} send={() => true} />);
     expect(faceOf(1)).toBe("6");
-    expect(seats()[1]?.classList.contains("is-six")).toBe(true);
   });
 });
 
 describe("RollOff replay + result hold (D-L2)", () => {
   const rounds = [
-    [1, 2, 3],
-    [1, 6, 2],
+    [3, 5, 5],
+    [0, 6, 2],
   ];
   const view = () => makeGameView({ players: 3 });
 
@@ -131,7 +166,7 @@ describe("RollOff replay + result hold (D-L2)", () => {
     const onDone = vi.fn();
     render(<RollOff view={view()} rounds={rounds} onDone={onDone} />);
     tick(LAND);
-    expect(screen.getByTestId("rolloff-caption").textContent).toBe("No 6 — roll again");
+    expect(screen.getByTestId("rolloff-caption").textContent).toBe("Tie — roll again");
     tick(ROUND_HOLD_MS);
     tick(LAND);
     expect(screen.getByTestId("rolloff-caption").textContent).toBe("Cleo goes first!");
@@ -157,14 +192,14 @@ describe("RollOff replay + result hold (D-L2)", () => {
 
   it("after a live roll-off only the deciding round replays; dice seen live don't re-tumble", () => {
     const { unmount } = render(
-      <RollOffLive view={liveView([1, null, 2], 0, [[1, 2, 3]])} send={() => true} />,
+      <RollOffLive view={liveView([0, null, 2], 0, [[3, 5, 5]])} send={() => true} />,
     );
     unmount();
     render(<RollOff view={view()} rounds={rounds} live onDone={() => {}} />);
-    expect(screen.queryByTestId("rolloff-history")?.textContent).toContain("Round 1");
-    expect(faceOf(0)).toBe("1");
+    expect(screen.queryByTestId("rolloff-history")?.textContent).toBe("Round 2");
+    expect(faceOf(0)).toBe("3"); // out: keeps its die from round 1
     expect(faceOf(2)).toBe("2");
-    expect(faceOf(1)).toBeNull();
+    expect(faceOf(1)).toBeNull(); // being tossed again
     tick(LAND);
     expect(faceOf(1)).toBe("6");
     expect(screen.getByTestId("rolloff-go")).toBeTruthy();

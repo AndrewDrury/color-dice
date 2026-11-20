@@ -117,8 +117,8 @@ export async function startGame(host: Player) {
 }
 
 /**
- * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every player
- * taps Roll each round, then "Let's go" on the result (T-NEW-17, D-L2), until every page
+ * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every rolling player
+ * taps Roll each round (after a tie only the tied pages have an enabled Roll), then "Let's go" on the result (T-NEW-17, D-L2), until every page
  * shows the game board with no roll-off screen over it.
  */
 export async function playRollOff(players: Player[]) {
