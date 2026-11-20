@@ -21,6 +21,7 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     await h.getByLabel("Room name").fill(roomName);
     await h.getByLabel("Your name").fill(host.name);
     await h.getByLabel("Password", { exact: true }).fill(password);
+    await h.locator('label:has(input[name="maxPlayers"][value="4"])').click();
     await h.getByLabel("Show in public list").uncheck();
     await h.getByRole("button", { name: "Create game" }).last().click();
     await expect(h.getByRole("button", { name: "Leave" })).toBeVisible();
