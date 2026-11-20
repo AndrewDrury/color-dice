@@ -101,6 +101,16 @@ afterEach(() => {
 });
 
 describe("chat client", () => {
+  it("uses the generic cat-face icon for reaction send buttons", async () => {
+    const top = screen.getAllByLabelText("Send reaction")[0] as HTMLElement;
+    expect(top.querySelector("svg.icon")).not.toBeNull();
+    expect(top.querySelector("img")).toBeNull();
+    await openChat();
+    const inChat = screen.getAllByLabelText("Send reaction").at(-1) as HTMLElement;
+    expect(inChat.querySelector("svg.icon")).not.toBeNull();
+    expect(inChat.querySelector("img")).toBeNull();
+  });
+
   it("incoming text toasts as avatar + bubble without the sender name; opening clears the badge", async () => {
     emit(text(1, "hello there"));
     expect(toasts()[0]?.textContent).toBe("hello there");

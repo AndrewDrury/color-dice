@@ -13,7 +13,7 @@ import { useReducedMotion } from "../fx/motion";
 import type { RollPhase } from "../fx/useRollAnimation";
 import { seatName, seatProfile } from "../game/model";
 import { t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { Die } from "./Die";
 import "../styles/dice.css";
 import "../styles/rolloff.css";
@@ -109,7 +109,7 @@ function SeatCard(p: CardProps) {
       data-face={phase === "settled" && shown !== null ? shown : undefined}
     >
       <span class="ro-avatar">
-        <Avatar profile={info.profile} size={56} />
+        <AvatarHover profile={info.profile} size={56} name={info.name} />
       </span>
       <span class="ro-name">{info.name}</span>
       <span class="ro-die">

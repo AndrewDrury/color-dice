@@ -2,7 +2,7 @@
 import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { seatInfo } from "../game/model";
 import { t, tn, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { CheckIcon, CloseIcon, DotsIcon, WarningIcon } from "./icons";
 
 export interface OpponentState {
@@ -96,7 +96,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
         strikes: strikes > 0 ? penText : t("opp.none"),
       })}
     >
-      <Avatar profile={seat?.profile} size={OPP_AVATAR} />
+      <AvatarHover profile={seat?.profile} size={OPP_AVATAR} name={name} />
       <span class="g-chip-body">
         <span class="g-chip-top">
           <span class="g-name name-clip" title={name}>

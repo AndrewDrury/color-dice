@@ -5,7 +5,7 @@ import { logLines } from "../game/log";
 import { cssColor } from "../game/model";
 import { useTypewriter } from "../game/useTypewriter";
 import { t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { CrownIcon, LockIcon } from "./icons";
 
 const NEAR_PX = 24;
@@ -70,7 +70,7 @@ export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: 
                         <CrownIcon size={18} />
                       </span>
                     ) : (
-                      <Avatar profile={l.profile} size={24} />
+                      <AvatarHover profile={l.profile} size={24} name={l.typed} />
                     )}
                     <span class="lg-name" aria-hidden="true" title={l.typed}>
                       {n === undefined ? (

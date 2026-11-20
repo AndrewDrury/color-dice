@@ -100,6 +100,8 @@ export const common: Record<keyof typeof en, string> = {
   "field.yourName": "Ton nom",
   "field.roomName.label": "Nom de la salle",
   "field.gameCode.label": "Code de partie",
+  "profile.youLabel": "Toi : {name}",
+  "profile.youCaption": "Toi · {name}",
   "update.done": "Mise à jour vers la dernière version",
   "update.updating": "Nouvelle version — mise à jour…",
 };

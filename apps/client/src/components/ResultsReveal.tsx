@@ -26,7 +26,7 @@ import { celebrationKey, HUSH_MS, PLAYER_STAGGER_MS, useReveal } from "../game/u
 import { useTween } from "../game/useTween";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { CrownIcon, TieIcon } from "./icons";
 import { rankNumbers, rankPlayers } from "./ScoreTable";
 import "../styles/celebration.css";
@@ -237,7 +237,7 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
               >
                 <span class="rv-who">
                   <span class="num rv-rank">{showTotal ? `${ranks[i]}.` : ""}</span>
-                  <Avatar profile={seatInfo(view, p)?.profile} size={32} />
+                  <AvatarHover profile={seatInfo(view, p)?.profile} size={32} name={nm} />
                   <span class="rv-name g-name" title={nm}>
                     {nm}
                   </span>

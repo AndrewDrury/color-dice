@@ -3,7 +3,7 @@ import type { ClientMessage } from "@cd/protocol";
 import { useState } from "preact/hooks";
 import { useExitAnimation } from "../fx/motion";
 import { t, useT } from "../i18n";
-import { REACTION_BUTTON_IMAGE, reactionUrl } from "./CatReaction";
+import { CatFaceIcon } from "./icons";
 import { ReactionPicker } from "./ReactionPicker";
 
 export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }) {
@@ -21,14 +21,7 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
         aria-expanded={open ? "true" : "false"}
         onClick={() => setOpen((o) => !o)}
       >
-        <img
-          class="rx-btn-gif"
-          src={reactionUrl(REACTION_BUTTON_IMAGE)}
-          alt=""
-          aria-hidden="true"
-          width={44}
-          height={44}
-        />
+        <CatFaceIcon size={24} />
       </button>
       {mounted ? (
         <ReactionPicker

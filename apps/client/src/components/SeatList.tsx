@@ -3,7 +3,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { recordLabel, recordText } from "../game/model";
 import { t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import "../styles/profile.css";
 
 export type Seat = ViewMessage["seats"][number];
@@ -55,7 +55,7 @@ function SeatRow({
           class={`sl-dot${seat.online ? " is-on" : ""}`}
           aria-label={seat.online ? t("waiting.online") : t("waiting.offline")}
         />
-        <Avatar profile={seat.profile} size={32} />
+        <AvatarHover profile={seat.profile} size={32} name={seat.name} self={you} />
         <span class="name-clip sl-name" title={seat.name}>
           {seat.name}
         </span>

@@ -4,7 +4,7 @@ import { Fragment } from "preact";
 import { COLORS, cssColor, recordLabel, recordText, seatInfo, tieInfo } from "../game/model";
 import { useTween } from "../game/useTween";
 import { t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { CrownIcon, TieIcon } from "./icons";
 
 export function rankPlayers(view: ViewMessage): ViewPlayer[] {
@@ -123,7 +123,11 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
                 ) : win ? (
                   <CrownIcon size={16} title={t("table.winner")} />
                 ) : null}{" "}
-                <Avatar profile={seatInfo(view, p)?.profile} size={20} />{" "}
+                <AvatarHover
+                  profile={seatInfo(view, p)?.profile}
+                  size={20}
+                  name={seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                />{" "}
                 <span class="g-name">
                   {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
                 </span>

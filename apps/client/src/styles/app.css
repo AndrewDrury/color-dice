@@ -71,6 +71,14 @@ output {
   gap: var(--s2);
 }
 
+.self-badge {
+  display: inline-flex;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  align-items: center;
+  justify-content: center;
+}
+
 .card {
   background: var(--paper);
   border-radius: var(--r-card);

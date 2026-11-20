@@ -21,6 +21,7 @@ import {
 } from "../components/RollOff";
 import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
+import { SelfBadge } from "../components/SelfBadge";
 import { Sheet } from "../components/Sheet";
 import { TurnBanner } from "../components/TurnBanner";
 import { feedback } from "../fx/feedback";
@@ -264,6 +265,7 @@ function Board({
   const [rolling, setRolling] = useState(false);
   const gameOver = g.phase === "GAME_OVER";
   const summaryShown = summary !== null && !gameOver;
+  const mine = view.seats.find((s) => s.seatId === view.you.seatId);
 
   const myMove =
     view.you.canRoll ||
@@ -341,6 +343,11 @@ function Board({
             aria-label={status === "online" ? t("game.online") : t("game.reconnecting")}
           />
           {gameOver ? null : <ChatControls send={conn.send} />}
+          <SelfBadge
+            profile={mine?.profile}
+            name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
+            onClick={() => setPanel("settings")}
+          />
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>

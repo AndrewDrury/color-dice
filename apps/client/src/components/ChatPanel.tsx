@@ -11,8 +11,9 @@ import { useChatSheet } from "../chat/sheet";
 import { closePanel, seatName, seatProfile, setDraft, setSending, useChat } from "../chat/store";
 import { chatErrorText, t, useT } from "../i18n";
 import { getState } from "../store";
-import { Avatar } from "./Avatar";
-import { CatReaction, REACTION_BUTTON_IMAGE, reactionUrl } from "./CatReaction";
+import { AvatarHover } from "./AvatarHover";
+import { CatReaction } from "./CatReaction";
+import { CatFaceIcon } from "./icons";
 import { ReactionPicker } from "./ReactionPicker";
 import "../styles/chat.css";
 
@@ -64,7 +65,7 @@ function Bubble({
       <span class="chat-av">
         {last ? (
           profile ? (
-            <Avatar profile={profile} size={32} />
+            <AvatarHover profile={profile} size={32} name={seatName(m.seatId)} />
           ) : (
             <span class="chat-av-ph" />
           )
@@ -222,13 +223,7 @@ export function ChatPanel({
               aria-expanded={reactionPicker ? "true" : "false"}
               onClick={() => setReactionPicker((open) => !open)}
             >
-              <img
-                src={reactionUrl(REACTION_BUTTON_IMAGE)}
-                alt=""
-                aria-hidden="true"
-                width={28}
-                height={28}
-              />
+              <CatFaceIcon size={20} />
             </button>
             <div class="chat-field">
               <textarea

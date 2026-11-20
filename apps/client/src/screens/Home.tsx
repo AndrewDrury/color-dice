@@ -5,9 +5,10 @@ import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { GearButton, type Panel, Panels } from "../components/Settings";
+import { SelfBadge } from "../components/SelfBadge";
 import { useHistoryTotals } from "../history";
 import { type MessageKey, t, useT } from "../i18n";
-import { removeRoomPassword } from "../remembered";
+import { getRemembered, removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
@@ -156,6 +157,7 @@ export interface HomeProps {
 
 export function Home({ route }: HomeProps) {
   useT();
+  const remembered = getRemembered();
   const [games, setGames] = useState<PublicGame[] | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
@@ -181,6 +183,11 @@ export function Home({ route }: HomeProps) {
       <header class="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: "var(--fs-title)" }}>Color Dice</h1>
         <div class="row">
+          <SelfBadge
+            profile={remembered.profile}
+            name={remembered.name || t("waiting.you")}
+            onClick={() => setPanel("settings")}
+          />
           <GearButton onClick={() => setPanel("settings")} />
           <Button variant="primary" onClick={() => navigate("create")}>
             {t("home.createGame")}

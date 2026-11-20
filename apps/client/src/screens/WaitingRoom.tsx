@@ -11,6 +11,7 @@ import { FieldError, requestErrorText } from "../components/Field";
 import { ProfileField } from "../components/ProfileField";
 import { RoomSettings } from "../components/RoomSettings";
 import { type Seat, SeatList } from "../components/SeatList";
+import { SelfBadge } from "../components/SelfBadge";
 import { feedback } from "../fx/feedback";
 import { clockTime, t, tn, useT } from "../i18n";
 import { rememberProfile } from "../remembered";
@@ -185,6 +186,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         </h1>
         <span class="row">
           {view ? <ChatControls send={send} /> : null}
+          <SelfBadge profile={mine?.profile} name={mine?.name ?? session.name} />
           <Button onClick={() => setConfirm({ kind: "leave" })}>{t("waiting.leave")}</Button>
         </span>
       </div>

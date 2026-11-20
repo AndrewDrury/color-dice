@@ -9,7 +9,7 @@ import { cssColor } from "../game/model";
 import type { TurnSummary as Summary } from "../game/turnSummary";
 import { colorName, t, useT } from "../i18n";
 import "../styles/game.css";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 import { CloseIcon, LockIcon } from "./icons";
 
 export const SUMMARY_MS = 4000;
@@ -58,7 +58,7 @@ export function TurnSummary({
         {summary.players.map((p) => (
           <li key={p.seat} class="ts-player" data-seat={p.seat}>
             <div class="ts-who">
-              <Avatar profile={p.profile} size={44} />
+              <AvatarHover profile={p.profile} size={44} name={p.name} />
               <span class="ts-name" title={p.name}>
                 {p.name}
               </span>

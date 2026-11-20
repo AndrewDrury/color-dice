@@ -3,7 +3,7 @@ import type { ViewMessage } from "@cd/protocol";
 import { seatName, seatProfile } from "../game/model";
 import { currentStep, noWhiteSumMove, submitLabel } from "../game/staging";
 import { t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { AvatarHover } from "./AvatarHover";
 
 export interface TurnBannerProps {
   view: ViewMessage;
@@ -25,9 +25,10 @@ export function TurnBanner({ view, staged, noMove }: TurnBannerProps) {
   const g = view.game;
   if (!g?.turn || g.phase === "GAME_OVER") return null;
   const mine = g.turn.activeSeat === view.you.seat;
+  const actor = seatName(view, g.turn.activeSeat);
   const title = mine
     ? t("turn.yours")
-    : t("turn.theirs", { name: seatName(view, g.turn.activeSeat) });
+    : t("turn.theirs", { name: actor });
   const step =
     g.phase === "AWAIT_ROLL"
       ? t("turn.stepRoll")
@@ -42,7 +43,8 @@ export function TurnBanner({ view, staged, noMove }: TurnBannerProps) {
       data-testid="turn-banner"
     >
       <span class="g-turnbar-who name-clip" title={title} aria-live="polite">
-        <Avatar profile={seatProfile(view, g.turn.activeSeat)} size={20} /> {title}
+        <AvatarHover profile={seatProfile(view, g.turn.activeSeat)} size={20} name={actor} />{" "}
+        {title}
       </span>
       {step === cta ? null : <span class="g-turnbar-step">{step}</span>}
       {cta ? <span class="g-turnbar-cta">{cta}</span> : null}

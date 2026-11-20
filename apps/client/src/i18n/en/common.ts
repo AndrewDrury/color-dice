@@ -97,6 +97,8 @@ export const common = {
   "field.yourName": "Your name",
   "field.roomName.label": "Room name",
   "field.gameCode.label": "Game code",
+  "profile.youLabel": "You: {name}",
+  "profile.youCaption": "You · {name}",
   "update.done": "Updated to the latest version",
   "update.updating": "New version — updating…",
 } as const;
