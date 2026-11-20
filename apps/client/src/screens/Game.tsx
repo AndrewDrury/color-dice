@@ -20,8 +20,8 @@ import {
   rollOffPlayed,
 } from "../components/RollOff";
 import { ScoreGuide } from "../components/ScoreGuide";
-import { GearButton, type Panel, Panels } from "../components/Settings";
 import { SelfBadge } from "../components/SelfBadge";
+import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
 import { TurnBanner } from "../components/TurnBanner";
 import { feedback } from "../fx/feedback";
@@ -344,7 +344,7 @@ function Board({
           <SelfBadge
             profile={mine?.profile}
             name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
-            onClick={() => setPanel("settings")}
+            onClick={() => setPanel("profile")}
           />
           <GearButton onClick={() => setPanel("settings")} />
         </span>
@@ -443,7 +443,12 @@ function Board({
           }}
         />
       ) : null}
-      <Panels panel={panel} onPanel={setPanel} />
+      <Panels
+        panel={panel}
+        onPanel={setPanel}
+        profile={mine?.profile}
+        name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
+      />
       {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
       {rematching ? (
         <ConfirmDialog

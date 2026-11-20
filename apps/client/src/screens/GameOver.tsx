@@ -66,11 +66,27 @@ function useDeviceHistory(view: ViewMessage, result: GameResult) {
     if (view.game?.phase !== "GAME_OVER" || view.you.seat === null) return;
     const mine = view.seats.find((s) => s.seatId === view.you.seatId);
     if (!mine) return;
+    const minePlayer = view.game.players.find((p) => p.seat === view.you.seat);
+    const opponents = view.game.players
+      .filter((p) => p.seat !== view.you.seat)
+      .map((p) => {
+        const seat = view.seats.find((s) => s.seatId === p.seatId);
+        return {
+          name: seat?.name ?? "",
+          colour: seat?.profile?.color ?? ("slate" as const),
+          cat: seat?.profile?.cat ?? ("mad-cat" as const),
+          score: p.score.total,
+        };
+      })
+      .filter((p) => p.name.length > 0);
     recordGame({
       code: view.code,
       game: mine.record.wins + mine.record.ties + mine.record.losses,
       result,
       at: Date.now(),
+      opponents,
+      myScore: minePlayer?.score.total,
+      players: view.game.players.length,
     });
   }, []);
 }

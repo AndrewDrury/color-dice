@@ -12,6 +12,7 @@ import { ProfileField } from "../components/ProfileField";
 import { RoomSettings } from "../components/RoomSettings";
 import { type Seat, SeatList } from "../components/SeatList";
 import { SelfBadge } from "../components/SelfBadge";
+import { type Panel, Panels } from "../components/Settings";
 import { feedback } from "../fx/feedback";
 import { clockTime, t, tn, useT } from "../i18n";
 import { rememberProfile } from "../remembered";
@@ -43,6 +44,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const { view: storeView } = useAppState();
   const view: ViewMessage | null = storeView?.code === code ? storeView : null;
   const [confirm, setConfirm] = useState<Confirm>(null);
+  const [panel, setPanel] = useState<Panel>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
@@ -186,7 +188,11 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         </h1>
         <span class="row">
           {view ? <ChatControls send={send} /> : null}
-          <SelfBadge profile={mine?.profile} name={mine?.name ?? session.name} />
+          <SelfBadge
+            profile={mine?.profile}
+            name={mine?.name ?? session.name}
+            onClick={() => setPanel("profile")}
+          />
           <Button onClick={() => setConfirm({ kind: "leave" })}>{t("waiting.leave")}</Button>
         </span>
       </div>
@@ -302,6 +308,17 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
           </div>
         </Dialog>
       ) : null}
+      <Panels
+        panel={panel}
+        onPanel={setPanel}
+        profile={mine?.profile}
+        name={mine?.name ?? session.name}
+        editable
+        onProfile={(profile) => {
+          send({ type: "profile", profile });
+          rememberProfile(profile);
+        }}
+      />
     </main>
   );
 }

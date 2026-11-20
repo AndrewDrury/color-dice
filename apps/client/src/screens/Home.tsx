@@ -4,8 +4,8 @@ import { ApiError, getMe } from "../api";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
-import { GearButton, type Panel, Panels } from "../components/Settings";
 import { SelfBadge } from "../components/SelfBadge";
+import { GearButton, type Panel, Panels } from "../components/Settings";
 import { useHistoryTotals } from "../history";
 import { type MessageKey, t, useT } from "../i18n";
 import { getRemembered, removeRoomPassword } from "../remembered";
@@ -186,7 +186,7 @@ export function Home({ route }: HomeProps) {
           <SelfBadge
             profile={remembered.profile}
             name={remembered.name || t("waiting.you")}
-            onClick={() => setPanel("settings")}
+            onClick={() => setPanel("profile")}
           />
           <GearButton onClick={() => setPanel("settings")} />
           <Button variant="primary" onClick={() => navigate("create")}>
@@ -194,7 +194,12 @@ export function Home({ route }: HomeProps) {
           </Button>
         </div>
       </header>
-      <Panels panel={panel} onPanel={setPanel} />
+      <Panels
+        panel={panel}
+        onPanel={setPanel}
+        profile={remembered.profile}
+        name={remembered.name || t("waiting.you")}
+      />
       <div class="cols-2 stack">
         <div class="stack">
           <YourRecord />
