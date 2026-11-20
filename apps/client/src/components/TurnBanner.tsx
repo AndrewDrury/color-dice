@@ -26,9 +26,7 @@ export function TurnBanner({ view, staged, noMove }: TurnBannerProps) {
   if (!g?.turn || g.phase === "GAME_OVER") return null;
   const mine = g.turn.activeSeat === view.you.seat;
   const actor = seatName(view, g.turn.activeSeat);
-  const title = mine
-    ? t("turn.yours")
-    : t("turn.theirs", { name: actor });
+  const title = mine ? t("turn.yours") : t("turn.theirs", { name: actor });
   const step =
     g.phase === "AWAIT_ROLL"
       ? t("turn.stepRoll")

@@ -15,8 +15,11 @@ const myTurnNow = (v: ViewMessage): boolean => {
   const g = v.game;
   if (!g || (v.pausedSeatIds ?? []).length > 0) return false;
   if (v.you.canRoll) return true;
-  if (g.phase === "ACTION_1") return v.you.legalAction1.length > 0 && v.you.action1Decision === null;
-  return g.phase === "ACTION_2" && g.turn?.activeSeat === v.you.seat && v.you.legalAction2.length > 0;
+  if (g.phase === "ACTION_1")
+    return v.you.legalAction1.length > 0 && v.you.action1Decision === null;
+  return (
+    g.phase === "ACTION_2" && g.turn?.activeSeat === v.you.seat && v.you.legalAction2.length > 0
+  );
 };
 // i18n-ok: punctuation-only app-title suffix.
 const title = (txt: string) => `${txt} — ${APP}`;
@@ -49,7 +52,8 @@ function gameTitle(v: ViewMessage): string {
   }
   if (myTurnNow(v)) {
     if (v.you.canRoll) return title(t("title.yourTurn"));
-    if (g.phase === "ACTION_1" && v.you.action1Decision !== null) return title(t("title.waitingOthers"));
+    if (g.phase === "ACTION_1" && v.you.action1Decision !== null)
+      return title(t("title.waitingOthers"));
     return title(t("title.yourMove"));
   }
   const active = g.turn?.activeSeat;

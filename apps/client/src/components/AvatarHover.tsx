@@ -38,7 +38,10 @@ export function AvatarHover({
     const width = 176;
     const height = 188;
     const gap = 10;
-    const left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left + r.width / 2 - width / 2));
+    const left = Math.max(
+      8,
+      Math.min(window.innerWidth - width - 8, r.left + r.width / 2 - width / 2),
+    );
     const above = r.top - height - gap;
     const top = above >= 8 ? above : Math.min(window.innerHeight - height - 8, r.bottom + gap);
     setXY({ left, top });
@@ -119,7 +122,7 @@ export function AvatarHover({
           <Avatar profile={profile} size={size} />
         </button>
       ) : (
-        <span {...shared} tabIndex={0}>
+        <span {...shared}>
           <Avatar profile={profile} size={size} />
         </span>
       )}

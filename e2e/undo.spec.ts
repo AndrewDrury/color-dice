@@ -15,9 +15,9 @@ test("undo removes a staged mark and stays in the current turn @smoke", async ({
     await joinGame(guest, code, "undo-pass");
     await roll(host.page);
     await host.page.getByRole("button", { name: /Red 8, can mark/ }).click();
-    await expect(host.page.getByRole("button", { name: "Undo" })).toBeVisible();
-    await host.page.getByRole("button", { name: "Undo" }).click();
-    await expect(host.page.getByRole("button", { name: "Undo" })).toBeHidden();
+    await expect(host.page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+    await host.page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(host.page.getByRole("button", { name: "Undo", exact: true })).toBeHidden();
   } finally {
     await host.context.close();
     await guest.context.close();

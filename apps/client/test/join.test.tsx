@@ -140,9 +140,10 @@ describe("JoinDialog", () => {
 
   it("T-NEW-32: preselects a free colour when the remembered one is taken, and shows a lost race", async () => {
     const taken = rememberedProfile().color;
+    const taken2 = taken === "sky" ? "teal" : "sky";
     vi.mocked(api.getTakenColors).mockResolvedValueOnce({ taken: [taken] });
     vi.mocked(api.joinGame).mockRejectedValueOnce(
-      new ApiError(409, "E_COLOUR_TAKEN", `${taken},sky`),
+      new ApiError(409, "E_COLOUR_TAKEN", `${taken},${taken2}`),
     );
     render(<JoinDialog code={CODE} games={[ROOM]} onClose={() => {}} />);
     await screen.findByRole("group", { name: "Choose colour" });

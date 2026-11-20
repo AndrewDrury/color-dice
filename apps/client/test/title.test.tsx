@@ -1,7 +1,7 @@
-import type { Route } from "../src/router";
 import { act, cleanup, render } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLanguage } from "../src/i18n";
+import type { Route } from "../src/router";
 import { useDocumentTitle } from "../src/useDocumentTitle";
 import { makeGameView } from "./fixtures/views";
 
