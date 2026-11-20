@@ -2,8 +2,11 @@ import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { logLines } from "../game/log";
+import { cssColor } from "../game/model";
 import { useTypewriter } from "../game/useTypewriter";
 import { t, useT } from "../i18n";
+import { Avatar } from "./Avatar";
+import { CrownIcon, LockIcon } from "./icons";
 
 const NEAR_PX = 24;
 
@@ -14,7 +17,7 @@ export function MoveLog({ view }: { view: ViewMessage }) {
   const box = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const lastTop = useRef(0);
-  const shown = useTypewriter(lines);
+  const shown = useTypewriter(lines.map((l) => ({ id: l.id, text: l.typed })));
   const [more, setMore] = useState({ above: false, below: false });
 
   const measure = () => {
@@ -52,16 +55,44 @@ export function MoveLog({ view }: { view: ViewMessage }) {
             <ol>
               {lines.map((l) => {
                 const n = shown(l.id);
-                return n === undefined ? (
-                  <li key={l.id}>{l.text}</li>
-                ) : (
-                  <li key={l.id}>
+                return (
+                  <li key={l.id} class={`lg k-${l.kind}`}>
                     <span class="sr-only">{l.text}</span>
-                    <span aria-hidden="true">
-                      {l.text.slice(0, n)}
-                      {n > 0 ? <i class="g-caret" /> : null}
-                      <span class="g-untyped">{l.text.slice(n)}</span>
+                    {l.kind === "lock" && l.color ? (
+                      <span class={`lg-lock c-${cssColor(l.color)}`} aria-hidden="true">
+                        <LockIcon size={16} />
+                      </span>
+                    ) : l.kind === "over" ? (
+                      <span class="lg-sym" aria-hidden="true">
+                        <CrownIcon size={18} />
+                      </span>
+                    ) : (
+                      <Avatar profile={l.profile} size={24} />
+                    )}
+                    <span class="lg-name" aria-hidden="true" title={l.typed}>
+                      {n === undefined ? (
+                        l.typed
+                      ) : (
+                        <>
+                          {l.typed.slice(0, n)}
+                          {n > 0 ? <i class="g-caret" /> : null}
+                          <span class="g-untyped">{l.typed.slice(n)}</span>
+                        </>
+                      )}
                     </span>
+                    {l.kind === "mark" && l.color ? (
+                      <span class={`ts-box lg-box c-${cssColor(l.color)}`} aria-hidden="true">
+                        {l.number}
+                      </span>
+                    ) : l.kind === "pass" ? (
+                      <span class="lg-pass" aria-hidden="true">
+                        {t("summary.none")}
+                      </span>
+                    ) : l.kind === "penalty" ? (
+                      <span class="ts-penalty lg-pen" aria-hidden="true">
+                        −5
+                      </span>
+                    ) : null}
                   </li>
                 );
               })}

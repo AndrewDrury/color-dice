@@ -38,7 +38,9 @@
 .g-pencap {
   position: absolute;
   top: 100%;
-  right: 0;
+  /* T-NEW-26: centred under the number (the term is exactly as wide as its number). */
+  left: 50%;
+  transform: translateX(-50%);
   margin-top: 1px;
   font-size: 10px;
   line-height: 1;

@@ -27,7 +27,6 @@ export const game: Record<keyof typeof en, string> = {
   "end.twoRows": "Dos filas bloqueadas",
   "end.penalty": "{names}: 4.ª penalización",
   "log.turn": "Turno {n} — tira {name}",
-  "log.dice": "Dados: blancos {a} + {b} = {sum}",
   "log.passed": "{name} pasó",
   "log.marked": "{name} marcó {color} {n}",
   "log.penalty": "{name} recibe una penalización (−5)",

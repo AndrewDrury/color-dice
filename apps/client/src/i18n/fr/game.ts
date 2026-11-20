@@ -28,7 +28,6 @@ export const game: Record<keyof typeof en, string> = {
   "end.twoRows": "Deux lignes verrouillées",
   "end.penalty": "4e pénalité pour {names}",
   "log.turn": "Tour {n} — {name} lance",
-  "log.dice": "Dés : blancs {a} + {b} = {sum}",
   "log.passed": "{name} a passé",
   "log.marked": "{name} a coché {color} {n}",
   "log.penalty": "{name} prend une pénalité (−5)",

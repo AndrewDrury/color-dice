@@ -5,6 +5,7 @@ import {
   BUTTON_PAIRS,
   contrastRatio,
   DERIVED,
+  mixHex,
   PAIRS,
   resolvedTokens,
   THEME_BASE,
@@ -13,6 +14,7 @@ import {
   TOKENS,
   themeTokens,
 } from "../src/styles/contrast";
+import gameCss from "../src/styles/game.css?raw";
 import themesCss from "../src/styles/themes.css?raw";
 import css from "../src/styles/tokens.css?raw";
 
@@ -54,6 +56,33 @@ describe("contrast", () => {
       });
     }
   }
+
+  // T-NEW-26: the white-sum candidate is the row colour mixed into white (12 % light, 22 % dark: --hl-mix
+  // in game.css) with dark vivid ink; row colours never change per theme.
+  for (const theme of themes) {
+    for (const c of ["red", "yellow", "green", "blue"]) {
+      it(`${theme}: ${c} white-sum highlight keeps 4.5:1 ink and stays apart from the tint`, () => {
+        const hl = mixHex(
+          TOKENS[theme][`--row-${c}`] as string,
+          theme === "dark" ? 22 : 12,
+          "#FFFFFF",
+        );
+        expect(
+          contrastRatio(TOKENS[theme][`--row-${c}-vivid-ink`] as string, hl),
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(hl).not.toBe(TOKENS[theme][`--row-${c}-tint`]);
+      });
+    }
+  }
+
+  it("white-sum highlight in game.css mixes the row colour into white by --hl-mix", () => {
+    for (const c of ["red", "yellow", "green", "blue"])
+      expect(gameCss).toContain(
+        `--row-white-hl: color-mix(in srgb, var(--row-${c}) var(--hl-mix), white);`,
+      );
+    expect(gameCss).toContain("--hl-mix: 12%;");
+    expect(gameCss).toContain("--hl-mix: 22%;");
+  });
 
   it("contrast.ts matches tokens.css", () => {
     const light = block(":root");

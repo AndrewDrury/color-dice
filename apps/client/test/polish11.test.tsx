@@ -52,10 +52,10 @@ describe("MoveLog", () => {
   const view = (n: number): ViewMessage => {
     const v = makeGameView();
     const g = v.game as NonNullable<ViewMessage["game"]>;
+    const id = (g.players[0] as { seatId: string }).seatId;
     const events = Array.from({ length: n }, (_, i) => ({
-      type: "DICE_ROLLED",
-      white: [1, 2],
-      whiteSum: 3,
+      type: "ACTION2_PASSED",
+      playerId: id,
       i,
     }));
     return { ...v, game: { ...g, events } } as unknown as ViewMessage;
@@ -85,6 +85,38 @@ describe("MoveLog", () => {
     expect(box.scrollTop).toBe(100);
     expect(screen.queryByTestId("log-fade-top")).not.toBeNull();
     expect(screen.queryByTestId("log-fade-bottom")).not.toBeNull();
+  });
+  it("renders avatar + name + graphic per move, keeps the sentence sr-only, omits the white-dice sum", () => {
+    const v = makeGameView();
+    const g = v.game as NonNullable<ViewMessage["game"]>;
+    const p0 = g.players[0] as { seatId: string };
+    const p1 = g.players[1] as { seatId: string };
+    const events = [
+      { type: "DICE_ROLLED", white: [3, 4], whiteSum: 7 },
+      { type: "MARKED", playerId: p0.seatId, action: 1, color: "RED", number: 7, index: 5 },
+      { type: "ACTION2_PASSED", playerId: p1.seatId },
+      { type: "PENALTY", playerId: p1.seatId },
+      { type: "ROW_LOCKED", color: "BLUE", lockedBy: [p0.seatId] },
+    ];
+    const { container } = render(
+      <MoveLog view={{ ...v, game: { ...g, events } } as unknown as ViewMessage} />,
+    );
+    const items = container.querySelectorAll(".g-log li");
+    expect(items).toHaveLength(4); // no "added white dice" line
+    const text = container.textContent ?? "";
+    expect(text).toMatch(/marked Red 7/);
+    expect(text).not.toMatch(/white/i);
+    const sr = (i: number) => items[i]?.querySelector(".sr-only")?.textContent ?? "";
+    expect(sr(0)).toMatch(/marked Red 7/); // oldest first
+    expect(sr(3)).toMatch(/Blue row locked/);
+    expect(container.querySelector(".lg-box.c-red")?.textContent).toBe("7");
+    expect(container.querySelector(".lg-pass")).not.toBeNull();
+    expect(container.querySelector(".lg-pen")?.textContent).toBe("−5");
+    expect(container.querySelector(".lg-lock.c-blue svg")).not.toBeNull();
+    // Visible parts are aria-hidden; the prose is not in them.
+    for (const el of container.querySelectorAll(".lg-name, .lg-box")) {
+      expect(el.getAttribute("aria-hidden")).toBe("true");
+    }
   });
   it("shows no fades when the entries are not scrollable", () => {
     render(<MoveLog view={view(1)} />);

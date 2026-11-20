@@ -26,7 +26,6 @@ export const game = {
   "end.twoRows": "Two rows locked",
   "end.penalty": "{names} took a 4th penalty",
   "log.turn": "Turn {n} — {name} rolls",
-  "log.dice": "Dice: white {a} + {b} = {sum}",
   "log.passed": "{name} passed",
   "log.marked": "{name} marked {color} {n}",
   "log.penalty": "{name} took a penalty (−5)",

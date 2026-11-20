@@ -112,6 +112,7 @@
 .c-red {
   --row-color: var(--row-red);
   --row-tint: var(--row-red-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-red) var(--hl-mix), white);
   --row-ink: var(--row-red-ink);
   --row-on: var(--row-red-on);
   --row-pattern: var(--pattern-red);
@@ -121,6 +122,7 @@
 .c-yellow {
   --row-color: var(--row-yellow);
   --row-tint: var(--row-yellow-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-yellow) var(--hl-mix), white);
   --row-ink: var(--row-yellow-ink);
   --row-on: var(--row-yellow-on);
   --row-pattern: var(--pattern-yellow);
@@ -130,6 +132,7 @@
 .c-green {
   --row-color: var(--row-green);
   --row-tint: var(--row-green-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-green) var(--hl-mix), white);
   --row-ink: var(--row-green-ink);
   --row-on: var(--row-green-on);
   --row-pattern: var(--pattern-green);
@@ -139,6 +142,7 @@
 .c-blue {
   --row-color: var(--row-blue);
   --row-tint: var(--row-blue-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-blue) var(--hl-mix), white);
   --row-ink: var(--row-blue-ink);
   --row-on: var(--row-blue-on);
   --row-pattern: var(--pattern-blue);
@@ -193,11 +197,18 @@
     0 0 10px color-mix(in srgb, var(--row-color) 55%, transparent);
   animation: g-breathe 1.6s ease-in-out infinite;
 }
-/* D-L5: a white-sum candidate is whiter with a white border (thin dark outer edge for light themes);
-   a colour (white + colour die) candidate keeps its tint with a bright border in the row colour. */
+:root {
+  --hl-mix: 12%;
+}
+:root[data-scheme="dark"] {
+  --hl-mix: 22%;
+}
+/* D-L5, T-NEW-26: a white-sum candidate is a light, row-tinted fill (white mixed with the row colour,
+   dark ink in every scheme) with a white border (thin dark outer edge for light themes); a colour
+   (white + colour die) candidate keeps its tint with a bright border in the row colour. */
 .g-box.is-cw {
-  background: var(--row-pattern), color-mix(in srgb, var(--row-tint) 30%, white);
-  color: var(--row-ink);
+  background: var(--row-pattern), var(--row-white-hl);
+  color: var(--row-vivid-ink);
   box-shadow:
     0 0 0 3px white,
     0 0 0 4px rgb(0 0 0 / 0.5);
@@ -507,6 +518,64 @@
 }
 .g-log li {
   overflow-wrap: anywhere;
+}
+/* T-NEW-26: a line is avatar + name + the move as a graphic (the full sentence is sr-only). */
+.g-log .lg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  min-width: 0;
+}
+.lg .av,
+.lg-lock,
+.lg-sym {
+  flex: none;
+}
+.lg-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--fw-bold);
+}
+.k-turn .lg-name,
+.k-lock .lg-name,
+.k-over .lg-name {
+  font-weight: var(--fw-regular);
+}
+.lg-sym {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+}
+.lg-lock {
+  display: inline-grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--row-vivid);
+  color: var(--row-vivid-ink);
+  animation: ts-pop 260ms var(--ease-out) both;
+}
+.lg-box {
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  font-size: 15px;
+}
+.lg-box::after {
+  font-size: 24px;
+}
+.lg-pen {
+  flex: none;
+  font-size: 13px;
+}
+.lg-pass {
+  flex: none;
+  font-style: italic;
+  color: var(--ink-muted);
 }
 .g-untyped {
   visibility: hidden;
@@ -1150,12 +1219,14 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ts-card,
+  .lg-lock,
   .ts-box,
   .ts-penalty {
     animation: none;
   }
 }
 :root[data-motion="reduced"] .ts-card,
+:root[data-motion="reduced"] .lg-lock,
 :root[data-motion="reduced"] .ts-box,
 :root[data-motion="reduced"] .ts-penalty {
   animation: none;
