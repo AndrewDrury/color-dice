@@ -5,6 +5,7 @@ import {
   CLOSE,
   ClientMessageSchema,
   CODE_ALPHABET,
+  CpuCountSchema,
   CreateGameReqSchema,
   cleanName,
   ERROR_CODES,
@@ -35,6 +36,27 @@ const createOk = {
 };
 
 describe("HTTP request schemas", () => {
+  it("accepts 0-3 CPUs but bounds the combined player count", () => {
+    for (let cpuCount = 0; cpuCount <= 3; cpuCount++) {
+      expect(CpuCountSchema.safeParse(cpuCount).success).toBe(true);
+      expect(
+        CreateGameReqSchema.safeParse({
+          ...createOk,
+          maxPlayers: 4,
+          cpuCount,
+        }).success,
+      ).toBe(true);
+    }
+    expect(CpuCountSchema.safeParse(-1).success).toBe(false);
+    expect(CpuCountSchema.safeParse(4).success).toBe(false);
+    expect(
+      CreateGameReqSchema.safeParse({
+        ...createOk,
+        maxPlayers: 2,
+        cpuCount: 2,
+      }).success,
+    ).toBe(false);
+  });
   it("accepts valid bodies and returns cleaned names", () => {
     const r = CreateGameReqSchema.parse({
       ...createOk,

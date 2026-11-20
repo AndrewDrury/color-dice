@@ -28,10 +28,46 @@ export async function startLobbyGame(
   seats: SeatRecord[],
   diceOverride?: number[],
 ): Promise<OpResult<Started>> {
-  if (seats.length < MIN_PLAYERS || seats.length > meta.maxPlayers) {
+  const humanSeats = [...seats].filter((s) => s.kind !== "cpu");
+  const existingCpuSeats = [...seats].filter((s) => s.kind === "cpu");
+  const cpuCount = meta.cpuCount ?? 0;
+  const neededCpu = cpuCount - existingCpuSeats.length;
+  const added: SeatRecord[] = [];
+  if (neededCpu > 0) {
+    const usedIds = new Set(seats.map((s) => s.seatId));
+    const nextOrder = Math.max(0, ...seats.map((s) => s.joinOrder));
+    for (let i = 0; i < neededCpu; i++) {
+      let n = i + 1;
+      let name = `CPU ${n}`;
+      while (seats.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+        n++;
+        name = `CPU ${n}`;
+      }
+      let seatId = `cpu${(nextOrder + i + 1).toString(36).padStart(5, "0")}`;
+      while (usedIds.has(seatId)) seatId += "x";
+      seatId = seatId.slice(0, 8).padEnd(8, "0");
+      usedIds.add(seatId);
+      added.push({
+        seatId,
+        name,
+        joinOrder: nextOrder + i + 1,
+        host: false,
+        seatIndex: null,
+        tokenHash: "",
+        away: false,
+        left: false,
+        lastSeenAt: Date.now(),
+        kind: "cpu",
+        policy: "balanced",
+      });
+    }
+  }
+  const ordered = [...humanSeats, ...existingCpuSeats, ...added].sort(
+    (x, y) => x.joinOrder - y.joinOrder,
+  );
+  if (ordered.length < MIN_PLAYERS || ordered.length > meta.maxPlayers) {
     return fail(422, "E_PLAYER_COUNT");
   }
-  const ordered = [...seats].sort((x, y) => x.joinOrder - y.joinOrder);
   ordered.forEach((s, i) => {
     s.seatIndex = i;
   });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  CpuCountSchema,
   GameCodeSchema,
   MaxPlayersSchema,
   PasswordSchema,
@@ -29,9 +30,21 @@ export const CreateGameReqSchema = z
     maxPlayers: MaxPlayersSchema,
     listed: z.boolean(),
     profile: ProfileSchema.optional(),
+    cpuCount: CpuCountSchema.optional().default(0),
   })
-  .strict();
+  .strict()
+  .refine((b) => 1 + b.cpuCount <= b.maxPlayers, {
+    message: "CPU count would exceed maxPlayers",
+  });
 export type CreateGameReq = z.input<typeof CreateGameReqSchema>;
+
+export const AddCpuReqSchema = z.object({ count: CpuCountSchema.optional().default(1) }).strict();
+export type AddCpuReq = z.input<typeof AddCpuReqSchema>;
+
+export const RemoveCpuReqSchema = z
+  .object({ count: CpuCountSchema.optional().default(1) })
+  .strict();
+export type RemoveCpuReq = z.input<typeof RemoveCpuReqSchema>;
 
 /** Exactly one of `password` or `invite` (K2.1); both or neither → 400. */
 function credentialBody() {

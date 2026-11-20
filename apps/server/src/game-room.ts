@@ -7,6 +7,7 @@ import {
   type InviteRes,
   type MaxPlayers,
   type MeRes,
+  MIN_PLAYERS,
   type Profile,
   TokenSchema,
 } from "@cd/protocol";
@@ -43,7 +44,7 @@ import {
   seatIdOf,
 } from "./room-lobby-ops";
 import { endSocket, RoomPlay } from "./room-play-ops";
-import { isRoomFull, startLobbyGame } from "./room-start";
+import { startLobbyGame } from "./room-start";
 import { type RoomMeta, RoomStore, type SeatRecord } from "./room-store";
 import { applyTestHook, CLOCK_KEY, hooksEnabled, type TestHookInput } from "./test-hooks";
 import { broadcastViews } from "./views";
@@ -56,6 +57,7 @@ export interface InitInput {
   maxPlayers: MaxPlayers;
   listed: boolean;
   profile?: Profile;
+  cpuCount?: number;
 }
 
 export interface PatchInput {
@@ -155,6 +157,15 @@ export class GameRoom extends DurableObject<Env> {
   init(input: InitInput): Promise<OpResult<CreateGameRes>> {
     return this.serial(async () => {
       if (await this.store.getMeta()) return fail(409, "E_INVALID_COMMAND", "code taken");
+      const cpuCount = input.cpuCount ?? 0;
+      if (
+        !Number.isInteger(cpuCount) ||
+        cpuCount < 0 ||
+        cpuCount > 3 ||
+        1 + cpuCount > input.maxPlayers
+      ) {
+        return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
+      }
       const now = this.now();
       const pwd = await hashPassword(input.password, iterationsFromEnv(this.env));
       const meta: RoomMeta = {
@@ -162,6 +173,7 @@ export class GameRoom extends DurableObject<Env> {
         roomName: input.roomName,
         listed: input.listed,
         maxPlayers: input.maxPlayers,
+        cpuCount: input.cpuCount ?? 0,
         status: "lobby",
         pwd,
         inviteKey: newInviteKey(),
@@ -191,13 +203,17 @@ export class GameRoom extends DurableObject<Env> {
       const order = Math.max(0, ...seats.map((s) => s.joinOrder)) + 1;
       const seat = await newSeat(name, order, false, token, this.now(), profile);
       const all = [...seats, seat];
+      const withCpu = all.length + (meta.cpuCount ?? 0);
       // T-UX-17: the seat that fills the room starts the game, same path as the host's Start.
-      const started = isRoomFull(meta, all)
-        ? await startLobbyGame(this.env, this.ctx.storage, meta, all)
-        : null;
+      const started =
+        withCpu >= meta.maxPlayers && withCpu >= MIN_PLAYERS
+          ? await startLobbyGame(this.env, this.ctx.storage, meta, all)
+          : null;
       if (started?.ok)
         await this.commit(meta, started.value.seats, started.value.state ?? undefined);
       else await this.commit(meta, all);
+      if (started?.ok && started.value.state === null)
+        await this.play.resave(meta, started.value.seats);
       return ok({ code: meta.code, token, seatId: seat.seatId });
     });
   }
@@ -211,7 +227,8 @@ export class GameRoom extends DurableObject<Env> {
       const seat = findByName(seats, name);
       const sockets = this.ctx.getWebSockets();
       // A seat that left the game (K2.2) is gone for good: same answer as no such seat.
-      if (!seat || seat.left || isOnline(sockets, seat.seatId)) return fail(409, "E_SEAT_ONLINE");
+      if (!seat || seat.left || seat.kind === "cpu" || isOnline(sockets, seat.seatId))
+        return fail(409, "E_SEAT_ONLINE");
       const token = newToken();
       seat.tokenHash = await hashToken(token);
       seat.lastSeenAt = this.now();
@@ -289,6 +306,40 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
 
+  addCpu(token: string, count = 1): Promise<OpResult<null>> {
+    return this.serial(async () => {
+      const a = await this.host(token);
+      if (!a.ok) return a;
+      const { meta, seats } = a.value;
+      if (meta.status !== "lobby") return NOT_IN_LOBBY;
+      if (!Number.isInteger(count) || count < 0 || count > 3) {
+        return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
+      }
+      const next = (meta.cpuCount ?? 0) + count;
+      if (next > 3 || seats.length + next > meta.maxPlayers) {
+        return fail(409, "E_ROOM_FULL");
+      }
+      meta.cpuCount = next;
+      await this.commit(meta, seats);
+      return ok(null);
+    });
+  }
+
+  removeCpu(token: string, count = 1): Promise<OpResult<null>> {
+    return this.serial(async () => {
+      const a = await this.host(token);
+      if (!a.ok) return a;
+      const { meta, seats } = a.value;
+      if (meta.status !== "lobby") return NOT_IN_LOBBY;
+      if (!Number.isInteger(count) || count < 0 || count > 3) {
+        return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
+      }
+      meta.cpuCount = Math.max(0, (meta.cpuCount ?? 0) - count);
+      await this.commit(meta, seats);
+      return ok(null);
+    });
+  }
+
   patch(token: string, input: PatchInput): Promise<OpResult<null>> {
     return this.serial(async () => {
       const a = await this.host(token);
@@ -319,6 +370,7 @@ export class GameRoom extends DurableObject<Env> {
       const res = await startLobbyGame(this.env, this.ctx.storage, meta, seats, diceOverride);
       if (!res.ok) return res;
       await this.commit(meta, res.value.seats, res.value.state ?? undefined);
+      if (res.value.state === null) await this.play.resave(meta, res.value.seats);
       return ok(null);
     });
   }

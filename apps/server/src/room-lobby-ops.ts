@@ -116,12 +116,14 @@ export function abandonedAt(meta: RoomMeta, seats: SeatRecord[]): number {
 
 /** Explicit allow-list (C2): null when the room must not be listed. No player names (K2.3). */
 export function publicEntry(meta: RoomMeta, seats: SeatRecord[]): PublicGame | null {
-  if (!meta.listed || meta.status !== "lobby" || seats.length >= meta.maxPlayers) return null;
-  if (seats.length === 0) return null;
+  const cpuCount = meta.cpuCount ?? 0;
+  const players = seats.length + (meta.status === "lobby" ? cpuCount : 0);
+  if (!meta.listed || meta.status !== "lobby" || players >= meta.maxPlayers) return null;
+  if (players === 0) return null;
   return {
     code: meta.code,
     roomName: meta.roomName,
-    players: seats.length,
+    players,
     maxPlayers: meta.maxPlayers,
     createdAt: meta.createdAt,
   };

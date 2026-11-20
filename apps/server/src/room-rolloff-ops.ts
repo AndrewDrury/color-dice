@@ -78,7 +78,7 @@ export class RollOffOps {
     ro: RollOffState,
     dice: { dice: DiceSource; save(): Promise<void> },
   ): Promise<void> {
-    const left = seats.filter((s) => s.left && s.seatIndex !== null);
+    const left = seats.filter((s) => s.seatIndex !== null && (s.left || s.kind === "cpu"));
     for (;;) {
       for (const s of left) {
         if (ro.current[s.seatIndex as number] === null) {

@@ -11,6 +11,8 @@ export interface RoomMeta {
   roomName: string;
   listed: boolean;
   maxPlayers: MaxPlayers;
+  /** CPU seats requested for the lobby. Legacy rooms omit this and default to zero. */
+  cpuCount?: number;
   status: RoomStatus;
   /** PBKDF2-SHA256; never returned or logged. */
   pwd: StoredPassword;
@@ -47,6 +49,10 @@ export interface SeatRecord {
   record?: { wins: number; ties: number; losses: number };
   /** Public cosmetic profile (T-NEW-13). Absent on older seats: the view fills a default. */
   profile?: Profile;
+  /** Missing kind is human (legacy rooms). CPU seats have no credentials or socket. */
+  kind?: "human" | "cpu";
+  /** The only supported CPU policy. */
+  policy?: "balanced";
 }
 
 /** Storage key `"chat"`: persisted id counter + ring buffer of text messages. */

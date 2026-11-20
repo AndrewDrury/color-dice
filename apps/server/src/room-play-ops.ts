@@ -4,6 +4,8 @@
  * reading and writing state only storage calls are awaited.
  */
 import {
+  type Action1Decision,
+  type Action2Decision,
   type Command,
   createGame,
   type DiceSource,
@@ -11,6 +13,7 @@ import {
   fromJSON,
   type GameState,
   toJSON,
+  viewFor,
   winners,
 } from "@cd/engine";
 import {
@@ -154,6 +157,7 @@ function leftSeats(seats: SeatRecord[]): Set<number> {
 export function tallyRecord(seats: SeatRecord[], winners: readonly string[]): void {
   const won = new Set(winners);
   for (const s of seats) {
+    if (s.kind === "cpu") continue;
     if (s.seatIndex === null) continue;
     // Normalise on read: a legacy `{wins, losses}` record has no `ties`.
     const r = {
@@ -183,6 +187,56 @@ export interface PlayDeps {
 }
 
 type Loaded = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
+
+function cpuAction1(state: GameState, seatIndex: number): Action1Decision {
+  const view = viewFor(state, seatIndex);
+  const choices = view.you.legalAction1;
+  const marks = choices.filter((x): x is Extract<typeof x, { kind: "MARK" }> => x.kind === "MARK");
+  if (marks.length === 0) return { kind: "PASS" };
+  const player = view.game.players.find((p) => p.seat === seatIndex);
+  marks.sort((a, b) => {
+    const ar = player?.sheet?.rows[a.color];
+    const br = player?.sheet?.rows[b.color];
+    const aLocked = ar ? ar.lockCrossed : false;
+    const bLocked = br ? br.lockCrossed : false;
+    if (aLocked !== bLocked) return aLocked ? 1 : -1;
+    const aMarks = ar?.marked.filter(Boolean).length ?? 0;
+    const bMarks = br?.marked.filter(Boolean).length ?? 0;
+    if (aMarks !== bMarks) return bMarks - aMarks;
+    const aScore = player?.score.rows?.[a.color] ?? 0;
+    const bScore = player?.score.rows?.[b.color] ?? 0;
+    return bScore - aScore;
+  });
+  return marks[0] ?? { kind: "PASS" };
+}
+
+function cpuAction2(state: GameState, seatIndex: number): Action2Decision {
+  const view = viewFor(state, seatIndex);
+  const choices = view.you.legalAction2;
+  const marks = choices.filter((x): x is Extract<typeof x, { kind: "MARK" }> => x.kind === "MARK");
+  if (marks.length === 0) return { kind: "PASS" };
+  const player = view.game.players.find((p) => p.seat === seatIndex);
+  const whiteSum = view.game.roll?.whiteSum;
+  const ranked = [...marks].sort((a, b) => {
+    const terminal = (color: typeof a.color, number: number) =>
+      color === "RED" || color === "YELLOW" ? number === 12 : number === 2;
+    const al = player?.sheet?.rows[a.color];
+    const bl = player?.sheet?.rows[b.color];
+    const aLock = terminal(a.color, a.number) && (al?.marked.filter(Boolean).length ?? 0) >= 5;
+    const bLock = terminal(b.color, b.number) && (bl?.marked.filter(Boolean).length ?? 0) >= 5;
+    if (aLock !== bLock) return aLock ? -1 : 1;
+    const aWhite = a.number === whiteSum;
+    const bWhite = b.number === whiteSum;
+    if (aWhite !== bWhite) return aWhite ? -1 : 1;
+    const aScore = player?.score.rows?.[a.color] ?? 0;
+    const bScore = player?.score.rows?.[b.color] ?? 0;
+    return bScore - aScore;
+  });
+  const chosen = ranked[0];
+  return chosen
+    ? { kind: "MARK", whiteDie: chosen.whiteDie, color: chosen.color }
+    : { kind: "PASS" };
+}
 
 export class RoomPlay {
   private readonly chat: RoomChat;
@@ -345,6 +399,7 @@ export class RoomPlay {
     seats: SeatRecord[],
     state: GameState,
     dice: { dice: DiceSource; save(): Promise<void> },
+    cpuSteps = 0,
   ): Promise<void> {
     // T-NEW-3: while the game is paused nothing advances, not even auto-pass for left seats.
     const paused = pausedSeatIds(seats, this.d.sockets(), state).length > 0;
@@ -362,6 +417,36 @@ export class RoomPlay {
     }
     await dice.save();
     await this.d.commit(meta, seats, toJSON(next));
+    if (cpuSteps < 20) await this.runCpuTurn(meta, seats, next, dice, cpuSteps + 1);
+  }
+
+  private async runCpuTurn(
+    meta: RoomMeta,
+    seats: SeatRecord[],
+    state: GameState,
+    dice: { dice: DiceSource; save(): Promise<void> },
+    cpuSteps: number,
+  ): Promise<void> {
+    if (state.phase === "GAME_OVER") return;
+    if (pausedSeatIds(seats, this.d.sockets(), state).length > 0) return;
+    const active = state.turn?.activeSeat;
+    if (active === undefined) return;
+    const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
+    if (!cpu) return;
+    let command: Command;
+    if (state.phase === "AWAIT_ROLL") {
+      command = { type: "ROLL", playerId: playerId(active) };
+    } else if (state.phase === "ACTION_1") {
+      const decision = cpuAction1(state, active);
+      command = { type: "ACTION1", playerId: playerId(active), decision };
+    } else if (state.phase === "ACTION_2") {
+      const decision = cpuAction2(state, active);
+      command = { type: "ACTION2", playerId: playerId(active), decision };
+    } else {
+      return;
+    }
+    const result = dispatch(state, command, dice.dice);
+    if (result.ok) await this.save(meta, seats, result.state, dice, cpuSteps);
   }
 
   private async rollOffRoll(ws: WebSocket, seatId: string, round: number): Promise<void> {
