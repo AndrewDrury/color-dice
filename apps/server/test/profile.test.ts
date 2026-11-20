@@ -79,4 +79,28 @@ describe("profile", () => {
     expect(text).not.toContain("cat-gif");
     expect(text).not.toContain("profile");
   });
+
+  it("reclaim applies a profile only in the lobby", async () => {
+    const cr = await api("POST", "/api/games", { body: body({ maxPlayers: 2 }) });
+    const host = (await cr.json()) as AuthRes;
+    const mine = { color: "pink", cat: "cat-gif" };
+    const lobby = await api("POST", `/api/games/${host.code}/reclaim`, {
+      body: { name: "Ann", password: PASSWORD, profile: mine },
+    });
+    expect(lobby.status).toBe(200);
+    const t1 = ((await lobby.json()) as AuthRes).token;
+    const c = await connect(host.code, t1);
+    expect(c.view().seats[0]?.profile).toEqual(mine);
+    c.close();
+    await api("POST", `/api/games/${host.code}/join`, { body: { name: "Bo", password: PASSWORD } });
+    const c2 = await connect(host.code, t1);
+    await c2.until(() => c2.view().game !== null || c2.view().rollOff !== null);
+    c2.close();
+    const late = await api("POST", `/api/games/${host.code}/reclaim`, {
+      body: { name: "Ann", password: PASSWORD, profile: { color: "teal", cat: "mad-cat" } },
+    });
+    expect(late.status).toBe(200);
+    const c3 = await connect(host.code, ((await late.json()) as AuthRes).token);
+    expect(c3.view().seats[0]?.profile).toEqual(mine);
+  });
 });

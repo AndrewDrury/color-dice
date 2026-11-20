@@ -215,7 +215,7 @@ export class GameRoom extends DurableObject<Env> {
       const token = newToken();
       seat.tokenHash = await hashToken(token);
       seat.lastSeenAt = this.now();
-      if (profile) seat.profile = profile;
+      if (profile && meta.status === "lobby") seat.profile = profile;
       this.closeSeat(seat.seatId, CLOSE.SESSION_ENDED, "sessionEnded");
       await this.commit(meta, seats);
       return ok({ code: meta.code, token, seatId: seat.seatId });

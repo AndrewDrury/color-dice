@@ -44,6 +44,18 @@ describe("early Action 2 (A-2)", () => {
     expect(s.turn?.turnNumber).toBe(1);
   });
 
+  it("undoing the early A2 emits no public event and leaves no trace in other views", () => {
+    let s = rolled(FACES);
+    s = ok(submitAction1(s, "p1", mark1("RED"))).state;
+    s = ok(submitAction2(s, "p1", mark2(0, "GREEN"))).state;
+    const before = JSON.stringify(viewFor(s, 1));
+    const r = ok(dispatch(s, { type: "UNDO", playerId: "p1" }, new ScriptedDice([])));
+    expect(r.events).toEqual([]);
+    expect(r.state.turn?.pendingAction2).toBeNull();
+    expect(JSON.stringify(viewFor(r.state, 1))).not.toContain("UNDO");
+    expect(JSON.stringify(viewFor(r.state, 1))).toBe(before);
+  });
+
   it("last passive deciding applies A1, the pending A2 and starts the next turn in one transition", () => {
     let s = rolled(FACES);
     s = ok(submitAction1(s, "p1", mark1("RED"))).state;

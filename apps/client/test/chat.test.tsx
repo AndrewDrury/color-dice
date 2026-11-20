@@ -253,11 +253,29 @@ describe("parseChatFrame", () => {
         JSON.stringify({ type: "chat", id: 1, seatId: "a", kind: "reaction", emoji: "x", at: 1 }),
       ),
     ).toBeNull();
-    expect(parseChatFrame(JSON.stringify({ type: "chatHistory", messages: [1] }))).toBeNull();
+    expect(parseChatFrame(JSON.stringify({ type: "chatHistory", messages: "x" }))).toBeNull();
     expect(
       parseChatFrame(JSON.stringify({ type: "error", code: "E_RATE_LIMITED", command: "react" }))
         ?.type,
     ).toBe("error");
     expect(parseChatFrame("nope")).toBeNull();
+  });
+
+  it("counts code points: 200 emoji pass (400 UTF-16 units), 201 fail", () => {
+    const f = (text: string) =>
+      parseChatFrame(
+        JSON.stringify({ type: "chat", id: 1, seatId: "a", kind: "text", text, at: 1 }),
+      );
+    expect(f("😀".repeat(200))?.type).toBe("chat");
+    expect(f("😀".repeat(201))).toBeNull();
+  });
+
+  it("chatHistory drops only the invalid entry", () => {
+    const good = (id: number) => ({ id, seatId: "a", kind: "text", text: "hi", at: 1 });
+    const m = parseChatFrame(
+      JSON.stringify({ type: "chatHistory", messages: [good(1), { bad: true }, good(3)] }),
+    );
+    expect(m?.type).toBe("chatHistory");
+    expect(m?.type === "chatHistory" && m.messages.map((e) => e.id)).toEqual([1, 3]);
   });
 });

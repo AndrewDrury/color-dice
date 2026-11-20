@@ -214,7 +214,7 @@ export function undo(state: GameState, playerId: PlayerId): Result {
   if (d.state.phase === "ACTION_1") {
     if (player.seat === turn.activeSeat && t.pendingAction2) {
       t.pendingAction2 = null;
-      emit(d, { type: "UNDO", playerId, kind: "ACTION2" });
+      // No public event: it would reveal that a silent early Action 2 was committed.
       return done(d);
     }
     if (Object.hasOwn(t.action1Decisions, playerId)) {

@@ -1,4 +1,6 @@
 /** T-NEW-2: the interactive opening roll-off (server-authoritative; D-L1 per-seat reveal). */
+import { runInDurableObject } from "cloudflare:test";
+import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { type Conn, connectAll, createRoom, queueDice, startGame } from "./helpers/client";
 
@@ -79,5 +81,25 @@ describe("interactive roll-off", () => {
         [5, 0, 3],
       ],
     });
+  });
+
+  it("an invalid roll-off result reopens the round instead of wedging the room", async () => {
+    const room = await createRoom(3);
+    await startGame(room);
+    const conns = await connectAll(room);
+    const [c0, c1, c2] = conns as [Conn, Conn, Conn];
+    // Corrupt history: round 1 was not a tie, so a unique leader in round 2 is not a valid roll-off.
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(room.code));
+    await runInDurableObject(stub, (_r, s) =>
+      s.storage.put("rollOff", { round: 2, current: [6, null, null], completed: [[1, 2, 3]] }),
+    );
+    await queueDice(room.code, [1, 2]);
+    c1.send({ type: "rollOff", round: 2 });
+    c2.send({ type: "rollOff", round: 2 });
+    await c0.until(
+      () => c0.view().rollOff?.round === 2 && c0.view().rollOff?.rolled.every((r) => !r),
+    );
+    expect(c0.view().game).toBeNull();
+    expect(c0.view().rollOff?.completed).toEqual([]);
   });
 });

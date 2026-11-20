@@ -76,6 +76,13 @@ export class RollOffOps {
     return true;
   }
 
+  /** A failed roll-off must not wedge the room: reopen the current round for every seat. */
+  private resetRound(ro: RollOffState, reason: string): void {
+    console.error(`roll-off reset: ${reason}`);
+    ro.completed = [];
+    ro.current = ro.current.map(() => null);
+  }
+
   private async settle(
     meta: RoomMeta,
     seats: SeatRecord[],
@@ -97,12 +104,18 @@ export class RollOffOps {
         const ordered = seats
           .filter((s): s is SeatRecord & { seatIndex: number } => s.seatIndex !== null)
           .sort((a, b) => a.seatIndex - b.seatIndex);
-        if (!isValidRollOff(rounds, ordered.length)) break;
+        if (!isValidRollOff(rounds, ordered.length)) {
+          this.resetRound(ro, "invalid roll-off");
+          break;
+        }
         const res = createGame(
           ordered.map((s) => ({ id: playerId(s.seatIndex), displayName: s.name })),
           { dice: dice.dice, rollOffRounds: rounds as never },
         );
-        if (!res.ok) break;
+        if (!res.ok) {
+          this.resetRound(ro, `createGame failed: ${res.error.code}`);
+          break;
+        }
         await this.d.storage.delete(ROLL_OFF_KEY);
         await this.d.finish(meta, seats, res.state, dice);
         return;
@@ -111,7 +124,10 @@ export class RollOffOps {
       ro.round += 1;
       // Only the seats tied for the highest face roll again; the rest are out (0).
       ro.current = round.map((_, seat) => (leaders.includes(seat) ? null : 0));
-      if (ro.round > MAX_ROLL_OFF_ROUNDS) break;
+      if (ro.round > MAX_ROLL_OFF_ROUNDS) {
+        this.resetRound(ro, "round cap reached");
+        break;
+      }
     }
     await this.d.storage.put(ROLL_OFF_KEY, ro);
     await dice.save();
