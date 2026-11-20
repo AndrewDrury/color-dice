@@ -11,6 +11,8 @@ import "../styles/profile.css";
 export interface ProfileFieldProps {
   value: Profile;
   onChange: (p: Profile) => void;
+  /** Colours held by other seats (T-NEW-32). */
+  taken?: readonly string[];
 }
 
 /** Preview size: within the 80–96 px desktop target and ≥ 72 px at 360 px. */
@@ -33,7 +35,9 @@ export function ProfileField(
         <Avatar profile={props.value} size={PREVIEW_SIZE} class="pf-av" />
         {props.children ? <div class="pf-name">{props.children}</div> : null}
       </div>
-      {Picker ? <Picker value={props.value} onChange={props.onChange} /> : null}
+      {Picker ? (
+        <Picker value={props.value} onChange={props.onChange} taken={props.taken ?? []} />
+      ) : null}
     </div>
   );
 }

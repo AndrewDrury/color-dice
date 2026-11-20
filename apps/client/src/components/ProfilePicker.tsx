@@ -18,9 +18,12 @@ const catName = (c: ProfileCat) => catCaption(c as Reaction).replace("-", " ");
 export function ProfilePicker({
   value,
   onChange,
+  taken = [],
 }: {
   value: Profile;
   onChange: (p: Profile) => void;
+  /** Colours held by other seats (T-NEW-32): shown locked and not selectable. */
+  taken?: readonly string[];
 }) {
   useT();
   const names = t("profile.colors").split(",");
@@ -29,15 +32,22 @@ export function ProfilePicker({
       <fieldset class="pp-colors">
         <legend class="pp-legend">{t("profile.chooseColor")}</legend>
         {PROFILE_COLORS.map((color, i) => (
-          <label key={color} class={`pp-swatch pc-${color}`}>
+          <label
+            key={color}
+            class={`pp-swatch pc-${color}${taken.includes(color) ? " pp-taken" : ""}`}
+          >
             <input
               type="radio"
               name="profile-color"
               class="pp-input"
               checked={color === value.color}
+              disabled={taken.includes(color)}
               onChange={() => onChange({ ...value, color })}
             />
-            <span class="sr-only">{names[i] ?? color}</span>
+            <span class="sr-only">
+              {names[i] ?? color}
+              {taken.includes(color) ? ` ${t("profile.taken")}` : ""}
+            </span>
           </label>
         ))}
       </fieldset>

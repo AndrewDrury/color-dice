@@ -50,6 +50,7 @@ export const waiting = {
   "profile.title": "Your look",
   "profile.colors": "Coral,Amber,Lime,Teal,Sky,Indigo,Violet,Pink,Slate,Brown",
   "profile.chooseColor": "Choose colour",
+  "profile.taken": "(taken)",
   "profile.chooseAvatar": "Choose avatar",
   "profile.chooseTheme": "Choose theme",
 } as const;

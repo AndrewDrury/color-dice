@@ -10,6 +10,7 @@ import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
+import { useTakenColors } from "../takenColors";
 
 /** After a wrong password the Join button stays disabled this long. */
 export const WRONG_PASSWORD_LOCK_MS = 2000;
@@ -34,6 +35,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [profile, setProfile] = useState(rememberedProfile);
+  const { taken, onError } = useTakenColors(code, setProfile);
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
   const [roomName, setRoomName] = useState<string | null>(null);
@@ -100,6 +102,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
       navigate("waiting", res.code);
     } catch (err) {
       if (!alive.current) return;
+      onError(err);
       setFormError(requestErrorText(err));
       if (err instanceof ApiError && err.status === 401) lockFor(WRONG_PASSWORD_LOCK_MS);
     } finally {
@@ -118,7 +121,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         </p>
       ) : null}
       <form class="stack" onSubmit={submit} noValidate>
-        <ProfileField value={profile} onChange={setProfile}>
+        <ProfileField value={profile} onChange={setProfile} taken={taken}>
           <Field
             label={t("field.yourName")}
             name="name"

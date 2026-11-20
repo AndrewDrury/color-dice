@@ -49,6 +49,22 @@
   background: var(--pc);
   box-shadow: inset 0 0 0 3px var(--paper);
 }
+.pp-taken {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.pp-taken::after {
+  content: "\2715";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-bold);
+  color: var(--paper);
+  text-shadow: 0 0 2px var(--ink);
+  pointer-events: none;
+}
 .pp-swatch:has(input:checked) {
   outline: 3px solid var(--ink);
   outline-offset: -1px;

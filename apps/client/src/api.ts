@@ -17,6 +17,8 @@ import {
   type PublicGame,
   PublicGameSchema,
   type ReclaimReq,
+  type TakenColorsRes,
+  TakenColorsResSchema,
 } from "@cd/protocol";
 import { SERVER_URL } from "./config";
 
@@ -130,6 +132,11 @@ export async function createGame(body: CreateGameReq): Promise<CreateGameRes> {
 /** `POST /api/games/:code/join` */
 export async function joinGame(code: string, body: JoinReq): Promise<AuthRes> {
   return json(await request(gamePath(code, "/join"), { method: "POST", body }), AuthResSchema);
+}
+
+/** `GET /api/games/:code/colors`: colours already used in the lobby (no names). */
+export async function getTakenColors(code: string): Promise<TakenColorsRes> {
+  return json(await request(gamePath(code, "/colors")), TakenColorsResSchema);
 }
 
 /** `POST /api/games/:code/reclaim` */

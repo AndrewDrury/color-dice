@@ -53,6 +53,7 @@ export const waiting: Record<keyof typeof en, string> = {
   "profile.title": "Tu estilo",
   "profile.colors": "Coral,Ámbar,Lima,Turquesa,Cielo,Índigo,Violeta,Rosa,Pizarra,Marrón",
   "profile.chooseColor": "Elige el color",
+  "profile.taken": "(ocupado)",
   "profile.chooseAvatar": "Elige el avatar",
   "profile.chooseTheme": "Elige el tema",
 };

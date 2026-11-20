@@ -66,6 +66,7 @@ export const common: Record<keyof typeof en, string> = {
   "err.E_ROOM_FULL": "Cette partie est complète.",
   "err.E_NOT_IN_LOBBY": "Cette partie a déjà commencé.",
   "err.E_NAME_TAKEN": "Quelqu'un à la table porte déjà ce nom.",
+  "err.E_COLOUR_TAKEN": "Cette couleur vient d'être prise. Choisissez-en une autre.",
   "err.E_RATE_LIMITED": "Trop d'essais. Patiente un instant.",
   "err.E_NOT_AUTHED": "Ta session a expiré. Rejoins à nouveau la partie.",
   "err.E_SEAT_ONLINE": "Ce joueur est toujours en ligne.",

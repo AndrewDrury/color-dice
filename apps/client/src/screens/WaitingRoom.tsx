@@ -202,6 +202,9 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
           {mine?.profile ? (
             <ProfileField
               value={mine.profile}
+              taken={view.seats
+                .filter((s) => s !== mine && !s.left)
+                .map((s) => s.profile?.color ?? "")}
               onChange={(p) => {
                 send({ type: "profile", profile: p });
                 rememberProfile(p);

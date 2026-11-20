@@ -95,3 +95,46 @@ test("max-length names fit at 360 px and 1280 px", async ({ browser }) => {
     await closeAll([a, b]);
   }
 });
+
+// T-NEW-32: a colour held by another seat is locked in the picker, in the join dialog and live.
+test("the second player cannot pick the first player's colour", async ({ browser }) => {
+  test.setTimeout(90_000);
+  const a = await newPlayer(browser, "Ada");
+  const b = await newPlayer(browser, "Bert");
+  try {
+    await a.page.goto("/");
+    await a.page.getByRole("button", { name: "Create game" }).first().click();
+    await a.page.getByLabel("Room name").fill(`Uniq ${uid()}`);
+    await a.page.getByLabel("Your name").fill("Ada");
+    await a.page.getByLabel("Password", { exact: true }).fill("pw-uniq");
+    await a.page.locator('label:has(input[name="maxPlayers"][value="3"])').click();
+    await a.page.getByRole("radio", { name: "Teal", exact: true }).click();
+    await a.page.getByRole("button", { name: "Create game" }).last().click();
+    await expect(a.page.getByRole("button", { name: "Leave" })).toBeVisible();
+    const code = new URL(a.page.url()).searchParams.get("game") ?? "";
+
+    await b.page.goto("/");
+    await b.page.getByLabel("Have an invite code?").fill(code);
+    await b.page.getByRole("button", { name: "Join", exact: true }).first().click();
+    const dialog = b.page.getByRole("dialog");
+    const teal = dialog.getByRole("radio", { name: /^Teal/ });
+    await expect(teal).toBeDisabled();
+    await expect(teal).toHaveAccessibleName(/taken/);
+    await teal.click({ force: true });
+    await expect(teal).not.toBeChecked();
+    await dialog.getByLabel("Your name").fill("Bert");
+    await dialog.getByLabel("Password", { exact: true }).fill("pw-uniq");
+    await dialog.getByRole("radio", { name: "Pink", exact: true }).click();
+    await dialog.getByRole("button", { name: "Join", exact: true }).click();
+    await expect(b.page.getByRole("button", { name: "Leave" })).toBeVisible();
+
+    // Live in the waiting room: Ada sees Bert's colour locked, Bert sees Ada's.
+    await expect(a.page.getByRole("radio", { name: /^Pink/ })).toBeDisabled();
+    await expect(b.page.getByRole("radio", { name: /^Teal/ })).toBeDisabled();
+    await b.page.getByRole("radio", { name: "Violet", exact: true }).click();
+    await expect(a.page.getByRole("radio", { name: "Pink", exact: true })).toBeEnabled();
+    await expect(a.page.getByRole("radio", { name: /^Violet/ })).toBeDisabled();
+  } finally {
+    await closeAll([a, b]);
+  }
+});

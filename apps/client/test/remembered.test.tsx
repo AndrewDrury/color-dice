@@ -26,6 +26,7 @@ vi.mock("../src/api", async (orig) => {
     ApiError: actual.ApiError,
     getMe: vi.fn().mockResolvedValue({ status: "lobby" }),
     createGame: vi.fn(),
+    getTakenColors: vi.fn().mockResolvedValue({ taken: [] }),
     joinGame: vi.fn(),
     reclaimSeat: vi.fn(),
   };
