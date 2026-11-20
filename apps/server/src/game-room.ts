@@ -165,7 +165,7 @@ export class GameRoom extends DurableObject<Env> {
       if (
         !Number.isInteger(cpuCount) ||
         cpuCount < 0 ||
-        cpuCount > 3 ||
+        cpuCount > 4 ||
         1 + cpuCount > input.maxPlayers
       ) {
         return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
@@ -338,11 +338,11 @@ export class GameRoom extends DurableObject<Env> {
       if (!a.ok) return a;
       const { meta, seats } = a.value;
       if (meta.status !== "lobby") return NOT_IN_LOBBY;
-      if (!Number.isInteger(count) || count < 0 || count > 3) {
+      if (!Number.isInteger(count) || count < 0 || count > 4) {
         return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
       }
       const next = (meta.cpuCount ?? 0) + count;
-      if (next > 3 || seats.length + next > meta.maxPlayers) {
+      if (next > 4 || seats.length + next > meta.maxPlayers) {
         return fail(409, "E_ROOM_FULL");
       }
       meta.cpuCount = next;
@@ -357,7 +357,7 @@ export class GameRoom extends DurableObject<Env> {
       if (!a.ok) return a;
       const { meta, seats } = a.value;
       if (meta.status !== "lobby") return NOT_IN_LOBBY;
-      if (!Number.isInteger(count) || count < 0 || count > 3) {
+      if (!Number.isInteger(count) || count < 0 || count > 4) {
         return fail(422, "E_INVALID_COMMAND", "invalid CPU count");
       }
       meta.cpuCount = Math.max(0, (meta.cpuCount ?? 0) - count);

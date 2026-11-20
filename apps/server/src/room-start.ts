@@ -4,7 +4,13 @@
  * so a racing Start + join can start the game at most once (the loser sees "playing").
  */
 import { createGame, toJSON } from "@cd/engine";
-import { MIN_PLAYERS } from "@cd/protocol";
+import {
+  DEFAULT_PROFILE_CAT,
+  MIN_PLAYERS,
+  PROFILE_CATS,
+  PROFILE_COLORS,
+  type Profile,
+} from "@cd/protocol";
 import { fail, type OpResult, ok, playerId } from "./room-lobby-ops";
 import { ROLL_OFF_KEY, type RollOffState, type RoomMeta, type SeatRecord } from "./room-store";
 import { DICE_KEY, hooksEnabled, startDice } from "./test-hooks";
@@ -33,15 +39,16 @@ export async function startLobbyGame(
   const cpuCount = meta.cpuCount ?? 0;
   const neededCpu = cpuCount - existingCpuSeats.length;
   const added: SeatRecord[] = [];
+  const cpuNames = ["Mochi", "Pixel", "Biscuit", "Nova"];
   if (neededCpu > 0) {
     const usedIds = new Set(seats.map((s) => s.seatId));
     const nextOrder = Math.max(0, ...seats.map((s) => s.joinOrder));
     for (let i = 0; i < neededCpu; i++) {
       let n = i + 1;
-      let name = `CPU ${n}`;
+      let name = `${cpuNames[i % cpuNames.length] ?? "CPU"} CPU`;
       while (seats.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
         n++;
-        name = `CPU ${n}`;
+        name = `${cpuNames[n % cpuNames.length] ?? "CPU"} CPU`;
       }
       let seatId = `cpu${(nextOrder + i + 1).toString(36).padStart(5, "0")}`;
       while (usedIds.has(seatId)) seatId += "x";
@@ -59,6 +66,13 @@ export async function startLobbyGame(
         lastSeenAt: Date.now(),
         kind: "cpu",
         policy: "balanced",
+        profile: {
+          color: PROFILE_COLORS[(nextOrder + i + 2) % PROFILE_COLORS.length] ?? "slate",
+          cat:
+            i % 2 === 0
+              ? DEFAULT_PROFILE_CAT
+              : (PROFILE_CATS[(i + 2) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT),
+        } satisfies Profile,
       });
     }
   }

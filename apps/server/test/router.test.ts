@@ -58,6 +58,19 @@ describe("router", () => {
     expect(matchRoute("POST", "/api/games/ABCDE/invite/reset/x")).toBeNull();
   });
 
+  it("matches CPU add/remove lobby routes", () => {
+    expect(matchRoute("POST", "/api/games/ABCDE/cpu/add")).toEqual({
+      kind: "game",
+      code: "ABCDE",
+      action: "cpuAdd",
+    });
+    expect(matchRoute("POST", "/api/games/ABCDE/cpu/remove")).toEqual({
+      kind: "game",
+      code: "ABCDE",
+      action: "cpuRemove",
+    });
+  });
+
   it("normalizes codes", () => {
     expect(normalizeCode("x2y3z")).toBe("X2Y3Z");
     expect(normalizeCode("ABCD0")).toBeNull();

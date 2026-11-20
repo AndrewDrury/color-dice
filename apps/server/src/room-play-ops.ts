@@ -468,6 +468,8 @@ export class RoomPlay {
       }
       await dice.save();
       await this.d.commit(meta, seats, toJSON(next));
+      const paceMs = this.d.env().ALLOW_TEST_HOOKS === "1" ? 0 : 650;
+      if (paceMs > 0) await new Promise((resolve) => setTimeout(resolve, paceMs));
     }
   }
 

@@ -221,7 +221,7 @@ describe("join rules", () => {
 
 describe("host-only actions", () => {
   it("creates bounded CPU seats with no credentials and adds/removes in lobby", async () => {
-    const host = await create({ maxPlayers: 5, cpuCount: 3 });
+    const host = await create({ maxPlayers: 5, cpuCount: 4 });
     await runInDurableObject(
       roomStub(host.code),
       async (room: GameRoom, state: DurableObjectState) => {
@@ -229,8 +229,8 @@ describe("host-only actions", () => {
         expect(await room.removeCpu(host.token, 1)).toMatchObject({ ok: true });
         await room.start(host.token);
         const seats = (await state.storage.get<SeatRecord[]>("seats")) as SeatRecord[];
-        expect(seats).toHaveLength(3);
-        expect(seats.filter((s) => s.kind === "cpu")).toHaveLength(2);
+        expect(seats).toHaveLength(4);
+        expect(seats.filter((s) => s.kind === "cpu")).toHaveLength(3);
         for (const cpu of seats.filter((s) => s.kind === "cpu")) {
           expect(cpu.tokenHash).toBe("");
           expect(cpu.away).toBe(false);

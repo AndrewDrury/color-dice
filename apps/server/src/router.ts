@@ -1,4 +1,5 @@
 import {
+  AddCpuReqSchema,
   CODE_ALPHABET,
   CODE_LENGTH,
   CreateGameReqSchema,
@@ -6,6 +7,7 @@ import {
   KickReqSchema,
   PatchRoomReqSchema,
   ReclaimReqSchema,
+  RemoveCpuReqSchema,
 } from "@cd/protocol";
 import { newGameCode } from "./codes";
 import type { Env } from "./env";
@@ -38,6 +40,8 @@ export type Route =
         | "update"
         | "invite"
         | "inviteReset"
+        | "cpuAdd"
+        | "cpuRemove"
         | "colors";
     };
 
@@ -63,6 +67,8 @@ const GAME_ACTIONS: Record<
   start: { method: "POST", action: "start" },
   leave: { method: "POST", action: "leave" },
   kick: { method: "POST", action: "kick" },
+  "cpu/add": { method: "POST", action: "cpuAdd" },
+  "cpu/remove": { method: "POST", action: "cpuRemove" },
   invite: { method: "GET", action: "invite" },
   colors: { method: "GET", action: "colors" },
   "invite/reset": { method: "POST", action: "inviteReset" },
@@ -73,8 +79,13 @@ export function matchRoute(method: string, pathname: string): Route | null {
   const parts = pathname.split("/").filter((p) => p !== "");
   const [a, b, c, d, e, ...rest] = parts;
   if (rest.length > 0) return null;
-  // Only `/api/games/:code/invite/reset` has five segments.
-  if (e !== undefined && (d !== "invite" || e !== "reset")) return null;
+  // Only nested game actions have five segments.
+  if (
+    e !== undefined &&
+    !((d === "invite" && e === "reset") || (d === "cpu" && (e === "add" || e === "remove")))
+  ) {
+    return null;
+  }
 
   if (a === "health" && parts.length === 1) return method === "GET" ? { kind: "health" } : null;
 
@@ -169,6 +180,16 @@ export async function gameApiHandler(
       const body = await readJson(req, KickReqSchema);
       if (!body.ok) return body.response;
       return respond(await stub.kick(token, body.value.seatId), 204);
+    }
+    case "cpuAdd": {
+      const body = await readJson(req, AddCpuReqSchema);
+      if (!body.ok) return body.response;
+      return respond(await stub.addCpu(token, body.value.count), 204);
+    }
+    case "cpuRemove": {
+      const body = await readJson(req, RemoveCpuReqSchema);
+      if (!body.ok) return body.response;
+      return respond(await stub.removeCpu(token, body.value.count), 204);
     }
     case "update": {
       const body = await readJson(req, PatchRoomReqSchema);

@@ -1,5 +1,11 @@
 import type { ClientMessage } from "@cd/protocol";
-import { MIN_PLAYERS, type ViewMessage } from "@cd/protocol";
+import {
+  DEFAULT_PROFILE_CAT,
+  MIN_PLAYERS,
+  PROFILE_CATS,
+  PROFILE_COLORS,
+  type ViewMessage,
+} from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ApiError, addCpu, kickSeat, leaveGame, removeCpu, startGame } from "../api";
 import { resetChat, routeChat, routeChatError } from "../chat/store";
@@ -163,10 +169,41 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
 
   const isHost = view?.you.host ?? false;
   const mine = view?.seats.find((s) => s.seatId === view.you.seatId);
-  const players = view?.seats.length ?? 0;
+  const players = view?.seats.filter((seat) => seat.kind !== "cpu").length ?? 0;
   const maxPlayers = view?.room.maxPlayers ?? 0;
-  const cpuCount = view?.room.cpuCount ?? 0;
+  const serverCpuCount = view?.room.cpuCount ?? 0;
+  const [cpuCount, setCpuCount] = useState(serverCpuCount);
+  useEffect(() => setCpuCount(serverCpuCount), [serverCpuCount]);
   const totalPlayers = players + cpuCount;
+  const cpuNames = ["Mochi", "Pixel", "Biscuit", "Nova"];
+  const actualCpuCount = view?.seats.filter((seat) => seat.kind === "cpu").length ?? 0;
+  const displaySeats: readonly Seat[] =
+    view?.room.status === "lobby"
+      ? [
+          ...view.seats.filter((seat) => seat.kind !== "cpu"),
+          ...view.seats.filter((seat) => seat.kind === "cpu"),
+          ...Array.from({ length: Math.max(0, cpuCount - actualCpuCount) }, (_, i) => {
+            const index = actualCpuCount + i;
+            return {
+              seatId: `cpu-preview-${index + 1}`,
+              name: `${cpuNames[index % cpuNames.length] ?? "CPU"} CPU`,
+              host: false,
+              kind: "cpu" as const,
+              online: false,
+              away: false,
+              left: false,
+              profile: {
+                color: PROFILE_COLORS[(index + 2) % PROFILE_COLORS.length] ?? "slate",
+                cat:
+                  index % 2 === 0
+                    ? DEFAULT_PROFILE_CAT
+                    : (PROFILE_CATS[(index + 2) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT),
+              },
+              record: { wins: 0, ties: 0, losses: 0 },
+            };
+          }),
+        ]
+      : (view?.seats ?? []);
   // T-UX-17: a full room starts by itself, so the host's Start gives way to a notice.
   const full = maxPlayers > 0 && cpuCount === 0 && totalPlayers >= maxPlayers;
   const canStart = totalPlayers >= MIN_PLAYERS && totalPlayers <= maxPlayers;
@@ -181,10 +218,18 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     return () => clearTimeout(t);
   }, [lockedUntil]);
   const showLock = isHost && lockedUntil !== null && lockedUntil > Date.now();
-  const canAddCpu = isHost && players + cpuCount < maxPlayers && cpuCount < 3;
+  const canAddCpu = isHost && players + cpuCount < maxPlayers && cpuCount < 4;
   const canRemoveCpu = isHost && cpuCount > 0;
-  const onAddCpu = () => run(() => addCpu(code, token, { count: 1 }), false);
-  const onRemoveCpu = () => run(() => removeCpu(code, token, { count: 1 }), false);
+  const onAddCpu = () =>
+    run(async () => {
+      await addCpu(code, token, { count: 1 });
+      setCpuCount((n) => Math.min(4, n + 1));
+    }, false);
+  const onRemoveCpu = () =>
+    run(async () => {
+      await removeCpu(code, token, { count: 1 });
+      setCpuCount((n) => Math.max(0, n - 1));
+    }, false);
 
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)", maxWidth: "560px" }}>
@@ -245,7 +290,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         </h2>
         {view ? (
           <SeatList
-            seats={view.seats}
+            seats={displaySeats}
             youSeatId={view.you.seatId}
             isHost={isHost}
             onKick={(seat) => {

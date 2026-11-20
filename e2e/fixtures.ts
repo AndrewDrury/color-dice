@@ -63,13 +63,18 @@ export async function createGame(player: Player, o: CreateOpts): Promise<string>
   await page.getByLabel("Password", { exact: true }).fill(o.password);
   if (o.max !== undefined)
     await page.locator(`label:has(input[name="maxPlayers"][value="${o.max}"])`).click();
-  if (o.cpu !== undefined) {
-    await page.locator(`label:has(input[name="cpuCount"][value="${o.cpu}"])`).click();
-  }
   if (o.listed === false) await page.getByLabel("Show in public list").uncheck();
   await page.getByRole("button", { name: "Create game" }).last().click();
   // Generous: the first rooms of a run hit a cold server while every worker starts at once.
   await expect(page.getByRole("button", { name: "Leave" })).toBeVisible({ timeout: 30_000 });
+  if (o.cpu !== undefined) {
+    for (let i = 0; i < o.cpu; i++) {
+      await page.getByRole("button", { name: "Add CPU" }).click();
+      await expect(
+        page.getByText(`${i + 1} CPU${i === 0 ? "" : "s"}`, { exact: true }),
+      ).toBeVisible();
+    }
+  }
   return codeOf(page);
 }
 

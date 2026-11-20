@@ -52,9 +52,10 @@ function SeatRow({
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => popIn(ref.current), []);
   const cpu = isCpuSeat(seat);
-  const cpuName = cpu
-    ? t("waiting.cpuName", { n: seat.name.match(/(\d+)$/)?.[1] ?? "" })
-    : seat.name;
+  const cpuName =
+    cpu && /^CPU \d+$/.test(seat.name)
+      ? t("waiting.cpuName", { n: seat.name.match(/(\d+)$/)?.[1] ?? "" })
+      : seat.name;
 
   return (
     <li ref={ref} class="row sl-row" data-seat={seat.seatId}>

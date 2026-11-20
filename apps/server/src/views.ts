@@ -5,7 +5,10 @@
  */
 import { type GameState, legalEarlyAction2Options, viewFor } from "@cd/engine";
 import {
+  DEFAULT_PROFILE_CAT,
   defaultProfile,
+  PROFILE_CATS,
+  PROFILE_COLORS,
   type ViewGame,
   type ViewMessage,
   type ViewRollOff,
@@ -16,8 +19,10 @@ import { pausedSeatIds } from "./pause";
 import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
 import type { RollOffState, RoomMeta, SeatRecord } from "./room-store";
 
-function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
-  return byJoinOrder(seats).map((s) => ({
+const CPU_NAMES = ["Mochi", "Pixel", "Biscuit", "Nova"];
+
+function viewSeats(meta: RoomMeta, seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
+  const rows: ViewSeat[] = byJoinOrder(seats).map((s) => ({
     seatId: s.seatId,
     name: s.name,
     host: s.host,
@@ -32,6 +37,31 @@ function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
       losses: s.record?.losses ?? 0,
     },
   }));
+  if (meta.status === "lobby") {
+    const existingCpuRows = rows.filter((s) => s.kind === "cpu").length;
+    const baseJoinOrder = Math.max(100, ...seats.map((s) => s.joinOrder + 1));
+    for (let i = existingCpuRows; i < (meta.cpuCount ?? 0); i++) {
+      const n = i % CPU_NAMES.length;
+      rows.push({
+        seatId: `cpu-preview-${i + 1}`,
+        name: `${CPU_NAMES[n]} CPU`,
+        host: false,
+        kind: "cpu",
+        online: false,
+        away: false,
+        left: false,
+        profile: {
+          color: PROFILE_COLORS[(baseJoinOrder + i) % PROFILE_COLORS.length] ?? "slate",
+          cat:
+            i % 2 === 0
+              ? DEFAULT_PROFILE_CAT
+              : (PROFILE_CATS[(i + 2) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT),
+        },
+        record: { wins: 0, ties: 0, losses: 0 },
+      });
+    }
+  }
+  return rows;
 }
 
 function lobbyYou(seat: SeatRecord): ViewYou {
@@ -133,7 +163,7 @@ export function buildView(
       // Lockout warnings are for the host only.
       joinLockedUntil: seat.host ? meta.joinLockedUntil : null,
     },
-    seats: viewSeats(seats, sockets),
+    seats: viewSeats(meta, seats, sockets),
     game,
     rollOff: ro,
     // T-NEW-3: seats holding the game up (offline, not left). Empty = not paused.

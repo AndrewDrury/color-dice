@@ -183,6 +183,20 @@ describe("WaitingRoom", () => {
     expect(api.removeCpu).toHaveBeenCalledWith(CODE, TOKEN, { count: 1 });
   });
 
+  it("allows exactly four CPUs while preserving the five-seat limit", () => {
+    const v = view({ seats: 2 });
+    v.room.maxPlayers = 5;
+    v.room.cpuCount = 4;
+    show(v);
+    expect(screen.getByText("4 CPUs")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Add CPU" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole("button", { name: "Remove CPU" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
   it("non-host sees a waiting line and no host controls", () => {
     show(view({ host: false, seats: 2 }));
     expect(screen.getByText("Waiting for the host to start…")).toBeTruthy();

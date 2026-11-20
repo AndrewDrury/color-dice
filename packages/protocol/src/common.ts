@@ -46,7 +46,7 @@ export const RoomNameSchema = cleanedName(ROOM_NAME_MIN, ROOM_NAME_MAX);
 export const MaxPlayersSchema = z.literal([2, 3, 4, 5]);
 export type MaxPlayers = z.infer<typeof MaxPlayersSchema>;
 
-export const CpuCountSchema = z.number().int().min(0).max(3);
+export const CpuCountSchema = z.number().int().min(0).max(4);
 export type CpuCount = z.infer<typeof CpuCountSchema>;
 
 export const CpuPolicySchema = z.literal("balanced");
