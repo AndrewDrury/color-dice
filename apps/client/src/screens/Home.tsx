@@ -6,7 +6,6 @@ import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { SelfBadge } from "../components/SelfBadge";
 import { GearButton, type Panel, Panels } from "../components/Settings";
-import { useHistoryTotals } from "../history";
 import { type MessageKey, t, useT } from "../i18n";
 import { getRemembered, removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
@@ -93,7 +92,22 @@ function YourGames() {
 /** "Your record: 12 W – 2 T – 7 L" from this device's history; hidden while empty. */
 function YourRecord() {
   useT();
-  const { wins, ties, losses } = useHistoryTotals();
+  const [totals, setTotals] = useState({ wins: 0, ties: 0, losses: 0 });
+  useEffect(() => {
+    let off = () => {};
+    let alive = true;
+    void import("../history").then((m) => {
+      if (!alive) return;
+      const update = () => setTotals(m.historyTotals());
+      update();
+      off = m.onHistory(update);
+    });
+    return () => {
+      alive = false;
+      off();
+    };
+  }, []);
+  const { wins, ties, losses } = totals;
   if (wins + ties + losses === 0) return null;
   return (
     <p class="muted" data-testid="your-record" style={{ margin: 0 }}>

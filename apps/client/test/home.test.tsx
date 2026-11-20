@@ -1,5 +1,5 @@
 import type { PublicGame } from "@cd/protocol";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api";
 import { getRoute, navigate } from "../src/router";
@@ -211,7 +211,9 @@ describe("Home record", () => {
     act(() => {
       recordGame({ code: CODE, game: 1, result: "W", at: 1 });
     });
-    expect(screen.getByTestId("your-record").textContent).toBe("Your record: 1 W – 0 T – 0 L");
+    await waitFor(() =>
+      expect(screen.getByTestId("your-record").textContent).toBe("Your record: 1 W – 0 T – 0 L"),
+    );
     unmount();
     localStorage.clear();
     _resetHistoryForTests();
