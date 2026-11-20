@@ -1,7 +1,7 @@
 import type { ClientMessage } from "@cd/protocol";
 import { MIN_PLAYERS, type ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { ApiError, kickSeat, leaveGame, startGame } from "../api";
+import { ApiError, addCpu, kickSeat, leaveGame, removeCpu, startGame } from "../api";
 import { resetChat, routeChat, routeChatError } from "../chat/store";
 import { Button } from "../components/Button";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
@@ -21,9 +21,9 @@ import { applyView, clearView, getState, setStatus, showToast, useAppState } fro
 import { type EndReason, GameSocket } from "../ws";
 
 /** Label for the host's Start button. */
-export function startLabel(players: number, maxPlayers: number): string {
-  if (players > maxPlayers) return t("waiting.start.tooMany");
-  const need = MIN_PLAYERS - players;
+export function startLabel(players: number, maxPlayers: number, cpuCount = 0): string {
+  if (players + cpuCount > maxPlayers) return t("waiting.start.tooMany");
+  const need = MIN_PLAYERS - (players + cpuCount);
   if (need > 0) return tn("waiting.start.need", need);
   return t("waiting.start.go");
 }
@@ -162,9 +162,27 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const mine = view?.seats.find((s) => s.seatId === view.you.seatId);
   const players = view?.seats.length ?? 0;
   const maxPlayers = view?.room.maxPlayers ?? 0;
+  const roomCpuCount = view
+    ? (view.room as typeof view.room & { cpuCount?: number }).cpuCount
+    : undefined;
+  let rememberedCpuCount = 0;
+  try {
+    rememberedCpuCount = Number(sessionStorage.getItem(`cpu-count:${code}`) ?? 0);
+  } catch {
+    rememberedCpuCount = 0;
+  }
+  const cpuCount =
+    roomCpuCount ??
+    (rememberedCpuCount > 0
+      ? rememberedCpuCount
+      : (view?.seats.filter((s) => {
+          const kind = (s as typeof s & { kind?: "human" | "cpu" }).kind;
+          return kind === "cpu" || s.seatId.toLowerCase().startsWith("cpu");
+        }).length ?? 0));
+  const totalPlayers = players + cpuCount;
   // T-UX-17: a full room starts by itself, so the host's Start gives way to a notice.
-  const full = maxPlayers > 0 && players >= maxPlayers;
-  const canStart = players >= MIN_PLAYERS && players <= maxPlayers;
+  const full = maxPlayers > 0 && cpuCount === 0 && totalPlayers >= maxPlayers;
+  const canStart = totalPlayers >= MIN_PLAYERS && totalPlayers <= maxPlayers;
   const lockedUntil = view?.room.joinLockedUntil ?? null;
   const [, setNow] = useState(0);
   // Re-render when the join lock expires so the warning disappears.
@@ -176,6 +194,10 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
     return () => clearTimeout(t);
   }, [lockedUntil]);
   const showLock = isHost && lockedUntil !== null && lockedUntil > Date.now();
+  const canAddCpu = isHost && players + cpuCount < maxPlayers && cpuCount < 3;
+  const canRemoveCpu = isHost && cpuCount > 0;
+  const onAddCpu = () => run(() => addCpu(code, token, { count: 1 }), false);
+  const onRemoveCpu = () => run(() => removeCpu(code, token, { count: 1 }), false);
 
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)", maxWidth: "560px" }}>
@@ -239,6 +261,19 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
         ) : (
           <p class="muted">{t("conn.connecting")}</p>
         )}
+        {view && isHost ? (
+          <div class="row" style={{ justifyContent: "space-between", gap: "var(--s2)" }}>
+            <span class="muted">{tn("waiting.cpuCount", cpuCount)}</span>
+            <span class="row" style={{ gap: "var(--s1)" }}>
+              <Button disabled={!canRemoveCpu || busy} onClick={onRemoveCpu}>
+                {t("waiting.removeCpu")}
+              </Button>
+              <Button disabled={!canAddCpu || busy} onClick={onAddCpu}>
+                {t("waiting.addCpu")}
+              </Button>
+            </span>
+          </div>
+        ) : null}
       </section>
 
       {view ? (
@@ -254,7 +289,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
             disabled={!canStart}
             onClick={onStart}
           >
-            {startLabel(players, maxPlayers)}
+            {startLabel(players, maxPlayers, cpuCount)}
           </Button>
         ) : (
           <p class="muted" role="status">

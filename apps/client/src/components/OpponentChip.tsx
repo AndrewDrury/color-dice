@@ -4,6 +4,7 @@ import { seatInfo } from "../game/model";
 import { t, tn, useT } from "../i18n";
 import { Avatar } from "./Avatar";
 import { CheckIcon, CloseIcon, DotsIcon, WarningIcon } from "./icons";
+import { isCpuSeat } from "./SeatList";
 
 export interface OpponentState {
   active: boolean;
@@ -18,6 +19,7 @@ export interface OpponentState {
 export function opponentState(view: ViewMessage, p: ViewPlayer): OpponentState {
   const g = view.game;
   const seat = seatInfo(view, p);
+  const cpu = seat ? isCpuSeat(seat) : false;
   const active = g?.turn?.activeSeat === p.seat && g.phase !== "GAME_OVER";
   const decided = g?.phase === "ACTION_1" && (p.decided ?? p.action1Submitted);
   const thinking =
@@ -27,9 +29,9 @@ export function opponentState(view: ViewMessage, p: ViewPlayer): OpponentState {
     active: !!active,
     decided,
     thinking: !decided && thinking,
-    away: !!seat?.away && !seat.left,
+    away: !!seat?.away && !seat.left && !cpu,
     left: !!seat?.left,
-    offline: seat ? !seat.online : false,
+    offline: seat ? !seat.online && !cpu : false,
   };
 }
 
@@ -77,7 +79,12 @@ export interface ChipProps {
 export function OpponentChip({ view, player, flash }: ChipProps) {
   useT();
   const seat = seatInfo(view, player);
-  const name = seat?.name ?? t("player.fallback", { n: player.seat + 1 });
+  const cpu = seat ? isCpuSeat(seat) : false;
+  const rawName = seat?.name;
+  const cpuNumber = rawName?.match(/(\d+)$/)?.[1];
+  const name = cpu
+    ? t("waiting.cpuName", { n: cpuNumber ?? "" })
+    : (rawName ?? t("player.fallback", { n: player.seat + 1 }));
   const g = view.game;
   const st = opponentState(view, player);
   const strikes = Math.round(-player.score.penalties / 5);
@@ -96,6 +103,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
       <span class="g-chip-top">
         <Avatar profile={seat?.profile} size={16} />
         <span class="g-name">{name}</span>
+        {cpu ? <span class="cpu-badge">{t("waiting.cpu")}</span> : null}
         <StatusGlyph state={st} />
       </span>
       <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">

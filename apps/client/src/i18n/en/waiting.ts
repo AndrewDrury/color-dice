@@ -27,6 +27,12 @@ export const waiting = {
   "waiting.you": "(you)",
   "waiting.online": "Online",
   "waiting.offline": "Offline",
+  "waiting.cpu": "CPU",
+  "waiting.cpuName": "CPU {n}",
+  "waiting.cpuCount_one": "{count} CPU",
+  "waiting.cpuCount_other": "{count} CPUs",
+  "waiting.addCpu": "Add CPU",
+  "waiting.removeCpu": "Remove CPU",
 
   "room.title": "Room settings",
   "room.listed": "Show in public list",

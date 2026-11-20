@@ -1,4 +1,16 @@
 /* Opponent chips (J0.7): hidden cards, so chips are the only opponent UI. */
+.cpu-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  padding: 1px var(--s1);
+  border: 1px solid currentColor;
+  border-radius: var(--r-pill);
+  color: var(--ink-muted);
+}
 .g-opp.is-tablet,
 .g-opp.is-desktop {
   flex-wrap: wrap;

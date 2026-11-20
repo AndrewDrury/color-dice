@@ -1,4 +1,5 @@
 import {
+  type AddCpuReq,
   type AuthRes,
   AuthResSchema,
   type CreateGameReq,
@@ -17,6 +18,7 @@ import {
   type PublicGame,
   PublicGameSchema,
   type ReclaimReq,
+  type RemoveCpuReq,
 } from "@cd/protocol";
 import { SERVER_URL } from "./config";
 
@@ -155,6 +157,24 @@ export async function leaveGame(code: string, token: string): Promise<void> {
 /** `POST /api/games/:code/kick` (host, lobby only) */
 export async function kickSeat(code: string, token: string, body: KickReq): Promise<void> {
   await request(gamePath(code, "/kick"), { method: "POST", token, body });
+}
+
+/** `POST /api/games/:code/cpu/add` (host, lobby only) */
+export async function addCpu(
+  code: string,
+  token: string,
+  body: AddCpuReq = { count: 1 },
+): Promise<void> {
+  await request(gamePath(code, "/cpu/add"), { method: "POST", token, body });
+}
+
+/** `POST /api/games/:code/cpu/remove` (host, lobby only) */
+export async function removeCpu(
+  code: string,
+  token: string,
+  body: RemoveCpuReq = { count: 1 },
+): Promise<void> {
+  await request(gamePath(code, "/cpu/remove"), { method: "POST", token, body });
 }
 
 /** `PATCH /api/games/:code` (host, lobby only) */

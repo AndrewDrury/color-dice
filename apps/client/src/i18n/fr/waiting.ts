@@ -30,6 +30,12 @@ export const waiting: Record<keyof typeof en, string> = {
   "waiting.you": "(toi)",
   "waiting.online": "En ligne",
   "waiting.offline": "Hors ligne",
+  "waiting.cpu": "CPU",
+  "waiting.cpuName": "CPU {n}",
+  "waiting.cpuCount_one": "{count} CPU",
+  "waiting.cpuCount_other": "{count} CPU",
+  "waiting.addCpu": "Ajouter une CPU",
+  "waiting.removeCpu": "Retirer une CPU",
 
   "room.title": "Réglages de la salle",
   "room.listed": "Afficher dans la liste publique",

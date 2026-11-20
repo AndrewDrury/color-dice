@@ -66,6 +66,8 @@ vi.mock("../src/api", async (orig) => {
   return {
     ApiError: actual.ApiError,
     startGame: vi.fn(),
+    addCpu: vi.fn(),
+    removeCpu: vi.fn(),
     leaveGame: vi.fn(),
     kickSeat: vi.fn(),
     patchRoom: vi.fn(),
@@ -123,6 +125,8 @@ beforeEach(() => {
   _resetStoreForTests();
   sockets.length = 0;
   vi.mocked(api.startGame).mockReset().mockResolvedValue();
+  vi.mocked(api.addCpu).mockReset().mockResolvedValue();
+  vi.mocked(api.removeCpu).mockReset().mockResolvedValue();
   vi.mocked(api.kickSeat).mockReset().mockResolvedValue();
   vi.mocked(api.leaveGame).mockReset().mockResolvedValue();
   vi.mocked(api.getInvite).mockReset().mockResolvedValue({ inviteKey: KEY });
@@ -154,6 +158,27 @@ describe("WaitingRoom", () => {
     expect(screen.getByRole("button", { name: "Remove Sam" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Remove Andrew" })).toBeNull();
     expect(screen.getByText("Room settings")).toBeTruthy();
+  });
+
+  it("shows CPU badges and host add/remove controls without offline status", async () => {
+    const v = view({ seats: 2 });
+    v.seats[1] = {
+      ...v.seats[1],
+      seatId: "cpu00001",
+      name: "CPU 1",
+      kind: "cpu",
+      online: false,
+    } as ViewMessage["seats"][number];
+    v.room.maxPlayers = 4;
+    show(v);
+    expect(screen.getByText("CPU")).toBeTruthy();
+    expect(screen.queryByLabelText("Offline")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Add CPU" }));
+    await flush();
+    expect(api.addCpu).toHaveBeenCalledWith(CODE, TOKEN, { count: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Remove CPU" }));
+    await flush();
+    expect(api.removeCpu).toHaveBeenCalledWith(CODE, TOKEN, { count: 1 });
   });
 
   it("non-host sees a waiting line and no host controls", () => {

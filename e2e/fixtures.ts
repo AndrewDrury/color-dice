@@ -23,6 +23,7 @@ export interface CreateOpts {
   password: string;
   max?: number;
   listed?: boolean;
+  cpu?: number;
 }
 
 /** A separate browser context per player = a separate "computer" (own storage). */
@@ -48,6 +49,9 @@ export async function createGame(player: Player, o: CreateOpts): Promise<string>
   await page.getByLabel("Password", { exact: true }).fill(o.password);
   if (o.max !== undefined)
     await page.locator(`label:has(input[name="maxPlayers"][value="${o.max}"])`).click();
+  if (o.cpu !== undefined) {
+    await page.locator(`label:has(input[name="cpuCount"][value="${o.cpu}"])`).click();
+  }
   if (o.listed === false) await page.getByLabel("Show in public list").uncheck();
   await page.getByRole("button", { name: "Create game" }).last().click();
   await expect(page.getByRole("button", { name: "Leave" })).toBeVisible();

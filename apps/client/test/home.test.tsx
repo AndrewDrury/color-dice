@@ -188,6 +188,16 @@ describe("CreateGame", () => {
     expect(location.search).toBe(`?game=${CODE}`);
   });
 
+  it("bounds CPU opponents by the human and max player counts", () => {
+    render(<CreateGame />);
+    fireEvent.click(screen.getByLabelText("2"));
+    expect((screen.getByLabelText("No CPUs") as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText("1 CPU") as HTMLInputElement).disabled).toBe(false);
+    fireEvent.click(screen.getByLabelText("1 CPU"));
+    expect((screen.getByLabelText("1 CPU") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByLabelText("2"));
+  });
+
   it("shows a friendly rate-limit message", async () => {
     vi.mocked(api.createGame).mockRejectedValue(new ApiError(429, "E_RATE_LIMITED", undefined, 42));
     render(<CreateGame />);

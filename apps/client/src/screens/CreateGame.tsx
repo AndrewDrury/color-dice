@@ -12,7 +12,7 @@ import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
 import { ProfileField } from "../components/ProfileField";
-import { t, useT } from "../i18n";
+import { t, tn, useT } from "../i18n";
 import { primeInvite } from "../invite";
 import { getRemembered, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
@@ -47,6 +47,7 @@ export function CreateGame() {
   const [name, setName] = useState(rememberedName);
   const [password, setPassword] = useState(initial.password);
   const [maxPlayers, setMaxPlayers] = useState(initial.maxPlayers);
+  const [cpuCount, setCpuCount] = useState(0);
   const [listed, setListed] = useState(true);
   const [profile, setProfile] = useState(rememberedProfile);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,6 +73,7 @@ export function CreateGame() {
       maxPlayers,
       listed,
       profile,
+      cpuCount,
     });
     if (!parsed.success) {
       setErrors(issuesByField(parsed.error.issues, fieldText()));
@@ -87,6 +89,11 @@ export function CreateGame() {
         name: parsed.data.name,
         roomName: parsed.data.roomName,
       });
+      try {
+        sessionStorage.setItem(`cpu-count:${res.code}`, String(parsed.data.cpuCount));
+      } catch {
+        // Storage can be unavailable in privacy modes; the server remains authoritative.
+      }
       rememberSubmit({
         code: res.code,
         name: parsed.data.name,
@@ -169,6 +176,45 @@ export function CreateGame() {
             ))}
           </div>
           <FieldError text={errors.maxPlayers} />
+        </fieldset>
+        <fieldset class="stack" style={{ border: 0, padding: 0, margin: 0, gap: "var(--s1)" }}>
+          <legend style={{ fontWeight: "var(--fw-bold)", padding: 0 }}>
+            {t("create.cpuOpponents")}
+          </legend>
+          <div
+            class="row"
+            style={{
+              gap: "var(--s1)",
+              padding: "var(--s1)",
+              borderRadius: "var(--r-button)",
+              background: "var(--table)",
+            }}
+          >
+            {[0, 1, 2, 3].map((n) => {
+              const unavailable = 1 + n > maxPlayers;
+              return (
+                <label
+                  key={n}
+                  style={{ ...segStyle(n === cpuCount), opacity: unavailable ? 0.45 : 1 }}
+                  aria-label={n === 0 ? t("create.cpuNone") : tn("create.cpuCount", n)}
+                >
+                  <input
+                    type="radio"
+                    name="cpuCount"
+                    class="sr-only"
+                    value={String(n)}
+                    checked={n === cpuCount}
+                    disabled={unavailable}
+                    onChange={() => setCpuCount(n)}
+                  />
+                  <span class="num">{n}</span>
+                </label>
+              );
+            })}
+          </div>
+          <p class="muted" style={{ margin: 0, fontSize: "var(--fs-small)" }}>
+            {tn("create.cpuCount", cpuCount)}
+          </p>
         </fieldset>
         <label class="row" style={{ minHeight: "var(--tap)", cursor: "pointer" }}>
           <input

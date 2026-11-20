@@ -22,6 +22,10 @@ export const home = {
   "create.passwordHint": "Share it privately with your friends.",
   "create.maxPlayers": "Max players",
   "create.listed": "Show in public list",
+  "create.cpuOpponents": "CPU opponents",
+  "create.cpuNone": "No CPUs",
+  "create.cpuCount_one": "{count} CPU",
+  "create.cpuCount_other": "{count} CPUs",
 
   "join.title": "Join game",
   "join.titleNamed": "Join {room}",

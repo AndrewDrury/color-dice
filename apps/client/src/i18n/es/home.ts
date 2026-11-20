@@ -24,6 +24,10 @@ export const home: Record<keyof typeof en, string> = {
   "create.passwordHint": "Compártela en privado con tus amigos.",
   "create.maxPlayers": "Máx. de jugadores",
   "create.listed": "Mostrar en la lista pública",
+  "create.cpuOpponents": "Oponentes CPU",
+  "create.cpuNone": "Sin CPU",
+  "create.cpuCount_one": "{count} CPU",
+  "create.cpuCount_other": "{count} CPU",
 
   "join.title": "Unirse a la partida",
   "join.titleNamed": "Unirse a {room}",

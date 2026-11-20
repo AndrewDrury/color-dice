@@ -3,9 +3,15 @@ import { useEffect, useRef } from "preact/hooks";
 import { reducedMotion } from "../fx/motion";
 import { recordLabel, recordText } from "../game/model";
 import { t, useT } from "../i18n";
+import "../styles/opponents.css";
 import { Avatar } from "./Avatar";
 
 export type Seat = ViewMessage["seats"][number];
+
+export function isCpuSeat(seat: Seat): boolean {
+  const kind = (seat as Seat & { kind?: "human" | "cpu" }).kind;
+  return kind === "cpu" || seat.seatId.toLowerCase().startsWith("cpu");
+}
 
 export interface SeatListProps {
   seats: readonly Seat[];
@@ -45,6 +51,10 @@ function SeatRow({
   useT();
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => popIn(ref.current), []);
+  const cpu = isCpuSeat(seat);
+  const cpuName = cpu
+    ? t("waiting.cpuName", { n: seat.name.match(/(\d+)$/)?.[1] ?? "" })
+    : seat.name;
 
   return (
     <li
@@ -60,20 +70,27 @@ function SeatRow({
       }}
     >
       <span class="row" style={{ gap: "var(--s2)", minWidth: 0 }}>
-        <span
-          role="img"
-          aria-label={seat.online ? t("waiting.online") : t("waiting.offline")}
-          style={{
-            flex: "0 0 auto",
-            width: "10px",
-            height: "10px",
-            borderRadius: "50%",
-            background: seat.online ? "var(--row-green)" : "transparent",
-            border: `2px solid ${seat.online ? "var(--row-green)" : "var(--ink-muted)"}`,
-          }}
-        />
+        {cpu ? null : (
+          <span
+            role="img"
+            aria-label={seat.online ? t("waiting.online") : t("waiting.offline")}
+            style={{
+              flex: "0 0 auto",
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              background: seat.online ? "var(--row-green)" : "transparent",
+              border: `2px solid ${seat.online ? "var(--row-green)" : "var(--ink-muted)"}`,
+            }}
+          />
+        )}
         <Avatar profile={seat.profile} />
-        <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{seat.name}</span>
+        <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{cpuName}</span>
+        {cpu ? (
+          <span class="cpu-badge" data-testid="cpu-badge">
+            {t("waiting.cpu")}
+          </span>
+        ) : null}
         {you ? <span class="muted">{t("waiting.you")}</span> : null}
         {showRecord ? (
           <span
@@ -128,7 +145,7 @@ export function SeatList({ seats, youSeatId, isHost, onKick }: SeatListProps) {
           key={seat.seatId}
           seat={seat}
           you={seat.seatId === youSeatId}
-          canKick={isHost && seat.seatId !== youSeatId}
+          canKick={isHost && seat.seatId !== youSeatId && !isCpuSeat(seat)}
           showRecord={showRecord}
           onKick={onKick}
         />
