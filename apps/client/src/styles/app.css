@@ -272,3 +272,11 @@ summary,
   white-space: nowrap;
   border: 0;
 }
+
+/* Join dialog: the Join button stays in view on short phones. */
+.join-foot {
+  position: sticky;
+  bottom: 0;
+  padding-block: var(--s2);
+  background: var(--paper);
+}

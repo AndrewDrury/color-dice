@@ -915,6 +915,21 @@
     flex: 1 1 0;
     text-align: end;
   }
+  /* Narrow phones: no step counter; the call to action gets its own full-width, wrapping line. */
+  @media (max-width: 399.98px) {
+    .g-game .g-turnbar {
+      flex-wrap: wrap;
+      row-gap: 0;
+    }
+    .g-game .g-turnbar-step {
+      display: none;
+    }
+    .g-game .g-turnbar-cta {
+      flex-basis: 100%;
+      white-space: normal;
+      text-align: start;
+    }
+  }
   .g-box {
     height: 36px;
   }

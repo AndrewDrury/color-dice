@@ -22,6 +22,18 @@ describe("turn banner (T-NEW-22)", () => {
     expect(el.className).not.toContain("is-mine");
     expect(el.querySelector(".g-turnbar-who")?.getAttribute("title")).toBe("Cleo's turn");
   });
+  it("my roll turn: the step text is dropped when it repeats the call to action", () => {
+    render(
+      <TurnBanner
+        view={makeGameView({ phase: "AWAIT_ROLL", canRoll: true })}
+        staged={false}
+        noMove={false}
+      />,
+    );
+    const el = screen.getByTestId("turn-banner");
+    expect(el.querySelector(".g-turnbar-cta")?.textContent).toBe("Roll the dice");
+    expect(el.querySelector(".g-turnbar-step")).toBeNull();
+  });
   it("reduced motion removes the glow", () => {
     expect(flowCss).toMatch(/data-motion="reduced"\] \.g-turnbar\.is-mine \{\s*animation: none/);
     expect(flowCss).toMatch(

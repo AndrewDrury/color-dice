@@ -132,9 +132,11 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         </ProfileField>
         <PasswordField value={password} onValue={setPassword} error={errors.password} />
         <FieldError text={formError} />
-        <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
-          {t("common.join")}
-        </Button>
+        <div class="join-foot">
+          <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
+            {t("common.join")}
+          </Button>
+        </div>
       </form>
       <Button variant="link" onClick={() => navigate("reclaim", code)}>
         {t("join.reclaimLink")}

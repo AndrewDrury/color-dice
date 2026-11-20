@@ -184,6 +184,9 @@
   .ro-screen {
     padding-block: var(--s4);
   }
+  .ro-body {
+    gap: var(--s3);
+  }
   .ro-seat {
     --die-size: 56px;
     flex-basis: calc((100% - 2 * var(--s3)) / 3);
@@ -201,4 +204,26 @@
 .ro-screen.is-reduced .ro-seat.is-winner .ro-avatar {
   transform: none;
   transition: none;
+}
+
+/* Short phones (360x640): tighter cards so the winner state, with its button, fits unscrolled. */
+@media (max-width: 480px) and (max-height: 700px) {
+  .ro-screen {
+    padding-block: var(--s2);
+  }
+  .ro-body {
+    gap: var(--s2);
+  }
+  .ro-seat {
+    --die-size: 48px;
+    gap: var(--s1);
+    padding-block: var(--s2);
+  }
+  .ro-avatar {
+    min-height: 40px;
+  }
+  .ro-seat.is-winner,
+  .ro-seat.is-winner .ro-avatar {
+    transform: none;
+  }
 }
