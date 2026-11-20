@@ -29,7 +29,18 @@ export interface CreateOpts {
 export async function newPlayer(browser: Browser, name: string): Promise<Player> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  await autoDismissRollOff(page);
   return { context, page, name };
+}
+
+/**
+ * T-NEW-17 (D-L2): the roll-off result stays until "Let's go" is pressed. Specs that are not
+ * about the roll-off get it pressed for them whenever it blocks an action or assertion.
+ */
+export async function autoDismissRollOff(page: Page) {
+  await page.addLocatorHandler(page.getByTestId("rolloff-go"), async (go) => {
+    await go.click();
+  });
 }
 
 export function codeOf(page: Page): string {
@@ -103,7 +114,8 @@ export async function startGame(host: Player) {
 
 /**
  * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every player
- * taps Roll each round until every page shows the game board.
+ * taps Roll each round, then "Let's go" on the result (T-NEW-17, D-L2), until every page
+ * shows the game board with no roll-off screen over it.
  */
 export async function playRollOff(players: Player[]) {
   await expect
@@ -111,9 +123,14 @@ export async function playRollOff(players: Player[]) {
       async () => {
         let boards = 0;
         for (const { page } of players) {
-          if (await page.locator(".g-main").isVisible()) boards += 1;
+          const go = page.getByTestId("rolloff-go");
+          if (await go.isVisible()) await go.click({ timeout: 2000 }).catch(() => {});
           const roll = page.getByTestId("rolloff-roll");
-          if (await roll.isVisible()) await roll.click().catch(() => {});
+          if ((await roll.isVisible()) && (await roll.isEnabled())) {
+            await roll.click({ timeout: 2000 }).catch(() => {});
+          }
+          const covered = await page.locator(".ro-screen").isVisible();
+          if (!covered && (await page.locator(".g-main").isVisible())) boards += 1;
         }
         return boards === players.length;
       },
@@ -167,7 +184,7 @@ export async function pass(page: Page) {
   await page.locator(".g-pass").click();
 }
 
-/** Tap Roll and wait until every die has settled (has data-face). */
+/** Tap Roll and wait until every die has landed (has data-face) and the tray has settled. */
 export async function roll(page: Page) {
   await page.locator(".g-primary", { hasText: "Roll" }).click();
   const dice = page.locator("[data-die]");
@@ -179,4 +196,6 @@ export async function roll(page: Page) {
         (await page.locator("[data-die]:not([data-face])").count()) === 0,
     )
     .toBe(true);
+  // D-L9: dice land one at a time, 400 ms apart; the tray is `data-settled` after the last.
+  await expect(page.locator(".tray[data-settled]")).toBeVisible();
 }

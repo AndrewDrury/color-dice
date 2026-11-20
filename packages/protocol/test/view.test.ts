@@ -128,6 +128,24 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(open).success).toBe(true);
   });
 
+  it("roll-off faces (D-L1): null before a seat rolls, 1–6 after; required", () => {
+    const lobby = { ...fixture, game: null };
+    const ro = { round: 2, rolled: [true, false], faces: [6, null], completed: [[1, 2]] };
+    expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: ro }).success).toBe(true);
+    const { faces: _f, ...noFaces } = ro;
+    expect(ViewMessageSchema.safeParse({ ...lobby, rollOff: noFaces }).success).toBe(false);
+    for (const bad of [
+      [7, null],
+      [0, null],
+      [2.5, null],
+      ["6", null],
+      [1, 1, 1, 1, 1, 1],
+    ]) {
+      const v = { ...lobby, rollOff: { ...ro, faces: bad } };
+      expect(ViewMessageSchema.safeParse(v).success).toBe(false);
+    }
+  });
+
   it("rejects extra fields and bad shapes", () => {
     expect(ViewMessageSchema.safeParse({ ...fixture, secret: 1 }).success).toBe(false);
     const g = fixture.game;

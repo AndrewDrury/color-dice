@@ -50,7 +50,7 @@ import { GameHint } from "./GameHint";
 import { GameOver } from "./GameOver";
 
 /** Fallback if the tray never reports landing (so legal boxes can't stay dark). */
-const LAND_FALLBACK_MS = 3000;
+const LAND_FALLBACK_MS = 4000;
 const LAND_GLOW_DELAY_MS = 100;
 
 interface Info {
@@ -88,7 +88,8 @@ export function Game({ code }: { code: string }) {
     return () => clearTimeout(t);
   }, [toast?.id]);
 
-  // The live roll-off: this player watched the rounds happen, so only the deciding one replays.
+  // The live roll-off: this player watched the rounds happen, so only the deciding one replays
+  // (its already-landed dice stay put); the result then waits for "Let's go" (D-L2).
   const sawLive = useRef(false);
   if (view?.rollOff && !view.game) sawLive.current = true;
   if (view && !view.game && view.rollOff) return <RollOffLive view={view} send={conn.send} />;
@@ -259,7 +260,8 @@ function Board({
   useWakeLock(!gameOver);
   useTabAttention(myMove);
   useGameKeys({
-    canRoll: view.you.canRoll && panel === null && !leaving && !rematching && !gameOver,
+    canRoll:
+      view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
     canPass:
       canPass(view, st.s1) &&
       !noMove &&
@@ -396,7 +398,8 @@ function Board({
       {showRollOff && rollOff ? (
         <RollOff
           view={view}
-          rounds={liveRollOff ? rollOff.rounds.slice(-1) : rollOff.rounds}
+          rounds={rollOff.rounds}
+          live={liveRollOff}
           onDone={() => {
             markRollOffPlayed(rollOffId as string);
             setRollOffDone(true);

@@ -112,8 +112,9 @@ export function buildView(
     rollOff && !state
       ? {
           round: rollOff.round,
-          // Only "has rolled", never the face: the round is revealed to everyone at once.
           rolled: rollOff.current.map((f) => f !== null),
+          // D-L1: a seat's face is public as soon as it rolls (server dice, no strategy).
+          faces: [...rollOff.current],
           completed: rollOff.completed.map((r) => [...r]),
         }
       : null;

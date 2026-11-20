@@ -120,14 +120,17 @@ export interface ViewYou {
 }
 
 /**
- * Opening roll-off in progress (T-NEW-2). Nobody's current die is revealed until every
- * expected seat has rolled; then the round moves to `completed` for everyone at once.
+ * Opening roll-off in progress (T-NEW-2). Dice are server-rolled and carry no strategy, so a
+ * seat's face is public as soon as it rolls (D-L1, `faces`); a finished round without a unique
+ * 6 moves to `completed` and the next round starts empty.
  */
 export interface ViewRollOff {
   /** 1-based round being rolled now. */
   round: number;
   /** Per seat index: has this seat rolled in the current round? */
   rolled: boolean[];
+  /** Per seat index: the face rolled in the current round, or null before that seat rolls. */
+  faces: (number | null)[];
   /** Fully revealed rounds, one face per seat each (all without a unique 6). */
   completed: number[][];
 }
@@ -330,6 +333,7 @@ export const ViewMessageSchema = z
       .object({
         round: z.number().int().min(1),
         rolled: z.array(z.boolean()).max(5),
+        faces: z.array(z.number().int().min(1).max(6).nullable()).max(5),
         completed: z.array(z.array(z.number().int().min(1).max(6)).max(5)).max(1000),
       })
       .strict()

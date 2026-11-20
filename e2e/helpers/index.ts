@@ -1,5 +1,5 @@
 import type { Browser } from "@playwright/test";
-import { expect, type Player, SERVER } from "../fixtures";
+import { autoDismissRollOff, expect, type Player, SERVER } from "../fixtures";
 
 let ipCounter = 0;
 /** A unique fake client IP (the server rate-limits per CF-Connecting-IP; "local" is shared). */
@@ -22,6 +22,7 @@ export async function newPlayer(browser: Browser, name: string, ip = uniqueIp())
   // limit is 30/min, which a whole run on one shared IP would exhaust).
   await context.setExtraHTTPHeaders({ "cf-connecting-ip": ip });
   const page = await context.newPage();
+  await autoDismissRollOff(page);
   return { context, page, name };
 }
 
@@ -90,6 +91,8 @@ export async function roll(page: Player["page"]) {
   await expect
     .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
     .toBe(0);
+  // D-L9: dice land one at a time, 400 ms apart; the tray is `data-settled` after the last.
+  await expect(page.locator(".tray[data-settled]")).toBeVisible();
 }
 
 export interface NetControl {

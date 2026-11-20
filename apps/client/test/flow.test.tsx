@@ -68,7 +68,7 @@ describe("roll-off captions (K4.1)", () => {
     expect(roundCaption(v, [2, 6, 3])).toBe("Cleo rolled the only 6 — Cleo goes first!");
   });
 
-  it("the overlay shows once, then skips on tap", () => {
+  it("the roll-off shows once; tap skips to the result, Let's go closes it", () => {
     const rounds = [
       [1, 2, 3],
       [6, 6, 1],
@@ -83,6 +83,8 @@ describe("roll-off captions (K4.1)", () => {
     render(<Game code={CODE} />);
     expect(screen.getByTestId("rolloff")).toBeTruthy();
     fireEvent.click(screen.getByTestId("rolloff"));
+    expect(screen.getByTestId("rolloff")).toBeTruthy(); // the result waits for Let's go (D-L2)
+    fireEvent.click(screen.getByTestId("rolloff-go"));
     expect(screen.queryByTestId("rolloff")).toBeNull();
     cleanup();
     render(<Game code={CODE} />);

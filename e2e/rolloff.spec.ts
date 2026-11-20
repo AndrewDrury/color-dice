@@ -9,7 +9,7 @@ import {
   test,
 } from "./fixtures";
 
-test("opening roll-off: each player rolls their own die, rerolls until one 6, then play starts", async ({
+test("opening roll-off: each player rolls their own die, rerolls until one 6, Let's go starts play", async ({
   browser,
 }) => {
   const roomName = `Roll ${Date.now() % 100000}`;
@@ -26,8 +26,10 @@ test("opening roll-off: each player rolls their own die, rerolls until one 6, th
       await expect(p.page.getByTestId("rolloff-roll")).toBeVisible();
     }
     await host.page.getByTestId("rolloff-roll").click();
-    await expect(host.page.getByTestId("rolloff-roll")).toBeHidden();
-    await expect(guest.page.getByTestId("rolloff-roll")).toBeVisible();
+    await expect(host.page.getByTestId("rolloff-roll")).toBeDisabled();
+    await expect(guest.page.getByTestId("rolloff-roll")).toBeEnabled();
+    // D-L1: the host's face lands on the guest's screen before the guest rolls.
+    await expect(guest.page.locator('[data-testid="rolloff-seat"][data-face]')).toHaveCount(1);
     await playRollOff([host, guest]);
     // Exactly one of them holds the Roll button (the unique 6).
     const rollers = [host, guest].filter(() => true);

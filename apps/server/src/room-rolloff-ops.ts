@@ -1,7 +1,7 @@
 /**
  * Opening roll-off (T-NEW-2). Every seated player asks the server to roll their one die;
  * faces come from the server's dice (crypto, or scripted by test hooks), never from a client.
- * A round is revealed to everyone at once, only after every expected seat has rolled. Rounds
+ * Each face is visible to everyone as soon as it is rolled (D-L1). Rounds
  * repeat until exactly one 6 is rolled; that seat starts. Seats that left are rolled by the
  * server so they can't stall the room. Callers run inside the room's serial queue.
  */
