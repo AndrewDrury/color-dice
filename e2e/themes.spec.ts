@@ -15,8 +15,29 @@ const THEMES: [string, string][] = [
   ["forest", "Forest"],
   ["lavender", "Lavender"],
   ["sunset", "Sunset"],
+  ["sakura", "Sakura"],
+  ["candy", "Candy"],
+  ["synthwave", "Synthwave"],
+  ["aurora", "Aurora"],
+  ["desert", "Desert"],
+  ["coffee", "Coffee"],
+  ["mint", "Mint"],
+  ["space", "Space"],
+  ["autumn", "Autumn"],
+  ["ice", "Ice"],
+  ["graphite", "Graphite"],
 ];
-const DARK = ["classic-dark", "midnight", "ocean", "forest"];
+const DARK = [
+  "classic-dark",
+  "midnight",
+  "ocean",
+  "forest",
+  "synthwave",
+  "aurora",
+  "coffee",
+  "space",
+  "graphite",
+];
 
 test.describe("themes @shots", () => {
   test.skip(!process.env.SHOTS, "set SHOTS=1 to capture screenshots");

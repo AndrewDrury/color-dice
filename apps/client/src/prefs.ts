@@ -12,8 +12,41 @@ export const THEMES = [
   "forest",
   "lavender",
   "sunset",
+  "sakura",
+  "candy",
+  "synthwave",
+  "aurora",
+  "desert",
+  "coffee",
+  "mint",
+  "space",
+  "autumn",
+  "ice",
+  "graphite",
 ] as const;
 export type ThemePref = (typeof THEMES)[number];
+export const THEME_SCHEME: Record<ThemePref, "auto" | "light" | "dark"> = {
+  classic: "auto",
+  "classic-light": "light",
+  "classic-dark": "dark",
+  hearts: "light",
+  midnight: "dark",
+  ocean: "dark",
+  forest: "dark",
+  lavender: "light",
+  sunset: "light",
+  sakura: "light",
+  candy: "light",
+  synthwave: "dark",
+  aurora: "dark",
+  desert: "light",
+  coffee: "dark",
+  mint: "light",
+  space: "dark",
+  autumn: "light",
+  ice: "light",
+  graphite: "dark",
+};
 export type LanguagePref = "auto" | "en" | "fr" | "es";
 
 export interface Prefs {

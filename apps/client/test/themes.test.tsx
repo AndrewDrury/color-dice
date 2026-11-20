@@ -2,7 +2,14 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyPrefs, startPrefs } from "../src/App";
 import { ThemePicker } from "../src/components/ThemePicker";
-import { _resetPrefsForTests, getPrefs, PREFS_KEY, setPrefs, THEMES } from "../src/prefs";
+import {
+  _resetPrefsForTests,
+  getPrefs,
+  PREFS_KEY,
+  setPrefs,
+  THEME_SCHEME,
+  THEMES,
+} from "../src/prefs";
 
 const root = document.documentElement;
 
@@ -49,13 +56,13 @@ describe("theme pref", () => {
 
 describe("applyPrefs", () => {
   it("sets data-theme and data-scheme per theme", () => {
-    const dark = ["classic-dark", "midnight", "ocean", "forest"];
     for (const theme of THEMES) {
       setPrefs({ theme });
       applyPrefs();
       expect(root.dataset.theme).toBe(theme);
-      if (theme === "classic") expect(root.dataset.scheme).toBeUndefined();
-      else expect(root.dataset.scheme).toBe(dark.includes(theme) ? "dark" : "light");
+      const scheme = THEME_SCHEME[theme];
+      if (scheme === "auto") expect(root.dataset.scheme).toBeUndefined();
+      else expect(root.dataset.scheme).toBe(scheme);
     }
   });
 });

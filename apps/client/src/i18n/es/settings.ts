@@ -12,7 +12,7 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.reduced": "Reducidas",
   "settings.full": "Completas",
   "settings.themes":
-    "Clásico (auto),Clásico claro,Clásico oscuro,Corazones,Medianoche,Océano,Bosque,Lavanda,Atardecer",
+    "Clásico (auto),Clásico claro,Clásico oscuro,Corazones,Medianoche,Océano,Bosque,Lavanda,Atardecer,Sakura,Dulce,Synthwave,Aurora,Desierto,Café,Menta,Espacio,Otoño,Hielo,Grafito",
   "settings.auto": "Auto",
   "settings.help": "Cómo se juega",
   "settings.keys": "Atajos de teclado",
