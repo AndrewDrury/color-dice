@@ -68,7 +68,19 @@ export const TurnMsgSchema = z
   })
   .strict();
 
+/** Host only (legacy): same as `rematchRequest`; the other seats still have to accept. */
 export const RematchMsgSchema = z.object({ type: z.literal("rematch") }).strict();
+/** T-NEW-30: any non-left seat asks for a rematch once the game is over (the sender accepts). */
+export const RematchRequestMsgSchema = z.object({ type: z.literal("rematchRequest") }).strict();
+/** Accept the pending offer; the game restarts when every non-left seat has accepted. */
+export const RematchAcceptMsgSchema = z.object({ type: z.literal("rematchAccept") }).strict();
+/** Decline the pending offer (the requester's own decline is a cancel). Clears it for everyone. */
+export const RematchDeclineMsgSchema = z.object({ type: z.literal("rematchDecline") }).strict();
+/**
+ * View-only attachment (T-NEW-30): the first frame of a watch socket, in place of `auth`.
+ * It authenticates with the same seat token but never counts as the seat being online.
+ */
+export const WatchMsgSchema = z.object({ type: z.literal("watch"), token: TokenSchema }).strict();
 export const UndoMsgSchema = z.object({ type: z.literal("undo"), turn: TurnSchema }).strict();
 
 export const PingMsgSchema = z.object({ type: z.literal("ping") }).strict();
@@ -97,6 +109,10 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   TurnMsgSchema,
   UndoMsgSchema,
   RematchMsgSchema,
+  RematchRequestMsgSchema,
+  RematchAcceptMsgSchema,
+  RematchDeclineMsgSchema,
+  WatchMsgSchema,
   PingMsgSchema,
   ChatMsgSchema,
   ReactMsgSchema,

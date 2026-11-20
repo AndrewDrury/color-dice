@@ -182,7 +182,29 @@ export interface ChatHistoryMessage {
   messages: ChatEntry[];
 }
 
+/** A pending rematch request (T-NEW-30). Display data only: no tokens, no hidden state. */
+export interface RematchOffer {
+  fromSeatId: string;
+  fromName: string;
+  fromProfile: Profile;
+  /** Seats that said yes (the requester included). */
+  accepted: string[];
+  /** Epoch ms; the offer is dropped 10 minutes after it was sent. */
+  expiresAt: number;
+}
+/** Why an offer went away (absent while it is pending). */
+export type RematchEnd = "started" | "declined" | "cancelled" | "expired";
+/** Sent to the room's game sockets and watch sockets of non-left seats: the offer now, or null. */
+export interface RematchOfferMessage {
+  type: "rematchOffer";
+  offer: RematchOffer | null;
+  reason?: RematchEnd;
+  /** Display name of the seat that declined. */
+  by?: string;
+}
+
 export type ServerMessage =
+  | RematchOfferMessage
   | ViewMessage
   | ErrorMessage
   | KickedMessage
@@ -374,12 +396,34 @@ export const ErrorMessageSchema = z
         "turn",
         "undo",
         "rematch",
+        "rematchRequest",
+        "rematchAccept",
+        "rematchDecline",
+        "watch",
         "ping",
         "chat",
         "react",
         "profile",
       ] as const satisfies readonly ClientMessageType[])
       .nullable(),
+  })
+  .strict();
+
+export const RematchOfferSchema = z
+  .object({
+    fromSeatId: SeatIdSchema,
+    fromName: z.string().min(1).max(PLAYER_NAME_MAX),
+    fromProfile: ProfileSchema,
+    accepted: z.array(SeatIdSchema).max(5),
+    expiresAt: z.number().int().min(0),
+  })
+  .strict();
+export const RematchOfferMessageSchema = z
+  .object({
+    type: z.literal("rematchOffer"),
+    offer: RematchOfferSchema.nullable(),
+    reason: z.enum(["started", "declined", "cancelled", "expired"]).optional(),
+    by: z.string().min(1).max(PLAYER_NAME_MAX).optional(),
   })
   .strict();
 
