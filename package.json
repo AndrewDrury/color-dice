@@ -17,10 +17,17 @@
     "lint:secrets:dist": "node scripts/secret-scan.mjs --dist",
     "lint:wrangler": "node scripts/check-wrangler.mjs",
     "lint:secrets:history": "node scripts/secret-scan.mjs --history",
-    "check": "npm run typecheck && npm run lint && npm run lint:nohtml && npm run lint:i18n && npm run lint:wrangler && npm run test && npm run lint:secrets",
+    "test:unit": "node scripts/run-parallel.mjs \"engine=npm run test -w packages/engine\" \"protocol=npm run test -w packages/protocol\" \"client=npm run test -w apps/client\" \"server=npm run test -w apps/server\"",
+    "test:changed": "node scripts/run-parallel.mjs \"engine=npm run test -w packages/engine -- --changed --passWithNoTests\" \"protocol=npm run test -w packages/protocol -- --changed --passWithNoTests\" \"client=npm run test -w apps/client -- --changed --passWithNoTests\" \"server=npm run test -w apps/server -- --changed --passWithNoTests\"",
+    "check": "node scripts/run-parallel.mjs \"typecheck=npm run typecheck\" \"lint=npm run lint\" \"nohtml=npm run lint:nohtml\" \"i18n=npm run lint:i18n\" \"wrangler=npm run lint:wrangler\" \"secrets=npm run lint:secrets\" \"engine=npm run test -w packages/engine\" \"protocol=npm run test -w packages/protocol\" \"client=npm run test -w apps/client\" \"server=npm run test -w apps/server\"",
+    "check:fast": "node scripts/run-parallel.mjs \"typecheck=npm run typecheck\" \"lint=npm run lint\" && npm run test:changed",
+    "check:serial": "npm run typecheck && npm run lint && npm run lint:nohtml && npm run lint:i18n && npm run lint:wrangler && npm run test && npm run lint:secrets",
+    "fuzz:full": "FUZZ_GAMES=10000 npm run test -w packages/engine",
     "dev:server": "npm run dev -w apps/server",
     "dev:client": "npm run dev -w apps/client",
     "e2e": "playwright test -c e2e/playwright.config.ts",
+    "e2e:smoke": "playwright test -c e2e/playwright.config.ts --grep @smoke",
+    "e2e:changed": "playwright test -c e2e/playwright.config.ts --only-changed=origin/main",
     "build": "npm run build -w apps/client"
   },
   "devDependencies": {
