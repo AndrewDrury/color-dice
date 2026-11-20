@@ -505,6 +505,20 @@
   font-size: var(--fs-body);
   margin-bottom: var(--s2);
 }
+.g-log li {
+  overflow-wrap: anywhere;
+}
+.g-untyped {
+  visibility: hidden;
+}
+.g-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-inline: 1px;
+  vertical-align: text-bottom;
+  background: currentColor;
+}
 .g-log ol {
   margin: 0;
   padding: 0;
