@@ -119,9 +119,7 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
             p.page
               .locator("[data-die]")
               .evaluateAll((els) => els.map((e) => e.getAttribute("data-face"))),
-          {
-            timeout: 1500,
-          },
+          { timeout: 5000 }, // D-L9: dice land 400 ms apart (≈ 2.8 s for six)
         )
         .toHaveLength(6);
       await expect
@@ -132,11 +130,11 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
                 .locator("[data-die]")
                 .evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-face"))))
             ).sort(),
-          { timeout: 1500 },
+          { timeout: 5000 },
         )
         .toEqual([...expected].sort());
     }
-    expect(Date.now() - t0).toBeLessThan(2500); // generous bound on the whole poll chain
+    expect(Date.now() - t0).toBeLessThan(6000); // generous bound: tumble + 400 ms-apart landings
     // The two whites show 6 and 1, the four colored dice 1 each.
     const faces = await b.page
       .locator("[data-die]")

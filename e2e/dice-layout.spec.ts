@@ -69,8 +69,8 @@ test("dice land left to right and outlines keep clear of their text", async ({ b
     await expect
       .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
       .toBe(0);
-    // Fast: tumble (>= 550 ms) + staggered landing (< 1 s) + round trip.
-    expect(Date.now() - start).toBeLessThan(3500);
+    // Tumble (>= 550 ms) + one-at-a-time landing, 400 ms apart (D-L9, < 2.5 s) + round trip.
+    expect(Date.now() - start).toBeLessThan(5000);
 
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });

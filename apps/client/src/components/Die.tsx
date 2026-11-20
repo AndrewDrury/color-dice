@@ -35,6 +35,10 @@ export interface DieProps {
   removed?: boolean;
   highlight?: boolean;
   reduced?: boolean;
+  /** Ms between landings while settling (gameplay: 400). Defaults to `ROLL_TIMING.stagger`. */
+  stagger?: number;
+  /** Landed during a live settle: show the face now (with a small pop), before `settled`. */
+  landed?: boolean;
 }
 
 /** Pip cells (0–8, row-major in a 3×3 grid) per face. */
@@ -81,6 +85,7 @@ export function dieLabel(color: DieColor, face: Face, phase: RollPhase, removed:
 
 export function Die(props: DieProps) {
   const { color, face, phase, seed, removed = false, highlight = false, reduced = false } = props;
+  const landed = props.landed === true && !removed;
   const pose = settleTransform(face, seed);
 
   const fxRef = useRef<HTMLDivElement>(null);
@@ -92,6 +97,7 @@ export function Die(props: DieProps) {
   const tumble = useRef<{ plan: TumblePlan; start: number } | null>(null);
   const prevPhase = useRef(phase);
   const prevRemoved = useRef(removed);
+  const prevLanded = useRef(landed);
   const latest = useRef(props);
   latest.current = props;
 
@@ -228,10 +234,19 @@ export function Die(props: DieProps) {
     if (phase === "shaking") startShake();
     else if (phase === "tumbling") startTumble();
     else if (phase === "settling") {
-      const delay = (latest.current.index ?? 0) * ROLL_TIMING.stagger;
+      const gap = latest.current.stagger ?? ROLL_TIMING.stagger;
+      const delay = (latest.current.index ?? 0) * gap;
       timers.current.push(setTimeout(() => settleOnto(ROLL_TIMING.settle, true), delay));
+    } else if (prev === "settling") {
+      // Normal end: every die has already started its settle. Skipped: snap the rest.
+      for (const t of timers.current) clearTimeout(t);
+      timers.current = [];
+      if (tumble.current) {
+        stopAll();
+        tumble.current = null;
+      }
     } else if (prev === "tumbling") settleOnto(ROLL_TIMING.easeBack, false);
-    else if (prev !== "settling") stopAll();
+    else stopAll();
   }, [phase]);
 
   // Colour locked during the game: lift, spin once, shrink and fade (500 ms).
@@ -249,12 +264,24 @@ export function Die(props: DieProps) {
     track(animate(fxRef.current, kf, { duration: 500, easing: EASE_OUT }));
   }, [removed]);
 
+  // D-L9: the face shows the moment the die lands, with a small pop.
+  useLayoutEffect(() => {
+    const was = prevLanded.current;
+    prevLanded.current = landed;
+    if (!landed || was || reduced) return;
+    const kf = [{ transform: "scale(1)" }, { transform: "scale(1.1)" }, { transform: "scale(1)" }];
+    track(animate(fxRef.current, kf, { duration: 200, easing: EASE_OUT }));
+  }, [landed]);
+
   useEffect(() => stopAll, []);
 
   const cls = ["die", `die--${color.toLowerCase()}`];
   if (removed) cls.push("is-removed");
   if (highlight && !removed) cls.push("is-highlight");
   if (phase !== "settled" && phase !== "idle") cls.push("is-moving");
+  if (landed) cls.push("is-landed");
+  const shownPhase: RollPhase = landed ? "settled" : phase;
+  const shown = shownPhase === "settled" && !removed;
 
   return (
     <div
@@ -263,8 +290,8 @@ export function Die(props: DieProps) {
       data-die={props.id ?? color}
       data-color={color}
       data-order={removed ? undefined : (props.index ?? 0)}
-      data-face={phase === "settled" && !removed ? String(face) : undefined}
-      aria-label={dieLabel(color, face, phase, removed)}
+      data-face={shown ? String(face) : undefined}
+      aria-label={dieLabel(color, face, shownPhase, removed)}
     >
       <div class="die__fx" ref={fxRef}>
         <div class="die__shadow" ref={shadowRef} />

@@ -5,6 +5,9 @@
  * - Each (code, turn) roll animates once per page load; first render / resync / hidden tab
  *   shows it settled with no animation.
  * - Reduced motion: no tumble; the result shows within 150 ms (CSS cross-fade).
+ * - Gameplay (D-L9): dice land one at a time, left to right, `GAMEPLAY_TIMING.landGap` apart;
+ *   `skip()` (tap on the tray) jumps to the end. Only the local display waits: the server
+ *   view is applied at once.
  */
 import { useEffect, useRef, useState } from "preact/hooks";
 import { BOUNCE_MS } from "./dice-math";
@@ -27,6 +30,12 @@ export const ROLL_TIMING = Object.freeze({
   easeBack: 300,
   reducedFade: 150,
 });
+
+/**
+ * Gameplay reveal (D-L9): 400 ms between landings. Kept apart from `ROLL_TIMING` (shared with
+ * the roll-off and turn summary, whose 70 ms stagger is unchanged).
+ */
+export const GAMEPLAY_TIMING = Object.freeze({ landGap: 400 });
 
 export interface RollLike {
   white: readonly number[];
@@ -54,11 +63,15 @@ export interface RollAnimation {
   slow: boolean;
   /** Increments on every live landing (drives the badge pop). */
   landings: number;
+  /** While settling: how many present dice (tray order) have landed so far. */
+  landed: number;
   shake(): void;
   cancelShake(): void;
   throwDice(): void;
   /** The roll request failed: ease back to the previous faces. */
   cancelThrow(): void;
+  /** Jump to the end of a live landing sequence (all dice landed, `onLanded` fires). */
+  skip(): void;
 }
 
 const played = new Set<string>();
@@ -88,6 +101,7 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
   });
   const [slow, setSlow] = useState(false);
   const [landings, setLandings] = useState(0);
+  const [landed, setLanded] = useState(0);
 
   const phaseRef = useRef(phase);
   const keyRef = useRef(key);
@@ -96,6 +110,8 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
   optsRef.current = opts;
   const tumbleStart = useRef(0);
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  /** Dice count of a live roll that has not finished landing yet (null: nothing to skip). */
+  const pending = useRef<number | null>(null);
 
   const setPhase = (p: RollPhase) => {
     phaseRef.current = p;
@@ -110,20 +126,32 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
   };
   const rest = () => {
     clearTimers();
+    pending.current = null;
     setSlow(false);
     setPhase(keyRef.current === null ? "idle" : "settled");
   };
 
+  const finish = () => {
+    const count = pending.current ?? 0;
+    clearTimers();
+    pending.current = null;
+    setLanded(count);
+    setPhase("settled");
+    setLandings((n) => n + 1);
+    optsRef.current.onLanded?.();
+  };
+
   const land = (count: number) => {
+    setLanded(0);
     setPhase("settling");
-    const { stagger, landAt, settle } = ROLL_TIMING;
+    const { landAt, settle } = ROLL_TIMING;
+    const gap = GAMEPLAY_TIMING.landGap;
     for (let i = 0; i < count; i++)
-      later(i * stagger + landAt, () => optsRef.current.onDieLand?.(i));
-    later((count - 1) * stagger + settle, () => {
-      setPhase("settled");
-      setLandings((n) => n + 1);
-      optsRef.current.onLanded?.();
-    });
+      later(i * gap + landAt, () => {
+        setLanded(i + 1);
+        optsRef.current.onDieLand?.(i);
+      });
+    later((count - 1) * gap + settle, finish);
   };
 
   useEffect(() => {
@@ -152,6 +180,7 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
     }
     clearTimers();
     setSlow(false);
+    pending.current = dieCount;
     if (phaseRef.current !== "tumbling") {
       // Someone else's roll (or ours without a press): tumble now, from the view's arrival.
       tumbleStart.current = Date.now();
@@ -169,6 +198,7 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
     phase,
     slow,
     landings,
+    landed,
     shake() {
       if (busy() || phaseRef.current === "shaking") return;
       if (!reducedMotion()) setPhase("shaking");
@@ -186,6 +216,9 @@ export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {
     },
     cancelThrow() {
       if (phaseRef.current === "tumbling") rest();
+    },
+    skip() {
+      if (pending.current !== null && busy()) finish();
     },
   };
 }

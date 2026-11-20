@@ -1,6 +1,7 @@
 /**
  * The dice tray (H4): two white + four coloured dice, the white-sum badge, removed dice,
  * the Action 2 helper highlight and the hold-to-shake Roll button (pointer + Space/Enter).
+ * Live rolls land one die at a time, left to right (D-L9); a tap on the tray skips to the end.
  */
 import type { Color } from "@cd/engine";
 import type { JSX } from "preact";
@@ -9,7 +10,7 @@ import { type Face, hashSeed } from "../fx/dice-math";
 import { feedback } from "../fx/feedback";
 import { useReducedMotion } from "../fx/motion";
 import { startRattle, stopRattle, unlockAudio } from "../fx/sound";
-import { type RollLike, useRollAnimation } from "../fx/useRollAnimation";
+import { GAMEPLAY_TIMING, type RollLike, useRollAnimation } from "../fx/useRollAnimation";
 import { t, useT } from "../i18n";
 import "../styles/dice.css";
 import { Die, type DieColor } from "./Die";
@@ -130,6 +131,18 @@ export function DiceTray(props: DiceTrayProps) {
     }
   }
 
+  // Tap / click anywhere on the tray: skip to the end of the landing sequence.
+  const trayRef = useRef<HTMLElement>(null);
+  const animRef = useRef(anim);
+  animRef.current = anim;
+  useEffect(() => {
+    const el = trayRef.current;
+    if (!el) return;
+    const onTap = () => animRef.current.skip();
+    el.addEventListener("click", onTap);
+    return () => el.removeEventListener("click", onTap);
+  }, []);
+
   // Ease back when the roll request fails.
   const failed = useRef(props.rollFailed);
   useEffect(() => {
@@ -245,6 +258,7 @@ export function DiceTray(props: DiceTrayProps) {
       ((slot.whiteIndex !== undefined && highlight.white === slot.whiteIndex) ||
         (slot.colorKey !== undefined && highlight.color === slot.colorKey));
     const phase = removed ? "settled" : anim.phase;
+    const landed = !removed && anim.phase === "settling" && index < anim.landed;
     return (
       <Die
         key={slot.id}
@@ -257,17 +271,26 @@ export function DiceTray(props: DiceTrayProps) {
         removed={removed}
         highlight={lit}
         reduced={reduced}
+        stagger={GAMEPLAY_TIMING.landGap}
+        landed={landed}
       />
     );
   });
 
   const settled = anim.phase === "settled" && roll !== null;
+  // The white sum shows once both white dice (always the first two) have landed.
+  const whitesDown = settled || (anim.phase === "settling" && anim.landed >= 2 && roll !== null);
   const sum = roll ? (roll.white[0] ?? 0) + (roll.white[1] ?? 0) : null;
   const hlWhite = highlight?.white !== undefined ? roll?.white[highlight.white] : undefined;
   const hlColor = highlight?.color ? roll?.colored[highlight.color] : undefined;
 
   return (
-    <section class={`tray${reduced ? " tray--reduced" : ""}`} aria-label={t("dice.aria")}>
+    <section
+      ref={trayRef}
+      class={`tray${reduced ? " tray--reduced" : ""}`}
+      aria-label={t("dice.aria")}
+      data-settled={settled ? "" : undefined}
+    >
       <div class="tray__felt">
         <div class={`tray__dice${highlight ? " has-highlight" : ""}`}>
           {dice.slice(0, 2)}
@@ -275,10 +298,10 @@ export function DiceTray(props: DiceTrayProps) {
           {dice.slice(2)}
           {/* K3.1: the white sum sits under the white pair only, in a fixed slot. */}
           <div class="tray__wsum" data-slot="white-sum">
-            {settled && sum !== null ? (
+            {whitesDown && sum !== null ? (
               <output
-                key={`sum-${anim.landings}`}
-                class={`tray__sum num${anim.landings > 0 ? " is-pop" : ""}`}
+                key={`sum-${turnKey.code}:${turnKey.turnNumber}`}
+                class={`tray__sum num${anim.landings > 0 || !settled ? " is-pop" : ""}`}
                 aria-label={t("dice.sum", { sum })}
               >
                 {sum}
