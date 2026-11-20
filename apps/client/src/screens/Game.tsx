@@ -131,7 +131,7 @@ interface BoardProps {
   liveRollOff: boolean;
 }
 
-function Board({
+export function Board({
   offlineSince,
   view,
   status,

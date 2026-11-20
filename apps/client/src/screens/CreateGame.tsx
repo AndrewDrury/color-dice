@@ -107,6 +107,13 @@ export function CreateGame() {
     }
   };
 
+  const startDemo = () => {
+    void import("../demo").then(({ startDemo }) => {
+      startDemo();
+      navigate("demo");
+    });
+  };
+
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
       <div class="row" style={{ justifyContent: "space-between" }}>
@@ -163,10 +170,13 @@ export function CreateGame() {
                   name="maxPlayers"
                   class="sr-only"
                   value={String(n)}
+                  aria-label={String(n)}
                   checked={n === maxPlayers}
                   onChange={() => setMaxPlayers(n)}
                 />
-                <span class="num">{n}</span>
+                <span class="num" aria-hidden="true">
+                  {n}
+                </span>
               </label>
             ))}
           </div>
@@ -191,18 +201,20 @@ export function CreateGame() {
                 <label
                   key={n}
                   style={{ ...segStyle(n === cpuCount), opacity: unavailable ? 0.45 : 1 }}
-                  aria-label={n === 0 ? t("create.cpuNone") : tn("create.cpuCount", n)}
                 >
                   <input
                     type="radio"
                     name="cpuCount"
                     class="sr-only"
                     value={String(n)}
+                    aria-label={n === 0 ? t("create.cpuNone") : tn("create.cpuCount", n)}
                     checked={n === cpuCount}
                     disabled={unavailable}
                     onChange={() => setCpuCount(n)}
                   />
-                  <span class="num">{n}</span>
+                  <span class="num" aria-hidden="true">
+                    {n}
+                  </span>
                 </label>
               );
             })}
@@ -224,6 +236,9 @@ export function CreateGame() {
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           {t("create.title")}
+        </Button>
+        <Button type="button" block onClick={startDemo}>
+          {t("home.demoStart")}
         </Button>
       </form>
     </main>

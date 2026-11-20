@@ -172,8 +172,8 @@ describe("CreateGame", () => {
       inviteKey: INVITE,
     });
     render(<CreateGame />);
-    expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByLabelText("4"));
+    expect((screen.getByRole("radio", { name: "2" }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "4" }));
     type("Room name", "Lunch");
     type("Your name", "Cleo");
     type("Password", "secret");
@@ -181,7 +181,7 @@ describe("CreateGame", () => {
     expect(stored()).toMatchObject({ maxPlayers: 4 });
     cleanup();
     render(<CreateGame />);
-    expect((screen.getByLabelText("4") as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: "4" }) as HTMLInputElement).checked).toBe(true);
   });
 
   it.each([9, 1, 2.5, "x", "3", null])(
@@ -190,7 +190,7 @@ describe("CreateGame", () => {
       localStorage.setItem(REMEMBERED_KEY, JSON.stringify({ name: "Cleo", maxPlayers: bad }));
       expect(getRemembered().maxPlayers).toBe(2);
       render(<CreateGame />);
-      expect((screen.getByLabelText("2") as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByRole("radio", { name: "2" }) as HTMLInputElement).checked).toBe(true);
     },
   );
 

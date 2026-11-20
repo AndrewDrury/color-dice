@@ -167,7 +167,7 @@ describe("CreateGame", () => {
     });
     fireEvent.input(screen.getByLabelText("Your name"), { target: { value: " Andrew  " } });
     fireEvent.input(screen.getByLabelText("Password"), { target: { value: " pw 1 " } });
-    fireEvent.click(screen.getByLabelText("3"));
+    fireEvent.click(screen.getByRole("radio", { name: "3" }));
     fireEvent.click(screen.getByLabelText("Show in public list"));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Create game" }));
@@ -179,6 +179,7 @@ describe("CreateGame", () => {
       password: " pw 1 ",
       maxPlayers: 3,
       listed: false,
+      cpuCount: 0,
       profile: expect.objectContaining({ cat: "mad-cat" }),
     });
     expect(listSessions()).toEqual([
@@ -190,12 +191,12 @@ describe("CreateGame", () => {
 
   it("bounds CPU opponents by the human and max player counts", () => {
     render(<CreateGame />);
-    fireEvent.click(screen.getByLabelText("2"));
+    fireEvent.click(screen.getByRole("radio", { name: "2" }));
     expect((screen.getByLabelText("No CPUs") as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText("1 CPU") as HTMLInputElement).disabled).toBe(false);
     fireEvent.click(screen.getByLabelText("1 CPU"));
     expect((screen.getByLabelText("1 CPU") as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByLabelText("2"));
+    fireEvent.click(screen.getByRole("radio", { name: "2" }));
   });
 
   it("shows a friendly rate-limit message", async () => {

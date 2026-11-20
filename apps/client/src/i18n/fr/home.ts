@@ -19,6 +19,7 @@ export const home: Record<keyof typeof en, string> = {
   "home.playersSr": "joueurs",
   "home.joinAria": "Rejoindre {room}",
   "home.passwordProtected": "Protégée par mot de passe",
+  "home.demoStart": "Démarrer le mode démo / test",
 
   "create.title": "Créer une partie",
   "create.passwordHint": "Transmets-le à tes amis en privé.",

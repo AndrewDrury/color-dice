@@ -91,6 +91,31 @@ output {
   color: var(--ink-muted);
 }
 
+.demo-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--e1);
+}
+
+.demo-scenarios {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  justify-content: center;
+  padding: var(--s2);
+}
+
 /* ---------- Controls ---------- */
 
 button,

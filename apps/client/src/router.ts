@@ -3,7 +3,15 @@ import { useEffect, useState } from "preact/hooks";
 import { isInviteHash, parseInviteHash } from "./invite";
 import { getSession } from "./session";
 
-export type Screen = "home" | "create" | "join" | "invite" | "reclaim" | "waiting" | "game";
+export type Screen =
+  | "home"
+  | "create"
+  | "join"
+  | "invite"
+  | "reclaim"
+  | "waiting"
+  | "game"
+  | "demo";
 
 export interface Route {
   screen: Screen;

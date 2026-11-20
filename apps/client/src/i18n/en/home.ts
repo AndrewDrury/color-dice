@@ -17,6 +17,7 @@ export const home = {
   "home.playersSr": "players",
   "home.joinAria": "Join {room}",
   "home.passwordProtected": "Password protected",
+  "home.demoStart": "Start demo / test mode",
 
   "create.title": "Create game",
   "create.passwordHint": "Share it privately with your friends.",

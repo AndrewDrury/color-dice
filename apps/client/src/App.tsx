@@ -1,4 +1,5 @@
-import { useEffect } from "preact/hooks";
+import type { ComponentType } from "preact";
+import { useEffect, useState } from "preact/hooks";
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
 import { UpdateToast } from "./components/UpdateToast";
@@ -28,6 +29,17 @@ export function App() {
   useLocale(); // re-render the whole tree when the language changes
   const route = useRoute();
   const { status } = useAppState();
+  const [DemoScreen, setDemoScreen] = useState<ComponentType | null>(null);
+  useEffect(() => {
+    if (route.screen !== "demo") return;
+    let alive = true;
+    void import("./demo").then((m) => {
+      if (alive) setDemoScreen(() => m.DemoScreen);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [route.screen]);
   useEffect(() => {
     applyPrefs();
     return onPrefs(() => applyPrefs());
@@ -53,6 +65,9 @@ export function App() {
       break;
     case "game":
       screen = route.code ? <Game key={route.code} code={route.code} /> : null;
+      break;
+    case "demo":
+      screen = DemoScreen ? <DemoScreen /> : null;
       break;
     default:
       screen = <Placeholder route={route} status={status} />;
