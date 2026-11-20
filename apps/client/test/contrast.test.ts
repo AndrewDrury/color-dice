@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { THEMES } from "../src/prefs";
+import appCss from "../src/styles/app.css?raw";
 import {
+  BUTTON_PAIRS,
   contrastRatio,
+  DERIVED,
   PAIRS,
+  resolvedTokens,
   THEME_BASE,
   THEME_OVERRIDES,
   type Theme,
@@ -11,6 +15,14 @@ import {
 } from "../src/styles/contrast";
 import themesCss from "../src/styles/themes.css?raw";
 import css from "../src/styles/tokens.css?raw";
+
+/** The CSS text app.css must declare for a derived token. */
+function derivedCss(name: string): string {
+  const d = DERIVED[name] as (typeof DERIVED)[string];
+  return typeof d === "string"
+    ? `${name}: var(${d});`
+    : `${name}: color-mix(in srgb, var(${d[0]}) ${d[1]}%, var(${d[2]}));`;
+}
 
 const themes: Theme[] = ["light", "dark"];
 
@@ -89,5 +101,19 @@ describe("contrast", () => {
       expect(themesCss).toContain(`:root[data-theme="${id}"]`);
     }
     expect(themesCss).not.toMatch(/--(row|die)-/);
+  });
+
+  // T-NEW-22: button variants and both turn-banner states, every theme.
+  for (const id of THEMES) {
+    for (const { fg, bg, min } of BUTTON_PAIRS) {
+      it(`buttons ${id}: ${fg} on ${bg} >= ${min}`, () => {
+        const tok = resolvedTokens(id);
+        expect(contrastRatio(tok[fg] as string, tok[bg] as string)).toBeGreaterThanOrEqual(min);
+      });
+    }
+  }
+
+  it("app.css declares every derived button / banner token as contrast.ts models it", () => {
+    for (const name of Object.keys(DERIVED)) expect(appCss, name).toContain(derivedCss(name));
   });
 });

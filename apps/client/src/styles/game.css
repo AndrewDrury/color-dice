@@ -447,23 +447,25 @@
 .g-actions .btn {
   min-height: 48px;
   flex: 1;
-  background: var(--paper);
-  box-shadow: var(--e1);
 }
 .g-actions .g-primary {
   flex: 2;
   font-weight: var(--fw-heavy);
 }
-.g-actions .btn-primary {
-  background: var(--accent);
-}
 .g-actions .g-submit {
-  background: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--btn-primary-border);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 .g-actions .g-submit.is-danger {
-  background: var(--danger);
-  color: var(--on-danger);
+  border-color: var(--btn-danger-border);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
+}
+.g-actions .btn:disabled {
+  border-color: var(--btn-disabled-border);
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
 }
 .g-log {
   max-height: 260px;
@@ -916,6 +918,11 @@
   }
   .g-top {
     min-height: 44px;
+  }
+  /* The banner's call to action already says what to press; the hint row (48 px) would push the
+     page into scrolling on 360x640 / 375x667 phones. */
+  .g-game .g-hintline {
+    display: none;
   }
 }
 

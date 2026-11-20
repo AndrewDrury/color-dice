@@ -29,7 +29,6 @@
 /* One-click pass: the warning label is the only warning (K4.4); no-move state (K4.9). */
 .g-actions .g-nomove {
   flex: 1;
-  opacity: 0.8;
   white-space: normal;
   line-height: 1.2;
 }
@@ -135,13 +134,47 @@
   gap: 2px var(--s2);
   padding: 6px var(--s3);
   border-radius: var(--r-button);
-  background: var(--paper);
+  border: 2px solid var(--turn-other-border);
+  background: var(--turn-other-bg);
+  color: var(--turn-other-fg);
   box-shadow: var(--e1);
   min-width: 0;
 }
+/* T-NEW-22: my turn is loud (accent fill, bold, glow); someone else's turn stays calm. */
 .g-turnbar.is-mine {
-  background: var(--accent);
-  color: var(--on-accent, var(--paper));
+  border-color: var(--turn-mine-bg);
+  background: var(--turn-mine-bg);
+  color: var(--turn-mine-fg);
+  font-weight: var(--fw-bold);
+  font-size: 1.0625em;
+  animation: turn-glow 2s ease-in-out infinite;
+}
+.g-turnbar.is-mine .g-turnbar-who::before {
+  content: "○ ";
+}
+.g-turnbar.is-mine .g-turnbar-who::before {
+  content: "▶ ";
+}
+.g-turnbar-who {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+@keyframes turn-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--turn-mine-bg) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--turn-mine-bg) 0%, transparent);
+  }
+}
+:root[data-motion="reduced"] .g-turnbar.is-mine {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .g-turnbar.is-mine {
+    animation: none;
+  }
 }
 .g-turnbar-who {
   max-width: 100%;

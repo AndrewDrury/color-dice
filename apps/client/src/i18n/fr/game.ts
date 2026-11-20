@@ -63,6 +63,7 @@ export const game: Record<keyof typeof en, string> = {
   "turn.roll": "Lance les dés",
   "turn.confirm": "Appuie sur Valider",
   "turn.pick": "Choisis une case ou appuie sur « {pass} »",
+  "nudge.title": "À toi de jouer !",
 
   "summary.aria": "Résumé du tour",
   "summary.turn": "Tour {n}",

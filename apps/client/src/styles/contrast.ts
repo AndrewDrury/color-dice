@@ -258,3 +258,70 @@ export const THEME_OVERRIDES: Record<string, Record<string, string>> = {
 export function themeTokens(id: string): Record<string, string> {
   return { ...TOKENS[THEME_BASE[id] ?? "light"], ...THEME_OVERRIDES[id] };
 }
+
+/**
+ * T-NEW-22: button and turn-banner tokens. Each is an alias of a base token or a sRGB
+ * `color-mix(in srgb, A pct%, B)`; app.css declares them identically (checked by the tests).
+ */
+export type Derived = string | [a: string, pct: number, b: string];
+
+export const DERIVED: Record<string, Derived> = {
+  "--btn-bg": ["--accent", 14, "--paper"],
+  "--btn-fg": "--ink",
+  "--btn-border": ["--ink", 60, "--paper"],
+  "--btn-primary-bg": "--accent",
+  "--btn-primary-fg": "--on-accent",
+  "--btn-primary-border": "--accent",
+  "--btn-danger-bg": "--danger",
+  "--btn-danger-fg": "--on-danger",
+  "--btn-danger-border": "--danger",
+  "--btn-disabled-bg": ["--ink", 10, "--paper"],
+  "--btn-disabled-fg": "--ink-muted",
+  "--btn-disabled-border": ["--ink", 60, "--paper"],
+  "--turn-mine-bg": "--accent",
+  "--turn-mine-fg": "--on-accent",
+  "--turn-other-bg": ["--ink", 8, "--paper"],
+  "--turn-other-fg": "--ink",
+  "--turn-other-border": ["--ink", 25, "--paper"],
+};
+
+/** Mix two `#RRGGBB` colours like CSS `color-mix(in srgb, a pct%, b)`. */
+export function mixHex(a: string, pct: number, b: string): string {
+  const ch = (h: string, i: number) => Number.parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+  return `#${[0, 1, 2]
+    .map((i) =>
+      Math.round((ch(a, i) * pct) / 100 + (ch(b, i) * (100 - pct)) / 100)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
+/** Base tokens plus the derived button / banner tokens, resolved for a theme id. */
+export function resolvedTokens(id: string): Record<string, string> {
+  const t = themeTokens(id);
+  for (const [name, d] of Object.entries(DERIVED)) {
+    t[name] =
+      typeof d === "string" ? (t[d] as string) : mixHex(t[d[0]] as string, d[1], t[d[2]] as string);
+  }
+  return t;
+}
+
+/** Label pairs min 4.5, borders (and fills against surfaces) min 3, per DERIVED token names. */
+export const BUTTON_PAIRS: { fg: string; bg: string; min: number }[] = [
+  ...["btn", "btn-primary", "btn-danger", "btn-disabled"].flatMap((v) => [
+    { fg: `--${v}-fg`, bg: `--${v}-bg`, min: 4.5 },
+  ]),
+  { fg: "--btn-border", bg: "--btn-bg", min: 3 },
+  { fg: "--btn-border", bg: "--paper", min: 3 },
+  { fg: "--btn-border", bg: "--table", min: 3 },
+  { fg: "--btn-primary-border", bg: "--paper", min: 3 },
+  { fg: "--btn-primary-border", bg: "--table", min: 3 },
+  { fg: "--btn-danger-border", bg: "--paper", min: 3 },
+  { fg: "--btn-disabled-border", bg: "--paper", min: 3 },
+  { fg: "--btn-disabled-border", bg: "--btn-disabled-bg", min: 3 },
+  { fg: "--turn-mine-fg", bg: "--turn-mine-bg", min: 4.5 },
+  { fg: "--turn-other-fg", bg: "--turn-other-bg", min: 4.5 },
+  { fg: "--turn-mine-bg", bg: "--table", min: 3 },
+  { fg: "--turn-mine-bg", bg: "--turn-other-bg", min: 1.5 },
+];

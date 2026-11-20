@@ -62,6 +62,7 @@ export const game: Record<keyof typeof en, string> = {
   "turn.roll": "Tira los dados",
   "turn.confirm": "Pulsa Enviar",
   "turn.pick": "Elige una casilla o pulsa «{pass}»",
+  "nudge.title": "¡Tu turno!",
 
   "summary.aria": "Resumen del turno",
   "summary.turn": "Turno {n}",

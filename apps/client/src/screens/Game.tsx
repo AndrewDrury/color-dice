@@ -227,6 +227,7 @@ function Board({
   const legal = new Set([...(cand?.white ?? []), ...(cand?.colour ?? [])]);
   const colour = new Set([...(cand?.colour ?? [])].filter((k) => !cand?.white.has(k)));
   const act = isActive(view);
+  const anyStaged = st.s1 !== null || st.s2 !== null;
   const staged = [st.s1 && { ...st.s1, step: 1 as const }, st.s2 && { ...st.s2, step: 2 as const }]
     .filter((m) => m !== null)
     .map((m) => (act ? m : { color: m.color, number: m.number }));
@@ -243,13 +244,11 @@ function Board({
     if (next) setSummary(next);
   }, [view.version]);
   // Lazy: the summary UI is loaded on the first summary (keeps the initial bundle small).
-  const [SummaryCard, setSummaryCard] = useState<
-    typeof import("../components/TurnSummary").TurnSummary | null
-  >(null);
+  const [late, setLate] = useState<typeof import("../components/lateUi") | null>(null);
   useEffect(() => {
-    if (summary && !SummaryCard)
-      import("../components/TurnSummary").then((m) => setSummaryCard(() => m.TurnSummary));
-  }, [summary]);
+    import("../components/lateUi").then(setLate);
+  }, []);
+  const SummaryCard = late?.TurnSummary;
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
   const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
@@ -268,6 +267,8 @@ function Board({
   const myMove =
     view.you.canRoll ||
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
+  // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
+  const Nudge = late?.IdleNudge;
   useWakeLock(!gameOver);
   useTabAttention(myMove);
   useGameKeys({
@@ -336,7 +337,7 @@ function Board({
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
-      <TurnBanner view={view} staged={st.s1 !== null || st.s2 !== null} noMove={noMove} />
+      <TurnBanner view={view} staged={anyStaged} noMove={noMove} />
       <AwayControls view={view} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
@@ -409,6 +410,16 @@ function Board({
         <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
       ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
+      {Nudge ? (
+        <Nudge
+          view={view}
+          staged={anyStaged}
+          noMove={noMove}
+          blocked={
+            !!(rolling || st.sent || showRollOff || panel || leaving || rematching) || !landed
+          }
+        />
+      ) : null}
       {showRollOff && rollOff ? (
         <RollOff
           view={view}

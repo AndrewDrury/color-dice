@@ -61,6 +61,7 @@ export const game = {
   "turn.roll": "Roll the dice",
   "turn.confirm": "Press Submit",
   "turn.pick": "Pick a box or press “{pass}”",
+  "nudge.title": "Your move!",
 
   "summary.aria": "Turn summary",
   "summary.turn": "Turn {n}",
