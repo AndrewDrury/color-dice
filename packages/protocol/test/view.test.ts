@@ -25,6 +25,7 @@ const fixture: ViewMessage = {
     name: "Friday dice",
     listed: true,
     maxPlayers: 4,
+    cpuCount: 1,
     status: "playing",
     joinLockedUntil: null,
   },
@@ -33,6 +34,7 @@ const fixture: ViewMessage = {
       seatId: "a1b2c3d4",
       name: "Andrew",
       host: true,
+      kind: "human",
       online: true,
       away: false,
       left: false,
@@ -42,6 +44,7 @@ const fixture: ViewMessage = {
       seatId: "e5f6g7h8",
       name: "Bo",
       host: false,
+      kind: "cpu",
       online: false,
       away: true,
       left: false,
@@ -107,6 +110,21 @@ describe("ViewMessageSchema", () => {
     expect(ViewMessageSchema.safeParse(withLeft).success).toBe(true);
     const bad = { ...fixture, seats: fixture.seats.map((s) => ({ ...s, left: "yes" })) };
     expect(ViewMessageSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("requires strict CPU kind and room CPU count fields", () => {
+    const noKind = { ...fixture, seats: fixture.seats.map(({ kind: _k, ...seat }) => seat) };
+    expect(ViewMessageSchema.safeParse(noKind).success).toBe(false);
+    const badKind = {
+      ...fixture,
+      seats: fixture.seats.map((seat) => ({ ...seat, kind: "robot" })),
+    };
+    expect(ViewMessageSchema.safeParse(badKind).success).toBe(false);
+    const noCount = {
+      ...fixture,
+      room: { ...fixture.room, cpuCount: undefined },
+    };
+    expect(ViewMessageSchema.safeParse(noCount).success).toBe(false);
   });
 
   it("parses hidden opponent cards (sheet and score.rows null)", () => {
@@ -179,12 +197,20 @@ describe("ViewMessage built from the engine's viewFor", () => {
       type: "view",
       version: 1,
       code: "K7QF2",
-      room: { name: "Room", listed: true, maxPlayers: 4, status: "playing", joinLockedUntil: null },
+      room: {
+        name: "Room",
+        listed: true,
+        maxPlayers: 4,
+        cpuCount: 0,
+        status: "playing",
+        joinLockedUntil: null,
+      },
       seats: [
         {
           seatId: "a1b2c3d4",
           name: "A",
           host: true,
+          kind: "human",
           online: true,
           away: false,
           left: false,
@@ -194,6 +220,7 @@ describe("ViewMessage built from the engine's viewFor", () => {
           seatId: "e5f6g7h8",
           name: "B",
           host: false,
+          kind: "human",
           online: true,
           away: false,
           left: false,

@@ -70,6 +70,7 @@ function seatsDiffer(a: ViewMessage["seats"], b: ViewMessage["seats"]): boolean 
       x.seatId !== y.seatId ||
       x.name !== y.name ||
       x.host !== y.host ||
+      x.kind !== y.kind ||
       x.online !== y.online ||
       x.away !== y.away ||
       x.left !== y.left

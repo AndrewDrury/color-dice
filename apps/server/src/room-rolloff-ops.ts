@@ -106,6 +106,13 @@ export class RollOffOps {
       ro.round += 1;
       ro.current = ro.current.map(() => null);
       if (ro.round > MAX_ROLL_OFF_ROUNDS) break;
+      await this.d.storage.put(ROLL_OFF_KEY, ro);
+      await dice.save();
+      await this.d.commit(meta, seats);
+      if (seats.some((s) => s.kind === "cpu")) {
+        await this.settle(meta, seats, ro, dice);
+      }
+      return;
     }
     await this.d.storage.put(ROLL_OFF_KEY, ro);
     await dice.save();

@@ -9,8 +9,7 @@ import { Avatar } from "./Avatar";
 export type Seat = ViewMessage["seats"][number];
 
 export function isCpuSeat(seat: Seat): boolean {
-  const kind = (seat as Seat & { kind?: "human" | "cpu" }).kind;
-  return kind === "cpu" || seat.seatId.toLowerCase().startsWith("cpu");
+  return seat.kind === "cpu";
 }
 
 export interface SeatListProps {

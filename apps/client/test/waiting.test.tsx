@@ -90,6 +90,7 @@ function view(opts: { host?: boolean; seats?: number; status?: "lobby" | "playin
     seatId: ids[i] ?? SEAT,
     name,
     host: host ? i === 0 : i === 1,
+    kind: "human",
     online: true,
     away: false,
     left: false,
@@ -170,6 +171,7 @@ describe("WaitingRoom", () => {
       online: false,
     } as ViewMessage["seats"][number];
     v.room.maxPlayers = 4;
+    v.room.cpuCount = 1;
     show(v);
     expect(screen.getByText("CPU")).toBeTruthy();
     expect(screen.queryByLabelText("Offline")).toBeNull();

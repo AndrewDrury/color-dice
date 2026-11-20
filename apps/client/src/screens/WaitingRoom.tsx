@@ -162,23 +162,7 @@ export function WaitingRoom({ code }: WaitingRoomProps) {
   const mine = view?.seats.find((s) => s.seatId === view.you.seatId);
   const players = view?.seats.length ?? 0;
   const maxPlayers = view?.room.maxPlayers ?? 0;
-  const roomCpuCount = view
-    ? (view.room as typeof view.room & { cpuCount?: number }).cpuCount
-    : undefined;
-  let rememberedCpuCount = 0;
-  try {
-    rememberedCpuCount = Number(sessionStorage.getItem(`cpu-count:${code}`) ?? 0);
-  } catch {
-    rememberedCpuCount = 0;
-  }
-  const cpuCount =
-    roomCpuCount ??
-    (rememberedCpuCount > 0
-      ? rememberedCpuCount
-      : (view?.seats.filter((s) => {
-          const kind = (s as typeof s & { kind?: "human" | "cpu" }).kind;
-          return kind === "cpu" || s.seatId.toLowerCase().startsWith("cpu");
-        }).length ?? 0));
+  const cpuCount = view?.room.cpuCount ?? 0;
   const totalPlayers = players + cpuCount;
   // T-UX-17: a full room starts by itself, so the host's Start gives way to a notice.
   const full = maxPlayers > 0 && cpuCount === 0 && totalPlayers >= maxPlayers;

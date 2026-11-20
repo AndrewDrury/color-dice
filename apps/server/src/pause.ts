@@ -16,6 +16,8 @@ export function pausedSeatIds(
 ): string[] {
   if (state?.phase === "GAME_OVER") return [];
   return seats
-    .filter((s) => s.seatIndex !== null && !s.left && !isOnline(sockets, s.seatId))
+    .filter(
+      (s) => s.kind !== "cpu" && s.seatIndex !== null && !s.left && !isOnline(sockets, s.seatId),
+    )
     .map((s) => s.seatId);
 }

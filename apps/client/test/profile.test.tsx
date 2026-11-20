@@ -110,6 +110,7 @@ describe("avatar rendering", () => {
         seatId: SEAT,
         name: "Andrew",
         host: true,
+        kind: "human",
         online: true,
         away: false,
         left: false,

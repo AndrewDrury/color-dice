@@ -14,6 +14,8 @@ import type { ChatEntry } from "./chat";
 import type { ClientMessageType } from "./client-messages";
 import {
   ColorSchema,
+  type CpuCount,
+  CpuCountSchema,
   GameCodeSchema,
   type MaxPlayers,
   MaxPlayersSchema,
@@ -32,6 +34,7 @@ export interface ViewRoom {
   name: string;
   listed: boolean;
   maxPlayers: MaxPlayers;
+  cpuCount: CpuCount;
   status: RoomStatus;
   /** Epoch ms; only meaningful to the host (lockout warning). */
   joinLockedUntil: number | null;
@@ -41,6 +44,7 @@ export interface ViewSeat {
   seatId: string;
   name: string;
   host: boolean;
+  kind: "human" | "cpu";
   online: boolean;
   away: boolean;
   /** The seat left the game for good (K2.2). */
@@ -305,6 +309,7 @@ export const ViewMessageSchema = z
         name: z.string().max(ROOM_NAME_MAX),
         listed: z.boolean(),
         maxPlayers: MaxPlayersSchema,
+        cpuCount: CpuCountSchema,
         status: RoomStatusSchema,
         joinLockedUntil: NonNegInt.nullable(),
       })
@@ -316,6 +321,7 @@ export const ViewMessageSchema = z
             seatId: SeatIdSchema,
             name: z.string().max(PLAYER_NAME_MAX),
             host: z.boolean(),
+            kind: z.enum(["human", "cpu"]),
             online: z.boolean(),
             away: z.boolean(),
             left: z.boolean(),

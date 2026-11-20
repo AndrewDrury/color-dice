@@ -212,8 +212,7 @@ export class GameRoom extends DurableObject<Env> {
       if (started?.ok)
         await this.commit(meta, started.value.seats, started.value.state ?? undefined);
       else await this.commit(meta, all);
-      if (started?.ok && started.value.state === null)
-        await this.play.resave(meta, started.value.seats);
+      if (started?.ok) await this.play.resave(meta, started.value.seats);
       return ok({ code: meta.code, token, seatId: seat.seatId });
     });
   }
@@ -370,7 +369,7 @@ export class GameRoom extends DurableObject<Env> {
       const res = await startLobbyGame(this.env, this.ctx.storage, meta, seats, diceOverride);
       if (!res.ok) return res;
       await this.commit(meta, res.value.seats, res.value.state ?? undefined);
-      if (res.value.state === null) await this.play.resave(meta, res.value.seats);
+      await this.play.resave(meta, res.value.seats);
       return ok(null);
     });
   }

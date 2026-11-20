@@ -21,6 +21,7 @@ function viewSeats(seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
     seatId: s.seatId,
     name: s.name,
     host: s.host,
+    kind: s.kind === "cpu" ? "cpu" : "human",
     online: isOnline(sockets, s.seatId),
     away: s.away,
     left: s.left === true,
@@ -125,6 +126,7 @@ export function buildView(
       name: meta.roomName,
       listed: meta.listed,
       maxPlayers: meta.maxPlayers,
+      cpuCount: meta.cpuCount ?? 0,
       status: meta.status,
       // Lockout warnings are for the host only.
       joinLockedUntil: seat.host ? meta.joinLockedUntil : null,

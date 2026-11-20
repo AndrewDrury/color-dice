@@ -89,11 +89,6 @@ export function CreateGame() {
         name: parsed.data.name,
         roomName: parsed.data.roomName,
       });
-      try {
-        sessionStorage.setItem(`cpu-count:${res.code}`, String(parsed.data.cpuCount));
-      } catch {
-        // Storage can be unavailable in privacy modes; the server remains authoritative.
-      }
       rememberSubmit({
         code: res.code,
         name: parsed.data.name,

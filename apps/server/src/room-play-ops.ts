@@ -194,9 +194,15 @@ function cpuAction1(state: GameState, seatIndex: number): Action1Decision {
   const marks = choices.filter((x): x is Extract<typeof x, { kind: "MARK" }> => x.kind === "MARK");
   if (marks.length === 0) return { kind: "PASS" };
   const player = view.game.players.find((p) => p.seat === seatIndex);
+  const number = view.game.roll?.whiteSum;
   marks.sort((a, b) => {
     const ar = player?.sheet?.rows[a.color];
     const br = player?.sheet?.rows[b.color];
+    const terminal = (color: typeof a.color, n: number | undefined) =>
+      n !== undefined && (color === "RED" || color === "YELLOW" ? n === 12 : n === 2);
+    const aTerminal = terminal(a.color, number) && (ar?.marked.filter(Boolean).length ?? 0) >= 5;
+    const bTerminal = terminal(b.color, number) && (br?.marked.filter(Boolean).length ?? 0) >= 5;
+    if (aTerminal !== bTerminal) return aTerminal ? -1 : 1;
     const aLocked = ar ? ar.lockCrossed : false;
     const bLocked = br ? br.lockCrossed : false;
     if (aLocked !== bLocked) return aLocked ? 1 : -1;
@@ -399,7 +405,6 @@ export class RoomPlay {
     seats: SeatRecord[],
     state: GameState,
     dice: { dice: DiceSource; save(): Promise<void> },
-    cpuSteps = 0,
   ): Promise<void> {
     // T-NEW-3: while the game is paused nothing advances, not even auto-pass for left seats.
     const paused = pausedSeatIds(seats, this.d.sockets(), state).length > 0;
@@ -417,36 +422,53 @@ export class RoomPlay {
     }
     await dice.save();
     await this.d.commit(meta, seats, toJSON(next));
-    if (cpuSteps < 20) await this.runCpuTurn(meta, seats, next, dice, cpuSteps + 1);
+    await this.runCpuTurns(meta, seats, next, dice);
   }
 
-  private async runCpuTurn(
+  private async runCpuTurns(
     meta: RoomMeta,
     seats: SeatRecord[],
     state: GameState,
     dice: { dice: DiceSource; save(): Promise<void> },
-    cpuSteps: number,
   ): Promise<void> {
-    if (state.phase === "GAME_OVER") return;
-    if (pausedSeatIds(seats, this.d.sockets(), state).length > 0) return;
-    const active = state.turn?.activeSeat;
-    if (active === undefined) return;
-    const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
-    if (!cpu) return;
-    let command: Command;
-    if (state.phase === "AWAIT_ROLL") {
-      command = { type: "ROLL", playerId: playerId(active) };
-    } else if (state.phase === "ACTION_1") {
-      const decision = cpuAction1(state, active);
-      command = { type: "ACTION1", playerId: playerId(active), decision };
-    } else if (state.phase === "ACTION_2") {
-      const decision = cpuAction2(state, active);
-      command = { type: "ACTION2", playerId: playerId(active), decision };
-    } else {
-      return;
+    let next = state;
+    for (;;) {
+      if (next.phase === "GAME_OVER") return;
+      if (pausedSeatIds(seats, this.d.sockets(), next).length > 0) return;
+      const active = next.turn?.activeSeat;
+      if (active === undefined) return;
+      const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
+      if (!cpu) return;
+      let command: Command;
+      if (next.phase === "AWAIT_ROLL") {
+        command = { type: "ROLL", playerId: playerId(active) };
+      } else if (next.phase === "ACTION_1") {
+        const decision = cpuAction1(next, active);
+        command = { type: "ACTION1", playerId: playerId(active), decision };
+      } else if (next.phase === "ACTION_2") {
+        const decision = cpuAction2(next, active);
+        command = { type: "ACTION2", playerId: playerId(active), decision };
+      } else {
+        return;
+      }
+      const before = toJSON(next);
+      const result = dispatch(next, command, dice.dice);
+      if (!result.ok) return;
+      next = autopass(result.state, leftSeats(seats), dice.dice);
+      if (toJSON(next) === before) return;
+      if (next.phase === "GAME_OVER") {
+        if (meta.status !== "finished") {
+          tallyRecord(seats, winners(next));
+          meta.status = "finished";
+          meta.finishedAt = this.d.now();
+        }
+      } else {
+        meta.status = "playing";
+        meta.finishedAt = null;
+      }
+      await dice.save();
+      await this.d.commit(meta, seats, toJSON(next));
     }
-    const result = dispatch(state, command, dice.dice);
-    if (result.ok) await this.save(meta, seats, result.state, dice, cpuSteps);
   }
 
   private async rollOffRoll(ws: WebSocket, seatId: string, round: number): Promise<void> {
