@@ -5,11 +5,12 @@ import { ResultsReveal } from "../src/components/ResultsReveal";
 import { type CelebrationKind, KINDS, pickCelebration } from "../src/fx/celebrate";
 import {
   _resetCelebrationForTests,
-  DROP_GAP_MS,
-  FIRST_DROP_MS,
+  FIRST_STEP_MS,
   HUSH_MS,
+  PLAYER_STAGGER_MS,
   revealSchedule,
   SETTLE_MS,
+  STEP_GAP_MS,
   TOTAL_GAP_MS,
 } from "../src/game/useReveal";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
@@ -66,8 +67,16 @@ const tick = (ms: number) =>
     vi.advanceTimersByTime(ms);
   });
 const overlay = () => document.querySelector<HTMLElement>('[data-testid="celebration"]');
-const dropped = () =>
-  [...document.querySelectorAll(".rv-card.is-dropped")].map((c) => c.getAttribute("data-seat"));
+/** Colour/penalty terms revealed so far, per seat, e.g. {0: ["RED"], 1: ["RED"]}. */
+const shown = () => {
+  const out: Record<string, string[]> = {};
+  for (const c of document.querySelectorAll(".rv-card"))
+    out[c.getAttribute("data-seat") as string] = [...c.querySelectorAll(".rv-pill.is-in")].map(
+      (p) => p.getAttribute("data-term") as string,
+    );
+  return out;
+};
+const allShow = (terms: string[]) => Object.values(shown()).every((v) => v.join() === terms.join());
 const totals = () => document.querySelectorAll(".rv-card.has-total").length;
 
 beforeEach(() => {
@@ -88,27 +97,48 @@ afterEach(() => {
 });
 
 describe("reveal timeline", () => {
-  it("drops cards one at a time, lowest score first, winner last", () => {
+  it("all cards are visible from the start, scores hidden", () => {
     mount(overView([9, 2, 5], [0]));
     expect(screen.getByText("And the scores are…")).toBeTruthy();
-    expect(dropped()).toEqual([]);
-    tick(FIRST_DROP_MS);
-    expect(dropped()).toEqual(["1"]); // 2 points
-    tick(DROP_GAP_MS - 1);
-    expect(dropped()).toEqual(["1"]);
-    tick(1);
-    expect(dropped().sort()).toEqual(["1", "2"]);
-    tick(DROP_GAP_MS);
-    expect(dropped().sort()).toEqual(["0", "1", "2"]); // 9 points last
+    expect(document.querySelectorAll(".rv-card")).toHaveLength(3);
+    expect(allShow([])).toBe(true);
+    expect(document.querySelector(".rv-rank")?.textContent).toBe(""); // no rank spoiler
+  });
+
+  it("reveals one colour at a time for every player at once: red, yellow, green, blue, penalties", () => {
+    mount(overView([9, 2, 5], [0]));
+    const s = revealSchedule(3);
+    expect(s.steps).toEqual([0, 1, 2, 3, 4].map((i) => FIRST_STEP_MS + i * STEP_GAP_MS));
+    tick(FIRST_STEP_MS - 1);
+    expect(allShow([])).toBe(true);
+    const seq = ["RED", "YELLOW", "GREEN", "BLUE", "PEN"];
+    for (let i = 0; i < 5; i++) {
+      tick(i === 0 ? 1 : STEP_GAP_MS - 1);
+      if (i > 0) expect(allShow(seq.slice(0, i))).toBe(true); // not early
+      if (i > 0) tick(1);
+      expect(allShow(seq.slice(0, i + 1))).toBe(true); // same fake time, every player
+    }
     expect(totals()).toBe(0);
   });
 
-  it("waits a longer beat than the drop gap before the totals, then slams them in order", () => {
-    expect(HUSH_MS).toBeGreaterThan(DROP_GAP_MS * 1.5);
+  it("staggers players by a few ms inside a colour", () => {
+    mount(overView([9, 2, 5], [0]));
+    const delays = [...document.querySelectorAll<HTMLElement>(".rv-card")].map((c) =>
+      c.style.getPropertyValue("--p"),
+    );
+    expect(delays).toEqual(["0ms", `${PLAYER_STAGGER_MS}ms`, `${PLAYER_STAGGER_MS * 2}ms`]);
+    expect(PLAYER_STAGGER_MS).toBeLessThan(150);
+  });
+
+  it("pauses much longer before the totals than between colours, then slams them in order", () => {
+    expect(STEP_GAP_MS).toBeGreaterThanOrEqual(800);
+    expect(HUSH_MS).toBeGreaterThanOrEqual(1800);
+    expect(HUSH_MS).toBeGreaterThan(STEP_GAP_MS * 1.5);
     mount(overView([9, 2, 5], [0]));
     const s = revealSchedule(3);
-    tick(s.drops[2] as number);
-    tick(DROP_GAP_MS + HUSH_MS - 1);
+    tick(s.steps[4] as number);
+    expect(allShow(["RED", "YELLOW", "GREEN", "BLUE", "PEN"])).toBe(true);
+    tick(HUSH_MS - 1);
     expect(totals()).toBe(0);
     expect(screen.getByText("And the winner is…")).toBeTruthy();
     expect(sound.playDrumRoll).toHaveBeenCalledTimes(1);
@@ -131,13 +161,13 @@ describe("reveal timeline", () => {
 
   it("each card shows avatar, name, four coloured pills and penalties", () => {
     mount(overView([9, 2], [0]));
-    tick(FIRST_DROP_MS);
-    const card = document.querySelector(".rv-card.is-dropped") as HTMLElement;
+    tick(FIRST_STEP_MS);
+    const card = document.querySelector(".rv-card") as HTMLElement;
     expect(
       card.querySelectorAll(".rv-pill.c-red, .rv-pill.c-yellow, .rv-pill.c-green, .rv-pill.c-blue"),
     ).toHaveLength(4);
     expect(card.querySelector('[data-term="PEN"]')).toBeTruthy();
-    expect(card.querySelector(".rv-name")?.textContent).toBe("Cleo");
+    expect(card.querySelector(".rv-name")?.textContent).toBe("Andrew");
     expect(card.querySelector(".rv-q")).toBeTruthy(); // total still hidden
   });
 });
@@ -145,9 +175,9 @@ describe("reveal timeline", () => {
 describe("skip, reduced motion, buttons", () => {
   it("Skip completes at once and stops the sounds", () => {
     mount(overView([9, 2, 5], [0]));
-    tick(FIRST_DROP_MS);
+    tick(FIRST_STEP_MS);
     fireEvent.click(screen.getByTestId("rv-skip"));
-    expect(dropped()).toHaveLength(3);
+    expect(allShow(["RED", "YELLOW", "GREEN", "BLUE", "PEN"])).toBe(true);
     expect(totals()).toBe(3);
     expect(screen.getByTestId("rv-show-cards")).toBeTruthy();
     for (const h of sound.handles) expect(h.stop).toHaveBeenCalled();
@@ -169,6 +199,7 @@ describe("skip, reduced motion, buttons", () => {
     mount(overView([9, 2], [0]));
     expect(overlay()?.classList.contains("is-reduced")).toBe(true);
     expect(totals()).toBe(2);
+    expect(allShow(["RED", "YELLOW", "GREEN", "BLUE", "PEN"])).toBe(true);
     expect(screen.getByTestId("rv-show-cards")).toBeTruthy();
     expect(document.querySelector(".rv-fx--still")).not.toBeNull();
     expect(document.querySelector("canvas")).toBeNull();
@@ -190,7 +221,7 @@ describe("skip, reduced motion, buttons", () => {
     const foot = () => document.querySelector(".rv-foot") as HTMLElement;
     expect(foot().textContent).toContain("Rematch");
     expect(foot().textContent).toContain("Back to home");
-    tick(FIRST_DROP_MS + 5000);
+    tick(FIRST_STEP_MS + 5000);
     expect(foot().textContent).toContain("Rematch");
     tick(10_000);
     expect(foot().textContent).toContain("Rematch");
@@ -202,7 +233,7 @@ describe("skip, reduced motion, buttons", () => {
 
   it("muting during the sequence stops the sounds", () => {
     mount(overView([9, 2], [0]));
-    tick(FIRST_DROP_MS + DROP_GAP_MS + 1000);
+    tick(FIRST_STEP_MS + STEP_GAP_MS + 1000);
     act(() => {
       setPrefs({ sound: false });
     });
@@ -258,15 +289,17 @@ function GameOverWithKind({ kind }: { kind: CelebrationKind }) {
 }
 
 describe("players, ties, names", () => {
-  it("five players: every card drops, ascending, then totals", () => {
+  it("five players: all cards up front, every colour together, totals ascending", () => {
     mount(overView([4, 9, 1, 7, 7], [1]));
+    expect(document.querySelectorAll(".rv-card")).toHaveLength(5);
+    tick(FIRST_STEP_MS);
+    expect(Object.values(shown()).every((v) => v.join() === "RED")).toBe(true);
     tick(revealSchedule(5).doneAt);
-    expect(dropped()).toHaveLength(5);
     expect(totals()).toBe(5);
     const order = [...document.querySelectorAll(".rv-card")].map((c) =>
       c.getAttribute("data-order"),
     );
-    expect(order).toEqual(["4", "3", "2", "1", "0"]);
+    expect(order.sort()).toEqual(["0", "1", "2", "3", "4"]); // seat order on screen, rank in data
   });
 
   it("a tie shows the tie badge and heading, never a crown", () => {

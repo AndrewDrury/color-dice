@@ -1,21 +1,28 @@
 /**
- * Timeline of the end-of-game reveal (T-NEW-25): cards drop in one at a time (lowest score first, so the
- * winner lands last), a longer hush, then the totals slam in one at a time (winner last), then `done`.
+ * Timeline of the end-of-game reveal (T-NEW-28): every player's card is on screen from the start; the
+ * scores drop in one colour at a time for ALL players at once (red, yellow, green, blue), then the
+ * penalties, then a longer pause, then the totals slam in one at a time (winner last), then `done`.
  * Reduced motion (or `instant`) skips straight to `done`. `skip()` completes at once. Pure timers, no DOM.
  */
 import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 
-export const FIRST_DROP_MS = 700;
-export const DROP_GAP_MS = 900;
-export const HUSH_MS = 1800;
+/** Steps before the totals: 4 colours, then penalties. */
+export const STEPS = 5;
+export const FIRST_STEP_MS = 700;
+/** Delay between one colour (or the penalties) and the next. */
+export const STEP_GAP_MS = 900;
+/** Extra per-player delay inside one step (applied in CSS; the state flips for everyone at once). */
+export const PLAYER_STAGGER_MS = 70;
+/** Pause after the penalties before the totals (longer than STEP_GAP_MS). */
+export const HUSH_MS = 1900;
 export const TOTAL_GAP_MS = 600;
 export const SETTLE_MS = 1100;
 
 export type RevealPhase = "drop" | "hush" | "totals" | "done";
 export interface RevealState {
-  /** Cards dropped so far (0..count). */
-  dropped: number;
+  /** Steps shown so far (0..STEPS): 1 = red, 2 = yellow, 3 = green, 4 = blue, 5 = penalties. */
+  step: number;
   /** Totals slammed so far (0..count). */
   totals: number;
   phase: RevealPhase;
@@ -23,25 +30,22 @@ export interface RevealState {
 
 /** Wall-clock offsets (ms from mount) of each step; also used by tests. */
 export function revealSchedule(count: number) {
-  const drops = Array.from({ length: count }, (_, i) => FIRST_DROP_MS + i * DROP_GAP_MS);
-  const hushAt = (drops[count - 1] ?? 0) + 500;
-  const totalsAt = Array.from(
-    { length: count },
-    (_, i) => (drops[count - 1] ?? 0) + DROP_GAP_MS + HUSH_MS + i * TOTAL_GAP_MS,
-  );
-  const doneAt = (totalsAt[count - 1] ?? 0) + SETTLE_MS;
-  return { drops, hushAt, totalsAt, doneAt };
+  const steps = Array.from({ length: STEPS }, (_, i) => FIRST_STEP_MS + i * STEP_GAP_MS);
+  const lastStep = steps[STEPS - 1] as number;
+  const hushAt = lastStep + 500;
+  const totalsAt = Array.from({ length: count }, (_, i) => lastStep + HUSH_MS + i * TOTAL_GAP_MS);
+  const doneAt = (totalsAt[count - 1] ?? lastStep) + SETTLE_MS;
+  return { steps, hushAt, totalsAt, doneAt };
 }
 
 export function useReveal(
   count: number,
   instant: boolean,
-  on: { drop?: (i: number) => void; hush?: () => void; total?: (i: number) => void } = {},
+  on: { drop?: (step: number) => void; hush?: () => void; total?: (i: number) => void } = {},
 ): RevealState & { skip: () => void } {
+  const full: RevealState = { step: STEPS, totals: count, phase: "done" };
   const [s, setS] = useState<RevealState>(() =>
-    instant
-      ? { dropped: count, totals: count, phase: "done" }
-      : { dropped: 0, totals: 0, phase: "drop" },
+    instant ? full : { step: 0, totals: 0, phase: "drop" },
   );
   const cb = useRef(on);
   cb.current = on;
@@ -52,14 +56,14 @@ export function useReveal(
   };
   useEffect(() => {
     if (instant) return;
-    const { drops, hushAt, totalsAt, doneAt } = revealSchedule(count);
+    const { steps, hushAt, totalsAt, doneAt } = revealSchedule(count);
     const at = (ms: number, fn: () => void) => {
       timers.current.push(setTimeout(fn, ms));
     };
-    drops.forEach((ms, i) => {
+    steps.forEach((ms, i) => {
       at(ms, () => {
         cb.current.drop?.(i);
-        setS((p) => ({ ...p, dropped: i + 1 }));
+        setS((p) => ({ ...p, step: i + 1 }));
       });
     });
     at(hushAt, () => {
@@ -72,12 +76,12 @@ export function useReveal(
         setS((p) => ({ ...p, totals: i + 1, phase: "totals" }));
       });
     });
-    at(doneAt, () => setS({ dropped: count, totals: count, phase: "done" }));
+    at(doneAt, () => setS({ step: STEPS, totals: count, phase: "done" }));
     return clear;
   }, [count, instant]);
   const skip = () => {
     clear();
-    setS({ dropped: count, totals: count, phase: "done" });
+    setS({ step: STEPS, totals: count, phase: "done" });
   };
   return { ...s, skip };
 }

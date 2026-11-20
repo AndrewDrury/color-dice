@@ -1,6 +1,7 @@
 /**
- * End-of-game reveal (T-NEW-25): all players' cards drop from the top one at a time (lowest score first,
- * winner last), a longer hush, then the totals slam in; a random full-screen celebration plays behind.
+ * End-of-game reveal (T-NEW-28): every player's card is shown at once; the scores drop in one colour at a
+ * time for all players together (red, yellow, green, blue), then penalties, a longer hush, then the totals
+ * slam in (winner last); a random full-screen celebration plays behind.
  * Skip completes it at once; "Show full score cards" closes it onto the full results. Rematch / Back home
  * (`actions`) live in the overlay's footer so they are never covered.
  */
@@ -20,7 +21,7 @@ import { haptic } from "../fx/haptics";
 import { useReducedMotion } from "../fx/motion";
 import { jingleFor, play, playDrumRoll, playJingle, type SoundHandle } from "../fx/sound";
 import { COLORS, cssColor, seatInfo, tieInfo } from "../game/model";
-import { celebrationKey, HUSH_MS, useReveal } from "../game/useReveal";
+import { celebrationKey, HUSH_MS, PLAYER_STAGGER_MS, useReveal } from "../game/useReveal";
 import { useTween } from "../game/useTween";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
@@ -105,6 +106,8 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
   const ranked = rankPlayers(view);
   const ranks = rankNumbers(ranked);
   const n = ranked.length;
+  // Seat order while revealing, so the layout never hints at the winner or jumps when totals land.
+  const bySeat = [...ranked].sort((a, b) => a.seat - b.seat);
   const key = celebrationKey(view);
   const [fx] = useState<CelebrationKind>(() => kind ?? queryKind() ?? pickCelebration(rand));
   const sounds = useRef<SoundHandle[]>([]);
@@ -197,9 +200,11 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
           <span class="rv-title-text">{title}</span>
         </h2>
         <ol class="rv-cards">
-          {ranked.map((p, i) => {
-            const order = n - 1 - i; // drop order: last place first, winner last
-            const dropped = r.dropped > order;
+          {bySeat.map((p) => {
+            const i = ranked.indexOf(p);
+            const pos = bySeat.indexOf(p);
+            const order = n - 1 - i; // total order: last place first, winner last
+            const stag = `${pos * PLAYER_STAGGER_MS}ms`;
             const showTotal = r.totals > order;
             const win = winnerSeats.includes(p.seat);
             const { rows, penalties, total } = p.score;
@@ -208,13 +213,13 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
             return (
               <li
                 key={p.seat}
-                class={`rv-card${dropped ? " is-dropped" : ""}${showTotal ? " has-total" : ""}${
+                class={`rv-card${showTotal ? " has-total" : ""}${
                   showTotal && win ? " is-winner" : ""
                 }`}
                 data-testid="rv-card"
                 data-seat={p.seat}
                 data-order={order}
-                aria-hidden={dropped ? undefined : "true"}
+                style={{ "--p": stag }}
                 aria-label={t("over.equationAria", {
                   name: nm,
                   r: rows?.RED ?? 0,
@@ -226,7 +231,7 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
                 })}
               >
                 <span class="rv-who">
-                  <span class="num rv-rank">{ranks[i]}.</span>
+                  <span class="num rv-rank">{showTotal ? `${ranks[i]}.` : ""}</span>
                   <Avatar profile={seatInfo(view, p)?.profile} size={32} />
                   <span class="rv-name g-name" title={nm}>
                     {nm}
@@ -242,12 +247,22 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
                   ) : null}
                 </span>
                 <span class="rv-pills" aria-hidden="true">
-                  {COLORS.map((c) => (
-                    <span key={c} class={`rv-pill c-${cssColor(c)}`} data-term={c}>
+                  {COLORS.map((c, k) => (
+                    <span
+                      key={c}
+                      class={`rv-pill c-${cssColor(c)}${r.step > k ? " is-in" : ""}`}
+                      data-term={c}
+                      data-step={k}
+                    >
                       {rows?.[c] ?? 0}
                     </span>
                   ))}
-                  <span class="rv-pill rv-pen" data-term="PEN" title={t("sheet.penaltiesCaption")}>
+                  <span
+                    class={`rv-pill rv-pen${r.step > 4 ? " is-in" : ""}`}
+                    data-term="PEN"
+                    data-step={4}
+                    title={t("sheet.penaltiesCaption")}
+                  >
                     −{pen}
                   </span>
                 </span>
