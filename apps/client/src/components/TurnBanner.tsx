@@ -45,8 +45,8 @@ export function TurnBanner({ view, staged, noMove, s1 }: TurnBannerProps) {
       aria-label={t("turn.aria")}
       data-testid="turn-banner"
     >
-      <span class="g-turnbar-who">
-        <Avatar profile={seatProfile(view, g.turn.activeSeat)} size={16} /> {title}
+      <span class="g-turnbar-who name-clip" title={title}>
+        <Avatar profile={seatProfile(view, g.turn.activeSeat)} size={20} /> {title}
       </span>
       <span class="g-turnbar-step">{step}</span>
       {cta ? <span class="g-turnbar-cta">{cta}</span> : null}

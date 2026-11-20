@@ -4,6 +4,7 @@ import { reducedMotion } from "../fx/motion";
 import { recordLabel, recordText } from "../game/model";
 import { t, useT } from "../i18n";
 import { Avatar } from "./Avatar";
+import "../styles/profile.css";
 
 export type Seat = ViewMessage["seats"][number];
 
@@ -47,33 +48,17 @@ function SeatRow({
   useEffect(() => popIn(ref.current), []);
 
   return (
-    <li
-      ref={ref}
-      class="row"
-      data-seat={seat.seatId}
-      style={{
-        justifyContent: "space-between",
-        minHeight: "var(--tap)",
-        padding: "var(--s1) var(--s2)",
-        borderRadius: "var(--r-box)",
-        background: "var(--paper)",
-      }}
-    >
-      <span class="row" style={{ gap: "var(--s2)", minWidth: 0 }}>
+    <li ref={ref} class="row sl-row" data-seat={seat.seatId}>
+      <span class="row sl-main">
         <span
           role="img"
+          class={`sl-dot${seat.online ? " is-on" : ""}`}
           aria-label={seat.online ? t("waiting.online") : t("waiting.offline")}
-          style={{
-            flex: "0 0 auto",
-            width: "10px",
-            height: "10px",
-            borderRadius: "50%",
-            background: seat.online ? "var(--row-green)" : "transparent",
-            border: `2px solid ${seat.online ? "var(--row-green)" : "var(--ink-muted)"}`,
-          }}
         />
-        <Avatar profile={seat.profile} />
-        <span style={{ overflowWrap: "anywhere", fontWeight: "var(--fw-bold)" }}>{seat.name}</span>
+        <Avatar profile={seat.profile} size={32} />
+        <span class="name-clip sl-name" title={seat.name}>
+          {seat.name}
+        </span>
         {you ? <span class="muted">{t("waiting.you")}</span> : null}
         {showRecord ? (
           <span
@@ -85,18 +70,7 @@ function SeatRow({
             {recordText(seat.record)}
           </span>
         ) : null}
-        {seat.host ? (
-          <span
-            style={{
-              fontSize: "var(--fs-small)",
-              padding: "0 var(--s2)",
-              borderRadius: "var(--r-pill)",
-              border: "1px solid currentColor",
-            }}
-          >
-            {t("waiting.host")}
-          </span>
-        ) : null}
+        {seat.host ? <span class="sl-host">{t("waiting.host")}</span> : null}
       </span>
       {canKick ? (
         <button

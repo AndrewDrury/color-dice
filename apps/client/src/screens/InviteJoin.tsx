@@ -103,18 +103,19 @@ export function InviteJoin({ code }: { code: string }) {
       </div>
       <form class="card stack" onSubmit={submit} noValidate style={{ maxWidth: "560px" }}>
         <p class="muted">{t("invite.intro")}</p>
-        <Field
-          label={t("field.yourName")}
-          name="name"
-          value={name}
-          onValue={setName}
-          error={errors.name}
-          maxLength={PLAYER_NAME_MAX}
-          autocomplete="nickname"
-          enterkeyhint="go"
-          autofocus
-        />
-        <ProfileField value={profile} onChange={setProfile} />
+        <ProfileField value={profile} onChange={setProfile}>
+          <Field
+            label={t("field.yourName")}
+            name="name"
+            value={name}
+            onValue={setName}
+            error={errors.name}
+            maxLength={PLAYER_NAME_MAX}
+            autocomplete="nickname"
+            enterkeyhint="go"
+            autofocus
+          />
+        </ProfileField>
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy}>
           {t("common.join")}

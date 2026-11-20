@@ -118,17 +118,18 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         </p>
       ) : null}
       <form class="stack" onSubmit={submit} noValidate>
-        <Field
-          label={t("field.yourName")}
-          name="name"
-          value={name}
-          onValue={setName}
-          error={errors.name}
-          maxLength={PLAYER_NAME_MAX}
-          autocomplete="nickname"
-          enterkeyhint="next"
-        />
-        <ProfileField value={profile} onChange={setProfile} />
+        <ProfileField value={profile} onChange={setProfile}>
+          <Field
+            label={t("field.yourName")}
+            name="name"
+            value={name}
+            onValue={setName}
+            error={errors.name}
+            maxLength={PLAYER_NAME_MAX}
+            autocomplete="nickname"
+            enterkeyhint="next"
+          />
+        </ProfileField>
         <PasswordField value={password} onValue={setPassword} error={errors.password} />
         <FieldError text={formError} />
         <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>

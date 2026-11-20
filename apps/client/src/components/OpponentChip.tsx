@@ -67,6 +67,9 @@ export function StatusGlyph({ state }: { state: OpponentState }) {
   return null;
 }
 
+/** Opponent avatar size (T-NEW-15): 2.5× the old 16 px, never below 40 px. */
+export const OPP_AVATAR = 40;
+
 export interface ChipProps {
   view: ViewMessage;
   player: ViewPlayer;
@@ -93,13 +96,17 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
         strikes: strikes > 0 ? penText : t("opp.none"),
       })}
     >
-      <span class="g-chip-top">
-        <Avatar profile={seat?.profile} size={16} />
-        <span class="g-name">{name}</span>
-        <StatusGlyph state={st} />
-      </span>
-      <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
-        {strikes > 0 ? penText : "\u00a0"}
+      <Avatar profile={seat?.profile} size={OPP_AVATAR} />
+      <span class="g-chip-body">
+        <span class="g-chip-top">
+          <span class="g-name name-clip" title={name}>
+            {name}
+          </span>
+          <StatusGlyph state={st} />
+        </span>
+        <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
+          {strikes > 0 ? penText : "\u00a0"}
+        </span>
       </span>
     </div>
   );

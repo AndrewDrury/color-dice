@@ -1,18 +1,31 @@
-/* Profile picker (lazy chunk). */
+/* Profile slot + picker (T-NEW-13, T-NEW-15). */
+.pf {
+  gap: var(--s3);
+  min-width: 0;
+}
+/* Avatar left of the name field; wraps only when the field would be under 160 px. */
+.pf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+}
+.pf-av {
+  margin: 5px;
+}
+.pf-name {
+  flex: 1 1 160px;
+  min-width: 0;
+}
 .pp {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  gap: var(--s2);
+  gap: var(--s3);
+  min-width: 0;
 }
 .pp-legend {
   font-weight: var(--fw-bold);
   padding: 0;
-}
-.pp-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
+  margin-bottom: var(--s2);
 }
 .pp-colors,
 .pp-cats {
@@ -45,24 +58,30 @@
   outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
+/* Always-open cat grid: ≥ 56 px tiles, scrolls inside its box rather than the page. */
 .pp-cats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--tap), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
   gap: var(--s2);
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px;
 }
 .pp-cat {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--tap);
+  min-height: 64px;
   padding: 2px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   border-radius: var(--r-box);
   cursor: pointer;
 }
 .pp-cat:has(input:checked) {
   border-color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .pp-cat .av {
   box-shadow: none;
@@ -75,4 +94,36 @@
   margin: 0;
   opacity: 0;
   cursor: pointer;
+}
+
+/* Waiting-room seat list (moved from inline styles, T-NEW-15). */
+.sl-row {
+  justify-content: space-between;
+  min-height: var(--tap);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-box);
+  background: var(--paper);
+}
+.sl-main {
+  min-width: 0;
+}
+.sl-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-muted);
+}
+.sl-dot.is-on {
+  background: var(--row-green);
+  border-color: var(--row-green);
+}
+.sl-name {
+  font-weight: var(--fw-bold);
+}
+.sl-host {
+  font-size: var(--fs-small);
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  border: 1px solid currentColor;
 }
