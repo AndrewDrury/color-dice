@@ -12,6 +12,7 @@ import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
 import { WaitingRoom } from "./screens/WaitingRoom";
 import { useAppState } from "./store";
+import { useDocumentTitle } from "./useDocumentTitle";
 import "./styles/polish.css";
 
 /**
@@ -41,7 +42,8 @@ export function startPrefs(): void {
 export function App() {
   useLocale(); // re-render the whole tree when the language changes
   const route = useRoute();
-  const { status } = useAppState();
+  const { status, view } = useAppState();
+  useDocumentTitle(route, route.code !== null && view?.code === route.code ? view : null);
 
   let screen = null;
   switch (route.screen) {

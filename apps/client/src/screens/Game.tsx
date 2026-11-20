@@ -26,7 +26,6 @@ import { Sheet } from "../components/Sheet";
 import { TurnBanner } from "../components/TurnBanner";
 import { feedback } from "../fx/feedback";
 import { useGameKeys } from "../fx/keyboard";
-import { useTabAttention } from "../fx/tabAttention";
 import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
 import { rollOffEvent } from "../game/flow";
@@ -272,7 +271,6 @@ function Board({
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
   // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
   useWakeLock(!gameOver);
-  useTabAttention(myMove);
   useGameKeys({
     canRoll:
       view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
