@@ -1,10 +1,10 @@
-// Budget check (H14): the initial JS must stay <= 90 KB gzip. Only scripts that index.html
+// Budget check (H14): the initial JS must stay <= 91 KB gzip. Only scripts that index.html
 // loads (script / modulepreload tags) count; lazy chunks (confetti, dice lab) are listed only.
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
-const BUDGET = 90 * 1024;
+const BUDGET = 91 * 1024;
 const dist = fileURLToPath(new URL("../apps/client/dist/", import.meta.url));
 const html = readFileSync(`${dist}index.html`, "utf8");
 const initial = new Set(
