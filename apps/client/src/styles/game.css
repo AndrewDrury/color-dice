@@ -193,6 +193,22 @@
     0 0 10px color-mix(in srgb, var(--row-color) 55%, transparent);
   animation: g-breathe 1.6s ease-in-out infinite;
 }
+/* D-L5: a white-sum candidate is whiter with a white border (thin dark outer edge for light themes);
+   a colour (white + colour die) candidate keeps its tint with a bright border in the row colour. */
+.g-box.is-cw {
+  background: var(--row-pattern), color-mix(in srgb, var(--row-tint) 30%, white);
+  color: var(--row-ink);
+  box-shadow:
+    0 0 0 3px white,
+    0 0 0 4px rgb(0 0 0 / 0.5);
+  animation: none;
+}
+.g-box.is-cc {
+  background: var(--row-pattern), var(--row-tint);
+  color: var(--row-ink);
+  box-shadow: 0 0 0 3px var(--row-vivid);
+  animation: none;
+}
 .g-box.is-legal:active {
   transform: scale(0.97);
 }
@@ -235,19 +251,22 @@
   opacity: 0.85;
   stroke-width: 3;
 }
+/* T-NEW-19: the step number fills the box like the ✕ (about 85 % of its height). */
 .g-step {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  min-width: 14px;
-  height: 14px;
-  border-radius: 7px;
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.5px solid currentColor;
-  font: 700 10px / 11px var(--font);
-  text-align: center;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--row-on);
+  font: 900 34px / 1 var(--font);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 3px var(--row-ink);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  pointer-events: none;
   animation: g-pop var(--t-med) var(--ease-spring);
+}
+.g-box:has(> .g-step) .g-num {
+  opacity: 0;
 }
 .g-box.is-flash {
   animation: g-pop var(--t-med) var(--ease-spring);
@@ -442,17 +461,13 @@
 .g-actions .btn-primary {
   background: var(--accent);
 }
-.g-actions .g-mark {
-  background: var(--row-color);
-  color: var(--row-on);
+.g-actions .g-submit {
+  background: var(--accent);
+  color: var(--on-accent);
 }
-.g-actions .g-danger,
-.g-actions .g-pass.is-danger {
+.g-actions .g-submit.is-danger {
   background: var(--danger);
   color: var(--on-danger);
-}
-.g-pass.is-staged {
-  box-shadow: 0 0 0 2px var(--accent);
 }
 .g-log {
   max-height: 260px;
@@ -796,6 +811,9 @@
   }
   .g-box {
     height: 34px;
+  }
+  .g-step {
+    font-size: 29px;
   }
   .g-foot {
     min-height: 24px;

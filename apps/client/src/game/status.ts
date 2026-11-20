@@ -4,7 +4,7 @@ import { colorName, joinNames, t } from "../i18n";
 import { COLORS, seatName, seatOfPlayer } from "./model";
 import { currentStep, isActive, noWhiteSumMove } from "./staging";
 
-export function statusText(view: ViewMessage, s1Staged = false): string {
+export function statusText(view: ViewMessage): string {
   const g = view.game;
   if (!g) return "";
   const active = g.turn?.activeSeat ?? -1;
@@ -16,8 +16,7 @@ export function statusText(view: ViewMessage, s1Staged = false): string {
     case "ACTION_1": {
       const step = currentStep(view);
       if (step === 1 && !noWhiteSumMove(view)) {
-        if (!isActive(view)) return t("step.passive", { sum: g.roll?.whiteSum ?? "" });
-        return s1Staged ? t("step.two") : t("step.one", { sum: g.roll?.whiteSum ?? "" });
+        return t(isActive(view) ? "step.one" : "step.passive", { sum: g.roll?.whiteSum ?? "" });
       }
       if (step === 2) return t("step.two");
       const waiting = g.players

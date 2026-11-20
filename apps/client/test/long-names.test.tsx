@@ -59,7 +59,7 @@ describe("long names", () => {
 
   it("clips the turn banner name with a title", () => {
     const view = longView();
-    render(<TurnBanner view={view} staged={false} noMove={false} s1={null} />);
+    render(<TurnBanner view={view} staged={false} noMove={false} />);
     const who = screen.getByTestId("turn-banner").querySelector(".g-turnbar-who");
     expect(who?.classList.contains("name-clip")).toBe(true);
     expect(who?.getAttribute("title")).toContain(view.seats[1]?.name as string);

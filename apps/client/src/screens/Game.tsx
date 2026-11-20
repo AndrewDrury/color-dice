@@ -30,7 +30,7 @@ import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
 import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
-import { canPass, decidedMarks, isActive, legalBoxes } from "../game/staging";
+import { candidates, currentStep, decidedMarks, isActive } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
 import { type TurnSummary as Summary, summarizeTurn } from "../game/turnSummary";
 import { useBackGuard } from "../game/useBackGuard";
@@ -75,7 +75,8 @@ export function Game({ code }: { code: string }) {
     showToast(errorText(e.code, e.reason), "error");
     feedback("error");
     if (e.command === "roll") setRollFailed((n) => n + 1);
-    if (e.command === "action1" || e.command === "action2") setFailSignal((n) => n + 1);
+    if (e.command === "action1" || e.command === "action2" || e.command === "turn")
+      setFailSignal((n) => n + 1);
   });
 
   useEffect(() => {
@@ -223,7 +224,9 @@ function Board({
 
   const me = youPlayer(view);
   const g = game as NonNullable<typeof game>;
-  const legal = landed && !st.sent ? legalBoxes(view, st.s1) : new Set<string>();
+  const cand = landed && !st.sent ? candidates(view, st.s1, st.s2, st.hover) : null;
+  const legal = new Set([...(cand?.white ?? []), ...(cand?.colour ?? [])]);
+  const colour = new Set([...(cand?.colour ?? [])].filter((k) => !cand?.white.has(k)));
   const act = isActive(view);
   const staged = [st.s1 && { ...st.s1, step: 1 as const }, st.s2 && { ...st.s2, step: 2 as const }]
     .filter((m) => m !== null)
@@ -263,7 +266,9 @@ function Board({
     canRoll:
       view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
     canPass:
-      canPass(view, st.s1) &&
+      currentStep(view) !== null &&
+      st.s1 === null &&
+      st.s2 === null &&
       !noMove &&
       !st.sent &&
       !view.you.canRoll &&
@@ -273,7 +278,7 @@ function Board({
     canUndo: st.s1 !== null || st.s2 !== null || view.you.canUndo,
     undo: st.undo,
     roll: onRoll,
-    pass: st.pass,
+    pass: st.submit,
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
@@ -286,15 +291,14 @@ function Board({
       {hint}
       <ActionBar
         view={view}
-        status={statusText(view, st.s1 !== null)}
+        status={statusText(view)}
         announce={cur.announce}
         s1={st.s1}
         s2={st.s2}
         sent={st.sent !== null}
         gated={!landed}
         noMove={noMove}
-        onPass={st.pass}
-        onConfirm={st.confirm}
+        onSubmit={st.submit}
         onUndo={st.undo}
       />
     </>
@@ -324,12 +328,7 @@ function Board({
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
-      <TurnBanner
-        view={view}
-        staged={st.s1 !== null || st.s2 !== null}
-        noMove={noMove}
-        s1={st.s1}
-      />
+      <TurnBanner view={view} staged={st.s1 !== null || st.s2 !== null} noMove={noMove} />
       <AwayControls view={view} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
@@ -341,12 +340,14 @@ function Board({
               player={me}
               lockedColors={g.lockedColors}
               legal={legal}
+              colour={colour}
               staged={staged}
               ghost={ghost}
               disabled={st.sent !== null || !landed}
               fx={fx.sheet}
               errorShake={st.shake > 0 && staged.length > 0}
               onPick={st.stageBox}
+              onHover={st.hoverBox}
               onFloatDone={fx.dropFloat}
             />
           ) : null}

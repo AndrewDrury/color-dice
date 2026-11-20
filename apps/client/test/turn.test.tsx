@@ -55,7 +55,7 @@ describe("turn clarity (T-NEW-9)", () => {
     render(<Game code={CODE} />);
     expect(banner()).toContain("Your turn");
     expect(banner()).toContain("Step 1 of 2 · white dice");
-    expect(banner()).toContain("Pick a box or press “Pass on white”");
+    expect(banner()).toContain("Pick a box or press “Pass (−5)”");
     cleanup();
     show(makeGameView({ phase: "ACTION_2", legal2: [{ whiteDie: 0, color: "RED", number: 5 }] }));
     render(<Game code={CODE} />);
@@ -75,7 +75,7 @@ describe("turn clarity (T-NEW-9)", () => {
     show(makeGameView({ legal1: ["RED"] }));
     render(<Game code={CODE} />);
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    expect(banner()).toContain("Press Confirm");
+    expect(banner()).toContain("Press Submit");
   });
 
   it("opponent chips: the active seat is highlighted, the others dim", () => {
@@ -86,11 +86,10 @@ describe("turn clarity (T-NEW-9)", () => {
     expect(chips.filter((c) => c.classList.contains("is-dim")).length).toBe(chips.length - 1);
   });
 
-  it("only a penalty is possible: one Take penalty button sends both passes", () => {
+  it("only a penalty is possible: one Pass (−5) button sends both passes", () => {
     show(makeGameView({ lockedColors: [...ALL] }));
     render(<Game code={CODE} />);
-    expect(screen.queryByText("Pass on white")).toBeNull();
-    fireEvent.click(screen.getByText("Take penalty (−5)"));
+    fireEvent.click(screen.getByText("Pass (−5)"));
     expect(sent).toEqual([
       { type: "turn", turn: 9, action1: { kind: "PASS" }, action2: { kind: "PASS" } },
     ]);

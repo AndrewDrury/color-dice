@@ -24,6 +24,8 @@ export interface SheetProps {
   player: FullViewPlayer;
   lockedColors: readonly Color[];
   legal: ReadonlySet<string>;
+  /** The legal keys that are colour moves (the rest of `legal` are white-sum boxes). */
+  colour?: ReadonlySet<string>;
   /** Staged marks in order (step 1, then step 2). */
   staged: readonly { color: Color; number: number; step?: 1 | 2 }[];
   /** Sent / decided marks waiting for the reveal (50 % ✕). */
@@ -37,6 +39,7 @@ export interface SheetProps {
   /** A staged Pass will cost a penalty: the next empty penalty box shakes. */
   warnPenalty?: boolean;
   onPick: (color: Color, number: number) => void;
+  onHover?: (color: Color, number: number | null) => void;
   onFloatDone?: (id: number) => void;
 }
 
@@ -102,10 +105,10 @@ function Total(p: { total: number; next: number | null }) {
 export function Sheet(p: SheetProps) {
   useT();
   const { sheet, score } = p.player;
-  const allLegal = (c: Color) =>
+  const pick = (c: Color, keys: ReadonlySet<string> | undefined) =>
     p.readOnly
       ? []
-      : Array.from({ length: 11 }, (_, i) => i + 2).filter((n) => p.legal.has(`${c}:${n}`));
+      : Array.from({ length: 11 }, (_, i) => i + 2).filter((n) => keys?.has(`${c}:${n}`));
   const numbersOf = (list: SheetProps["staged"], c: Color) =>
     list.filter((m) => m.color === c).map((m) => m.number);
   const gain = COLORS.reduce(
@@ -126,7 +129,8 @@ export function Sheet(p: SheetProps) {
           color={c}
           row={sheet.rows[c]}
           lockedColors={p.lockedColors}
-          legal={allLegal(c)}
+          legal={pick(c, p.legal)}
+          colour={pick(c, p.colour)}
           stagedNumbers={numbersOf(p.staged, c)}
           stagedSteps={p.staged.filter((m) => m.color === c && m.step).map((m) => m.step as 1 | 2)}
           ghostNumbers={numbersOf(p.ghost, c)}
@@ -135,6 +139,7 @@ export function Sheet(p: SheetProps) {
           shake={!!p.errorShake}
           glint={p.fx.glint === c}
           onPick={p.onPick}
+          onHover={p.onHover}
         />
       ))}
       <div class="g-foot">

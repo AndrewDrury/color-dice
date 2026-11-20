@@ -55,6 +55,13 @@
 .g-foot {
   /* Room for the hanging caption (the row grows by the caption, not the numbers). */
   padding-bottom: 8px;
+  /* T-NEW-19: air between the blue row and the score tally / penalties, scaled to the viewport. */
+  margin-top: clamp(8px, 2dvh, 16px);
+}
+@media (max-width: 599.98px) and (max-height: 699.98px) {
+  .g-foot {
+    margin-top: 6px;
+  }
 }
 .g-op {
   color: var(--ink-muted);

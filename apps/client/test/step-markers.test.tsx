@@ -75,7 +75,7 @@ describe("step number markers (T-NEW-14)", () => {
     show(makeGameView({ legal1: ["RED"] }));
     render(<Game code={CODE} />);
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    fireEvent.click(screen.getByLabelText("Red 8, can mark, step 1"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(steps()).toEqual([]);
     expect(document.querySelectorAll(".g-box.is-ghost .g-x").length).toBe(1);
   });
