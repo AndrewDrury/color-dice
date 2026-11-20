@@ -35,9 +35,7 @@ test("demo scenario panel navigates every scenario locally", async ({ page }) =>
     await expect(page.getByTestId("demo-view")).toHaveAttribute("data-scenario", id);
   }
 
-  await page
-    .getByRole("button", { name: "Previous scenario" })
-    .dispatchEvent("click");
+  await page.getByRole("button", { name: "Previous scenario" }).dispatchEvent("click");
   const next = page.getByRole("button", { name: "Next" });
   await next.dispatchEvent("click");
   await page.getByRole("button", { name: "Reset" }).dispatchEvent("click");

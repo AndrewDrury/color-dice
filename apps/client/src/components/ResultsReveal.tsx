@@ -34,24 +34,7 @@ import "../styles/celebration.css";
 
 function Total({ value, reduced }: { value: number; reduced: boolean }) {
   const eased = useTween(value, 1400, 0);
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    if (reduced) {
-      setStep(value);
-      return;
-    }
-    setStep(0);
-    if (value <= 0) return;
-    const stepMs = Math.max(18, Math.floor(2200 / Math.max(1, value)));
-    const id = setInterval(() => {
-      setStep((prev) => {
-        if (prev >= value) return value;
-        return prev + 1;
-      });
-    }, stepMs);
-    return () => clearInterval(id);
-  }, [value, reduced]);
-  const v = reduced ? value : Math.min(step, eased);
+  const v = reduced ? value : eased;
   return (
     <span class="rv-total-num num" data-value={value}>
       {v}
@@ -138,9 +121,6 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
         Math.floor((rand ? rand() : Math.random()) * REACTION_MOOD_ORDER.length)
       ] ?? "cat-dancing-gif-by-unscreen",
   );
-  const [reactionPos] = useState<"top" | "bottom">(() =>
-    (rand ? rand() : Math.random()) < 0.5 ? "top" : "bottom",
-  );
   const sounds = useRef<SoundHandle[]>([]);
   const stopSounds = () => {
     for (const h of sounds.current) h.stop();
@@ -224,11 +204,9 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
     >
       {allIn || r.phase === "totals" ? <Backdrop kind={fx} rand={rand} still={reduced} /> : null}
       <div class="rv-stage">
-        {reactionPos === "top" ? (
-          <div class="rv-cat rv-cat--top" aria-hidden="true" data-testid="celebration-cat">
-            <CatReaction id={reaction} size={88} />
-          </div>
-        ) : null}
+        <div class="rv-cat rv-cat--top" aria-hidden="true" data-testid="celebration-cat">
+          <CatReaction id={reaction} size={88} />
+        </div>
         <h2
           class={`rv-title${allIn ? " is-win" : ""}${r.phase === "hush" ? " is-hush" : ""}`}
           data-testid="rv-title"
@@ -316,11 +294,6 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
             );
           })}
         </ol>
-        {reactionPos === "bottom" ? (
-          <div class="rv-cat rv-cat--bottom" aria-hidden="true" data-testid="celebration-cat">
-            <CatReaction id={reaction} size={88} />
-          </div>
-        ) : null}
       </div>
       <div class="rv-foot">
         {chat ? <div class="rv-chat">{chat}</div> : null}

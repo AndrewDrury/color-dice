@@ -52,7 +52,6 @@ export function ReactionPicker({
   return (
     <fieldset
       ref={ref}
-      id="reaction-picker"
       class={`rx-picker mo-pop${inChat ? " chat-rx-picker" : ""}${closing ? " mo-exit" : ""}`}
       aria-label={t("chat.reactions")}
     >

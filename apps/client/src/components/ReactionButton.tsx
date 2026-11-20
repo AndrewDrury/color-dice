@@ -29,7 +29,6 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
         aria-label={t("chat.reactionSend")}
         aria-haspopup="true"
         aria-expanded={open ? "true" : "false"}
-        aria-controls="reaction-picker"
         onClick={() => {
           setHoverOpen(false);
           setClickOpen((o) => !o);

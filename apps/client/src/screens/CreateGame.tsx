@@ -12,7 +12,7 @@ import { Button } from "../components/Button";
 import { Field, FieldError, issuesByField, requestErrorText } from "../components/Field";
 import { PasswordField } from "../components/PasswordField";
 import { ProfileField } from "../components/ProfileField";
-import { t, tn, useT } from "../i18n";
+import { t, useT } from "../i18n";
 import { primeInvite } from "../invite";
 import { getRemembered, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
