@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { createGame, expect, joinGame, queueDice, startGame, test } from "./fixtures";
-import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import { closeAll, newPlayer, roll, rollFaces, settle, uid, waitForRoller } from "./helpers";
 
 const SHOTS = new URL("./screenshots/", import.meta.url).pathname;
 
@@ -63,7 +63,7 @@ test("375 px game screen in English, French and Spanish: nothing overflows", asy
   try {
     await a.page.setViewportSize({ width: 375, height: 667 });
     const code = await createGame(a, {
-      roomName: `I18n ${Date.now() % 10000}`,
+      roomName: `I18n ${uid()}`,
       password: "pw-i18n",
       max: 2,
     });
@@ -73,13 +73,13 @@ test("375 px game screen in English, French and Spanish: nothing overflows", asy
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);
     const langs = [
-      ["en", "Mark Yellow 7"],
-      ["fr", "Cocher Jaune 7"],
-      ["es", "Marcar Amarillo 7"],
+      ["en", "Submit"],
+      ["fr", "Valider"],
+      ["es", "Enviar"],
     ] as const;
     for (const [lang, primary] of langs) {
       // Tapping outside the sheet cancels a staged box, so switch language through the pref and
-      // reload (the seat resumes), then stage Yellow 7: the longest primary label.
+      // reload (the seat resumes), then stage Yellow 7: the primary button is then Submit.
       await a.page.evaluate((l) => {
         const key = "colorDice:prefs";
         const cur = JSON.parse(localStorage.getItem(key) ?? "{}");
@@ -93,7 +93,7 @@ test("375 px game screen in English, French and Spanish: nothing overflows", asy
         })
         .click();
       await expect(a.page.locator(".g-primary")).toHaveText(primary);
-      await a.page.waitForTimeout(350);
+      await settle(a.page);
       await expectFits(a.page, `${lang} @375`);
       await a.page.screenshot({ path: `${SHOTS}i18n-game-375-${lang}.png` });
     }

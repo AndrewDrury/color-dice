@@ -1,5 +1,5 @@
 import { createGame, expect, joinGame, mark, pass, queueDice, startGame, test } from "./fixtures";
-import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import { closeAll, newPlayer, roll, rollFaces, uid, waitForRoller } from "./helpers";
 
 const marked = (page: import("@playwright/test").Page, color: string, n: number) =>
   page.getByRole("button", { name: `${color} ${n}, marked` });
@@ -9,7 +9,7 @@ async function setup(browser: import("@playwright/test").Browser, dice: number[]
   const a = await newPlayer(browser, "Alma");
   const b = await newPlayer(browser, "Boris");
   const code = await createGame(a, {
-    roomName: `Flow ${Date.now() % 10000}`,
+    roomName: `Flow ${uid()}`,
     password: "pw-flow",
     max: 2,
   });
@@ -27,13 +27,16 @@ test("active confirms both steps together before the passive player decides", as
   try {
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);
-    await expect(status(a.page)).toContainText("Step 1 of 2");
+    await expect(status(a.page)).toContainText("Pick the white total 7");
     await expect(status(b.page)).toContainText("Mark the white total 7");
+    // Nothing staged: the one button is a penalty pass, not Submit.
+    await expect(a.page.locator(".g-submit")).toHaveText("Pass (−5)");
+    await expect(b.page.locator(".g-submit")).toHaveText("Pass");
 
     await a.page.getByRole("button", { name: /^Red 7,/ }).click();
-    await expect(status(a.page)).toContainText("Step 2 of 2");
     await a.page.getByRole("button", { name: /^Yellow 7,/ }).click();
-    await a.page.getByRole("button", { name: "Confirm both marks" }).click();
+    await expect(a.page.locator(".g-submit")).toHaveText("Submit");
+    await a.page.getByRole("button", { name: "Submit" }).click();
 
     // The turn waits for Boris; Alma needs no further click.
     await expect(status(a.page)).toContainText("Waiting for Boris");
@@ -49,7 +52,7 @@ test("active confirms both steps together before the passive player decides", as
   }
 });
 
-test("active does step 1 then step 2 separately; the turn waits for the passive player", async ({
+test("active can toggle a staged box off and on; one Submit sends both and the turn waits", async ({
   browser,
 }) => {
   test.setTimeout(90_000);
@@ -57,11 +60,14 @@ test("active does step 1 then step 2 separately; the turn waits for the passive 
   try {
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);
-    await mark(a.page, "RED", 7);
-    // Step 2 shows at once, with no "Waiting for" in between.
-    await expect(status(a.page)).toContainText("Step 2 of 2");
+    await a.page.getByRole("button", { name: /^Red 7,/ }).click();
     await a.page.getByRole("button", { name: /^Yellow 7,/ }).click();
+    // Tapping a staged box unselects it; nothing is sent and there is no "Waiting for" yet.
     await a.page.getByRole("button", { name: /^Yellow 7,/ }).click();
+    await expect(a.page.locator(".g-submit")).toHaveText("Submit");
+    await expect(status(a.page)).not.toContainText("Waiting for");
+    await a.page.getByRole("button", { name: /^Yellow 7,/ }).click();
+    await a.page.getByRole("button", { name: "Submit" }).click();
     await expect(status(a.page)).toContainText("Waiting for Boris");
     await expect(b.page.locator(".g-primary", { hasText: "Roll" })).toHaveCount(0);
     await pass(b.page); // passive: no penalty
@@ -87,7 +93,6 @@ test("a lock shows a popup to both players", async ({ browser }) => {
       await roll(active.page);
       await mark(active.page, "RED", s);
       await mark(other.page, "RED", s);
-      if (i < sums.length - 1) await pass(active.page); // step 2
     }
     for (const p of [a, b]) {
       await expect(p.page.getByText(/locked the Red row!/)).toBeVisible();

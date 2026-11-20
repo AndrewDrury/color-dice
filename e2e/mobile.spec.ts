@@ -9,7 +9,16 @@ import {
   startGame,
   test,
 } from "./fixtures";
-import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  frames,
+  newPlayer,
+  roll,
+  rollFaces,
+  settle,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 // Full motion: the tumble and settle timing is what these tests measure.
 test.use({ reducedMotion: "no-preference" });
@@ -54,7 +63,7 @@ async function smallTargets(page: Page): Promise<string[]> {
   });
 }
 
-test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, staging", async ({
+test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, staging @smoke", async ({
   browser,
 }) => {
   test.setTimeout(120_000);
@@ -75,7 +84,7 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
     expect(await smallTargets(a.page)).toEqual([]);
 
     const code = await createGame(a, {
-      roomName: `Mobile ${Date.now() % 10000}`,
+      roomName: `Mobile ${uid()}`,
       password: "pw-mob",
       max: 2,
     });
@@ -173,7 +182,7 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
     ] as const) {
       for (const p of players) {
         await p.page.setViewportSize({ width: w, height: h });
-        await p.page.waitForTimeout(300);
+        await settle(p.page);
         const m = await p.page.evaluate(() => ({
           over: document.documentElement.scrollHeight - window.innerHeight,
           hint:
@@ -210,13 +219,13 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
       }
     }
 
-    // Staging: the first tap on a legal box sends nothing, the second one does.
+    // Staging: tapping a legal box sends nothing, Submit does.
     const before = sentByB.filter((f) => !f.includes('"ping"')).length;
     await boxLocator(b.page, "RED", 7).tap();
-    await expect(b.page.locator(".g-primary.g-mark")).toBeVisible();
-    await b.page.waitForTimeout(400);
+    await expect(b.page.locator(".g-submit")).toHaveText("Submit");
+    await settle(b.page);
     expect(sentByB.filter((f) => !f.includes('"ping"')).length).toBe(before);
-    await boxLocator(b.page, "RED", 7).tap();
+    await b.page.locator(".g-submit").tap();
     await expect
       .poll(() => sentByB.filter((f) => !f.includes('"ping"')).length)
       .toBeGreaterThan(before);
@@ -227,7 +236,7 @@ test("mobile: no horizontal scroll, reachable action bar, tap targets, dice, sta
         .locator(".g-box")
         .evaluateAll((els) => Math.min(...els.map((e) => (e as HTMLElement).offsetWidth)));
       expect(w).toBeGreaterThanOrEqual(26);
-      await b.page.waitForTimeout(40);
+      await frames(b.page, 1);
     }
 
     // Reload: the same faces at once, nothing tumbling.

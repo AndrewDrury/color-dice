@@ -1,10 +1,10 @@
 import { createGame, expect, joinGame, startGame, test } from "./fixtures";
-import { closeAll, newPlayer } from "./helpers";
+import { closeAll, newPlayer, uid } from "./helpers";
 
 test("public list: listed rooms appear live and vanish on start; unlisted rooms join by code", async ({
   browser,
 }) => {
-  const tag = String(Date.now() % 100000);
+  const tag = uid();
   const listedName = `Open ${tag}`;
   const hiddenName = `Secret ${tag}`;
   const anon = await newPlayer(browser, "Anon");

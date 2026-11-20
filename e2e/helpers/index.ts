@@ -1,12 +1,48 @@
-import type { Browser } from "@playwright/test";
+import type { Browser, Locator } from "@playwright/test";
 import { autoDismissRollOff, expect, type Player, SERVER } from "../fixtures";
 
-let ipCounter = 0;
+/**
+ * Taps `tap` until `done` shows. A tap while the game socket is (re)connecting after a reload or
+ * the lobby -> game hand-over is dropped by the client, so one click is not enough under load.
+ */
+export async function tapUntil(tap: Locator, done: Locator): Promise<void> {
+  await expect(async () => {
+    if (await tap.isVisible()) await tap.click({ timeout: 2000 });
+    await expect(done).toBeVisible({ timeout: 4000 });
+  }).toPass({ timeout: 25_000, intervals: [100] });
+}
+
+/** Resolves after `n` animation frames (a deterministic "let the page render" instead of a sleep). */
+export function frames(page: Player["page"], n = 2): Promise<void> {
+  return page.evaluate(async (count) => {
+    for (let i = 0; i < count; i++) await new Promise((r) => requestAnimationFrame(r));
+  }, n);
+}
+
+/** Layout/transitions done: two frames, then no finite CSS/Web animation is still running. */
+export async function settle(page: Player["page"]): Promise<void> {
+  await frames(page, 2);
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (a) =>
+          a.playState !== "running" ||
+          a.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,
+      ),
+  );
+}
+
+/** Short random suffix so every test's rooms have names no other test (or worker) uses. */
+export function uid(): string {
+  // Four digits keeps names as short as the old `Date.now() % 10000` (layout specs measure them).
+  return String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
+}
+
 /** A unique fake client IP (the server rate-limits per CF-Connecting-IP; "local" is shared). */
 export function uniqueIp(): string {
-  ipCounter += 1;
-  const n = (Date.now() % 60_000) * 100 + ipCounter;
-  return `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}`;
+  const r = () => Math.floor(Math.random() * 256);
+  return `10.${r()}.${r()}.${r()}`;
 }
 
 /**
@@ -64,7 +100,7 @@ export async function waitForRoller(players: Player[]): Promise<Player> {
         }
         return false;
       },
-      { timeout: 15_000 },
+      { timeout: 15_000, intervals: [50, 100, 250] },
     )
     .toBe(true);
   return found as Player;
@@ -86,8 +122,19 @@ export function rollFaces(sum: number, colors = 4): number[] {
  * Same as roll(), but ignores `.is-removed` dice.
  */
 export async function roll(page: Player["page"]) {
-  await page.locator(".g-primary", { hasText: "Roll" }).click();
-  await expect(page.locator("[data-die][data-face]").first()).toBeVisible();
+  // The waiting room hands over to the game screen with a fresh socket; a tap while it is still
+  // (re)connecting is dropped silently. Tap again until the dice appear (a tap after the roll
+  // landed is impossible: the Roll button is gone).
+  const rollBtn = page.locator(".g-primary", { hasText: "Roll" });
+  await expect(async () => {
+    if ((await rollBtn.isVisible()) && (await rollBtn.isEnabled())) {
+      await rollBtn.click({ timeout: 2000 });
+    }
+    await expect(page.locator("[data-die][data-face]").first()).toBeVisible({ timeout: 4000 });
+  }).toPass({ timeout: 25_000, intervals: [100] });
+  // A tap on the tray skips the landing animation (a product feature): the end state is the
+  // same, so the helper does not sit through 6 x 400 ms of it. Specs that time the dice tap Roll themselves.
+  await page.locator(".tray").dispatchEvent("click");
   await expect
     .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
     .toBe(0);

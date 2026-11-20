@@ -1,16 +1,8 @@
-import {
-  codeOf,
-  createGame,
-  expect,
-  joinGame,
-  newPlayer,
-  playRollOff,
-  startGame,
-  test,
-} from "./fixtures";
+import { codeOf, createGame, expect, joinGame, playRollOff, startGame, test } from "./fixtures";
+import { newPlayer, uid } from "./helpers";
 
-test("host creates, guest joins via the list, host starts", async ({ browser }) => {
-  const roomName = `Smoke ${Date.now() % 100000}`;
+test("host creates, guest joins via the list, host starts @smoke", async ({ browser }) => {
+  const roomName = `Smoke ${uid()}`;
   const host = await newPlayer(browser, "Hana");
   const guest = await newPlayer(browser, "Gus");
   try {

@@ -1,6 +1,6 @@
 import type { Browser, Page } from "@playwright/test";
 import { codeOf, createGame, expect, joinGame, queueDice, startGame, test } from "./fixtures";
-import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import { closeAll, newPlayer, roll, rollFaces, uid, waitForRoller } from "./helpers";
 
 const NEW_BUILD = "e2e-new-build";
 
@@ -26,16 +26,20 @@ async function fakeDeploy(page: Page) {
       live = true;
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     },
+    // A navigation destroys the execution context mid-evaluate: that also means "reloaded".
     survived: () =>
-      page.evaluate(() => (window as unknown as { __alive?: boolean }).__alive === true),
+      page
+        .evaluate(() => (window as unknown as { __alive?: boolean }).__alive === true)
+        .catch(() => false),
   };
 }
 
-async function setup(browser: Browser) {
+async function setup(browser: Browser, fakeClock = false) {
   const a = await newPlayer(browser, "Alma");
+  if (fakeClock) await a.page.clock.install(); // lets a test fast-forward the idle ticks
   const b = await newPlayer(browser, "Boris");
   const code = await createGame(a, {
-    roomName: `Upd ${Date.now() % 10000}`,
+    roomName: `Upd ${uid()}`,
     password: "pw-upd",
     max: 2,
   });
@@ -66,17 +70,17 @@ test("an open tab reloads itself onto a new deploy and lands in the same seat", 
 
 test("staged marks hold the reload until Confirm", async ({ browser }) => {
   test.setTimeout(90_000);
-  const { a, b, code } = await setup(browser);
+  const { a, b, code } = await setup(browser, true);
   try {
     expect(await waitForRoller([a, b])).toBe(a);
     await roll(a.page);
     await a.page.getByRole("button", { name: /^Red 7,/ }).click();
     const deploy = await fakeDeploy(a.page);
     await deploy.publish();
-    await a.page.waitForTimeout(3500);
+    await a.page.clock.runFor(3500); // several 1 s idle ticks: busy, so it must not reload
     expect(await deploy.survived()).toBe(true);
     await a.page.getByRole("button", { name: /^Yellow 7,/ }).click();
-    await a.page.getByRole("button", { name: "Confirm both marks" }).click();
+    await a.page.getByRole("button", { name: "Submit" }).click();
     await expect.poll(deploy.survived, { timeout: 15_000 }).toBe(false);
     await expect(a.page.locator(".g-main")).toBeVisible();
     expect(codeOf(a.page)).toBe(code);

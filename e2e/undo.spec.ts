@@ -1,11 +1,12 @@
-import { createGame, expect, joinGame, newPlayer, queueDice, roll, test } from "./fixtures";
+import { createGame, expect, joinGame, queueDice, roll, test } from "./fixtures";
+import { newPlayer, uid } from "./helpers";
 
-test("undo removes a staged mark and stays in the current turn", async ({ browser }) => {
+test("undo removes a staged mark and stays in the current turn @smoke", async ({ browser }) => {
   const host = await newPlayer(browser, "UndoHost");
   const guest = await newPlayer(browser, "UndoGuest");
   try {
     const code = await createGame(host, {
-      roomName: "Undo turn",
+      roomName: `Undo ${uid()}`,
       password: "undo-pass",
       max: 2,
       listed: false,

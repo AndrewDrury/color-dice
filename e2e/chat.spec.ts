@@ -9,7 +9,7 @@ import {
   startGame,
   test,
 } from "./fixtures";
-import { closeAll, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import { closeAll, newPlayer, roll, rollFaces, settle, uid, waitForRoller } from "./helpers";
 
 const PAYLOAD = "<img src=x onerror=alert(1)>";
 
@@ -33,7 +33,7 @@ async function threeInAction1(
   const [a, b, c] = await Promise.all(names.map((n) => newPlayer(browser, n)));
   const players = [a!, b!, c!];
   const code = await createGame(a!, {
-    roomName: roomName ?? `Chat ${Date.now() % 10000}`,
+    roomName: roomName ?? `Chat ${uid()}`,
     password: "pw-chat",
     max: 3,
   });
@@ -42,6 +42,11 @@ async function threeInAction1(
   await joinGame(c!, code, "pw-chat");
   await startGame(a!);
   expect(await waitForRoller(players)).toBe(a);
+  // The game screen opens its own socket (the waiting room's is handed over); a chat sent
+  // before a peer's new socket is online is never toasted there. Wait until all are live.
+  for (const p of players) {
+    await expect(p.page.getByRole("img", { name: "online", exact: true })).toBeVisible();
+  }
   await roll(a!.page);
   return { a: a!, b: b!, c: c!, players, code };
 }
@@ -66,7 +71,7 @@ test("chat: toast + reaction reach others without blocking input; history surviv
     }
     await boxLocator(b.page, "RED", 7).click();
     await expect(b.page.locator(".chat-toast", { hasText: "hello table" })).toBeVisible();
-    await b.page.locator(".g-primary.g-mark").click();
+    await b.page.locator(".g-submit").click();
     await expect(b.page.getByText(/Waiting|Everyone/).first()).toBeVisible();
 
     // A: reaction.
@@ -98,7 +103,7 @@ test("chat: toast + reaction reach others without blocking input; history surviv
     await expect(log).toContainText("hello table");
     await expect(log).toContainText(PAYLOAD);
 
-    await a.page.waitForTimeout(300);
+    await settle(a.page);
     expect(dialogs).toEqual([]);
   } finally {
     await closeAll(players);
@@ -123,7 +128,8 @@ test("chat: the 6th text in quick succession is rate limited", async ({ browser 
 });
 
 const LONG_NAME = "W".repeat(30);
-const LONG_ROOM = "R".repeat(50);
+/** 50 chars (the max) with a unique tail, so parallel tests never share a room name. */
+const longRoom = () => "R".repeat(46) + uid();
 
 const noScroll = (p: Player) =>
   expect
@@ -134,27 +140,32 @@ async function longNamesGame(browser: Parameters<typeof newPlayer>[0]) {
   const a = await newPlayer(browser, LONG_NAME);
   const b = await newPlayer(browser, "Bo");
   for (const p of [a, b]) await p.page.setViewportSize({ width: 375, height: 667 });
-  const code = await createGame(a, { roomName: LONG_ROOM, password: "pw-long", max: 2 });
-  return { a, b, code };
+  const room = longRoom();
+  const code = await createGame(a, { roomName: room, password: "pw-long", max: 2 });
+  return { a, b, code, room };
 }
 
 test("chat: longest names do not cause horizontal scroll at 375 px (home, waiting, host board, chat)", async ({
   browser,
 }) => {
-  const { a, b, code } = await longNamesGame(browser);
+  const { a, b, code, room } = await longNamesGame(browser);
   try {
     await noScroll(a); // waiting room
     await b.page.goto("/");
     await noScroll(b); // public list shows the long room and host names
     await queueDice(code, [6, 1]);
-    await joinGame(b, code, "pw-long", LONG_ROOM); // fills the room: the game auto-starts
+    await joinGame(b, code, "pw-long", room); // fills the room: the game auto-starts
     await noScroll(b);
     await startGame(a);
     await expect(a.page.locator(".g-main")).toBeVisible();
     await noScroll(a);
     await openChat(a);
-    await sendText(a, "x".repeat(200));
-    await expect(a.page.getByRole("log", { name: "Chat messages" })).toContainText("xxxx");
+    // A send during the lobby -> game socket hand-over is dropped silently: send again until echoed.
+    const log = a.page.getByRole("log", { name: "Chat messages" });
+    await expect(async () => {
+      if (!(await log.innerText()).includes("xxxx")) await sendText(a, "x".repeat(200));
+      await expect(log).toContainText("xxxx", { timeout: 3000 });
+    }).toPass({ timeout: 25_000, intervals: [100] });
     await noScroll(a);
   } finally {
     await closeAll([a, b]);
@@ -168,10 +179,10 @@ test("chat: longest names do not cause horizontal scroll at 375 px (home, waitin
 test("chat: guest's board has no horizontal scroll with a 30-char host name at 375 px", async ({
   browser,
 }) => {
-  const { a, b, code } = await longNamesGame(browser);
+  const { a, b, code, room } = await longNamesGame(browser);
   try {
     await queueDice(code, [6, 1]);
-    await joinGame(b, code, "pw-long", LONG_ROOM);
+    await joinGame(b, code, "pw-long", room);
     await startGame(a);
     await expect(b.page.locator(".g-main")).toBeVisible();
     await noScroll(b);
@@ -190,7 +201,7 @@ test("chat: every reaction in the picker is on screen at 390 px", async ({ brows
   try {
     for (const p of [a, b]) await p.page.setViewportSize({ width: 390, height: 844 });
     const code = await createGame(a, {
-      roomName: `Rx ${Date.now() % 10000}`,
+      roomName: `Rx ${uid()}`,
       password: "pw-rx",
       max: 2,
     });

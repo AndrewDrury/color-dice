@@ -1,5 +1,14 @@
 import { createGame, expect, joinGame, mark, pass, queueDice, startGame, test } from "./fixtures";
-import { closeAll, expectGameOver, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  expectGameOver,
+  newPlayer,
+  roll,
+  rollFaces,
+  settle,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 // Opt-in (R4 uses the PNGs): `SHOTS=1 npm run e2e -- screenshots`. Tagged @shots.
 // The config has no grepInvert for it, so the skip lives here.
@@ -32,7 +41,7 @@ test.describe("screenshots @shots", () => {
           await p.page.emulateMedia({ colorScheme: theme });
         }
         const shot = async (p: typeof a, name: string) => {
-          await p.page.waitForTimeout(350); // let transitions settle
+          await settle(p.page); // let transitions settle
           await p.page.screenshot({ path: `${OUT}${theme}-${w}x${h}-${name}.png` });
         };
         try {
@@ -41,7 +50,7 @@ test.describe("screenshots @shots", () => {
           await shot(a, "home");
 
           const code = await createGame(a, {
-            roomName: `Shots ${Date.now() % 10000}`,
+            roomName: `Shots ${uid()}`,
             password: "pw-shots",
             max: 2,
           });
@@ -64,15 +73,14 @@ test.describe("screenshots @shots", () => {
             if (t === 0) {
               await active.page.getByRole("button", { name: /^Red 2,/ }).click();
               await shot(active, "action1-staged");
-              await active.page.getByRole("button", { name: /^Red 2,/ }).click(); // second tap sends
+              await active.page.locator(".g-submit").click();
             } else {
               await mark(active.page, "RED", s);
             }
-            await mark(other.page, "RED", s);
-            // Action 2: the active player has marked, so passing costs nothing.
-            await expect(active.page.locator(".g-pass")).toBeVisible();
+            // The active player's one Submit sent both actions: it now waits for the other.
+            await expect(active.page.locator(".g-submit")).toHaveCount(0);
             if (t === 0) await shot(active, "action2");
-            await pass(active.page);
+            await mark(other.page, "RED", s);
             // Lock progress pips: Red at 3 marks, then at 5 (lock available).
             if (t === 2) await shot(a, "marks3");
             if (t === 4) await shot(a, "marks5");
@@ -108,14 +116,22 @@ test.describe("screenshots @shots", () => {
             expect(await waitForRoller(players)).toBe(active);
             await roll(active.page);
             await pass(other.page);
-            await pass(active.page);
-            await pass(active.page);
+            await pass(active.page); // one Submit sends both actions
             if (turn === 8) await shot(a, "penalties");
             if (turn >= 13) break;
           }
           await expectGameOver(a.page);
           await expectGameOver(b.page);
-          await a.page.waitForTimeout(1500); // score count-up
+          // score count-up: every total shows its final data-value
+          await expect
+            .poll(() =>
+              a.page
+                .locator(".g-total-cell .num")
+                .evaluateAll((els) =>
+                  els.every((e) => e.textContent?.trim() === e.getAttribute("data-value")),
+                ),
+            )
+            .toBe(true);
           await shot(a, "gameover");
         } finally {
           await closeAll(players);

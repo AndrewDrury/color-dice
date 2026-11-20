@@ -1,6 +1,6 @@
 import { request } from "@playwright/test";
 import { createGame, expect, SERVER, test } from "./fixtures";
-import { closeAll, newPlayer, uniqueIp } from "./helpers";
+import { closeAll, newPlayer, uid, uniqueIp } from "./helpers";
 
 async function openJoinDialog(
   page: import("@playwright/test").Page,
@@ -23,7 +23,7 @@ test("wrong password is refused with a clear message", async ({ browser }) => {
   const guest = await newPlayer(browser, "Gus");
   try {
     const code = await createGame(host, {
-      roomName: `Pw ${Date.now() % 10000}`,
+      roomName: `Pw ${uid()}`,
       password: "right-pw",
     });
     const dialog = await openJoinDialog(guest.page, code, "Gus", "nope-nope");
@@ -59,7 +59,7 @@ test("10 wrong attempts lock the room: the right password is refused, the host s
   const guest = await newPlayer(browser, "Gus");
   try {
     const code = await createGame(host, {
-      roomName: `Lock ${Date.now() % 10000}`,
+      roomName: `Lock ${uid()}`,
       password: "right-pw",
     });
     await lockRoom(code);
@@ -82,7 +82,7 @@ test("host sees the lockout banner live, without reloading", async ({ browser })
   const host = await newPlayer(browser, "Hedda");
   try {
     const code = await createGame(host, {
-      roomName: `Live ${Date.now() % 10000}`,
+      roomName: `Live ${uid()}`,
       password: "right-pw",
     });
     await lockRoom(code);

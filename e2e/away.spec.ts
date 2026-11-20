@@ -1,5 +1,13 @@
 import { createGame, expect, joinGame, queueDice, startGame, test } from "./fixtures";
-import { closeAll, controlNetwork, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  controlNetwork,
+  newPlayer,
+  roll,
+  rollFaces,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 test("a dropped connection pauses the game for everyone; it resumes when the player is back", async ({
   browser,
@@ -10,7 +18,7 @@ test("a dropped connection pauses the game for everyone; it resumes when the pla
   try {
     const net = await controlNetwork(c!);
     const code = await createGame(a!, {
-      roomName: `Pause ${Date.now() % 10000}`,
+      roomName: `Pause ${uid()}`,
       password: "pw-away",
       max: 3,
     });
