@@ -11,6 +11,8 @@
   padding-top: var(--s2);
 }
 .g-top {
+  position: relative;
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: space-between;

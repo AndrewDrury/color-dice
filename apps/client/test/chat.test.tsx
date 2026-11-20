@@ -101,6 +101,16 @@ afterEach(() => {
 });
 
 describe("chat client", () => {
+  it("opens reactions on hover and toggles cleanly on click", () => {
+    const top = screen.getAllByLabelText("Send reaction")[0] as HTMLElement;
+    fireEvent.pointerEnter(top.closest(".rx-wrap") as HTMLElement);
+    expect(document.querySelector(".rx-picker")).not.toBeNull();
+    fireEvent.click(top);
+    expect(document.querySelector(".rx-picker")).not.toBeNull();
+    fireEvent.click(top);
+    expect(document.querySelector(".rx-picker.mo-exit")).not.toBeNull();
+  });
+
   it("uses the generic cat-face icon for reaction send buttons", async () => {
     const top = screen.getAllByLabelText("Send reaction")[0] as HTMLElement;
     expect(top.querySelector("svg.icon")).not.toBeNull();

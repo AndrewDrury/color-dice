@@ -15,6 +15,8 @@ export const common = {
   "demo.back": "Previous scenario",
   "demo.next": "Next",
   "demo.reset": "Reset",
+  "demo.showPanel": "Show scenarios",
+  "demo.hidePanel": "Hide scenarios",
   "demo.groupLobby": "Lobby and roll-off",
   "demo.groupTurn": "Turns",
   "demo.groupLocks": "Locks and penalties",

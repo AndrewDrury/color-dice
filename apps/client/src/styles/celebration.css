@@ -123,6 +123,22 @@
   overflow-x: hidden;
   padding: var(--s3) var(--s3);
 }
+.rv-cat {
+  pointer-events: none;
+  opacity: 0.96;
+  align-self: center;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.45));
+}
+.rv-cat--top {
+  margin-bottom: var(--s1);
+}
+.rv-cat--bottom {
+  margin-top: var(--s1);
+}
+.rv-cat .cat-cap {
+  background: rgb(8 6 28 / 0.72);
+  color: #fff;
+}
 .rv-title {
   display: flex;
   align-items: center;
@@ -296,6 +312,12 @@
   flex-direction: column;
   gap: var(--s2);
   padding-block: var(--s2) calc(var(--s3) + env(safe-area-inset-bottom));
+}
+.rv-chat {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
 }
 .rv-skip,
 .rv-show {

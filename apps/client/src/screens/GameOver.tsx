@@ -3,7 +3,7 @@ import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { AvatarHover } from "../components/AvatarHover";
 import { Button } from "../components/Button";
-import { ChatControls } from "../components/ChatButton";
+import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
 import { ResultsReveal } from "../components/ResultsReveal";
 import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
@@ -193,7 +193,17 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         </div>
       </section>
       {celebrating ? (
-        <ResultsReveal view={view} onDone={() => setCelebrating(false)} actions={actions} />
+        <ResultsReveal
+          view={view}
+          onDone={() => setCelebrating(false)}
+          actions={actions}
+          chat={
+            <>
+              <ChatControls send={send} />
+              <ChatLayer send={send} />
+            </>
+          }
+        />
       ) : null}
     </div>
   );

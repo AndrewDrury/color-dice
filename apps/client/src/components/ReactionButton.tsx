@@ -8,10 +8,20 @@ import { ReactionPicker } from "./ReactionPicker";
 
 export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }) {
   useT();
-  const [open, setOpen] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState(false);
+  const [clickOpen, setClickOpen] = useState(false);
+  const open = hoverOpen || clickOpen;
   const { mounted, closing } = useExitAnimation(open);
+  const close = () => {
+    setHoverOpen(false);
+    setClickOpen(false);
+  };
   return (
-    <span class="rx-wrap">
+    <span
+      class="rx-wrap"
+      onPointerEnter={() => setHoverOpen(true)}
+      onPointerLeave={() => setHoverOpen(false)}
+    >
       <button
         type="button"
         class="btn rx-btn"
@@ -19,17 +29,22 @@ export function ReactionButton({ send }: { send: (m: ClientMessage) => boolean }
         aria-label={t("chat.reactionSend")}
         aria-haspopup="true"
         aria-expanded={open ? "true" : "false"}
-        onClick={() => setOpen((o) => !o)}
+        aria-controls="reaction-picker"
+        onClick={() => {
+          setHoverOpen(false);
+          setClickOpen((o) => !o);
+        }}
       >
         <CatFaceIcon size={24} />
       </button>
       {mounted ? (
         <ReactionPicker
           closing={closing}
-          onClose={() => setOpen(false)}
+          onClose={close}
+          autoFocusFirst={clickOpen}
           onPick={(emoji) => {
             send({ type: "react", emoji });
-            setOpen(false);
+            close();
           }}
         />
       ) : null}

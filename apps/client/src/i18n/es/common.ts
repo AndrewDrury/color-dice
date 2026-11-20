@@ -17,6 +17,8 @@ export const common: Record<keyof typeof en, string> = {
   "demo.back": "Escenario anterior",
   "demo.next": "Siguiente",
   "demo.reset": "Restablecer",
+  "demo.showPanel": "Mostrar escenarios",
+  "demo.hidePanel": "Ocultar escenarios",
   "demo.groupLobby": "Sala y tirada inicial",
   "demo.groupTurn": "Turnos",
   "demo.groupLocks": "Bloqueos y penalizaciones",

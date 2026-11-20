@@ -1,6 +1,8 @@
 /* Reactions + chat (I3): glanceable, transient, never over the dice, action bar or your sheet. */
 
 .chat-controls {
+  position: relative;
+  z-index: 70;
   display: inline-flex;
   gap: var(--s1);
 }
@@ -56,7 +58,7 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 25;
+  z-index: 70;
   display: grid;
   grid-template-columns: repeat(4, 56px);
   gap: 2px;
@@ -128,7 +130,7 @@
 .rx-layer {
   position: fixed;
   inset: 0;
-  z-index: 25;
+  z-index: 70;
   pointer-events: none;
   overflow: hidden;
 }
@@ -189,7 +191,7 @@
   position: fixed;
   top: calc(env(safe-area-inset-top) + 52px);
   left: 50%;
-  z-index: 25;
+  z-index: 70;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -234,6 +236,7 @@
 
 /* Panel (T-NEW-31): near-full-height sheet on phones, a tall 400 px card bottom-right on desktop. */
 .chat-backdrop {
+  z-index: 70;
   top: var(--vv-top, 0);
   bottom: auto;
   height: var(--vv-h, 100%);

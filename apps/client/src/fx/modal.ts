@@ -33,8 +33,10 @@ function inertOutside(root: HTMLElement): () => void {
 export function useModalTrap(
   root: RefObject<HTMLElement | null>,
   fallback?: () => HTMLElement | null,
+  enabled = true,
 ) {
   useEffect(() => {
+    if (!enabled) return;
     const el = root.current;
     if (!el) return;
     const opener = document.activeElement as HTMLElement | null;
@@ -73,5 +75,5 @@ export function useModalTrap(
         back?.focus?.();
       });
     };
-  }, []);
+  }, [enabled]);
 }

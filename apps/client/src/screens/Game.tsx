@@ -337,7 +337,7 @@ export function Board({
             role="img"
             aria-label={status === "online" ? t("game.online") : t("game.reconnecting")}
           />
-          {gameOver ? null : <ChatControls send={conn.send} />}
+          <ChatControls send={conn.send} />
           <SelfBadge
             profile={mine?.profile}
             name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}

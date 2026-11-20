@@ -1,7 +1,7 @@
 import type { Color } from "@cd/engine";
 import type { ViewMessage, ViewRow } from "@cd/protocol";
 import { h } from "preact";
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { DemoBanner } from "./components/DemoBanner";
 import { LockPopup } from "./components/LockPopup";
 import { ResultsReveal } from "./components/ResultsReveal";
@@ -275,6 +275,7 @@ export function exitDemo(): void {
 export function DemoScreen() {
   const demo = useDemoState();
   const { status, toast } = useAppState();
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     applyView(createDemoView(demo.scenario));
@@ -318,6 +319,21 @@ export function DemoScreen() {
       rounds,
       onDone: () => setDemoScenario("rolloff-lets-go"),
     });
+  const board =
+    view?.code === DEMO_CODE
+      ? h(Board, {
+          key: `${demo.scenario}-${demo.scenario}`,
+          view,
+          status: status === "ended" ? "online" : status,
+          toast: toast?.kind === "error" ? toast.text : null,
+          conn,
+          rollFailed: 0,
+          failSignal: 0,
+          leaving: false,
+          setLeaving: () => undefined,
+          liveRollOff: false,
+        })
+      : null;
 
   return h(
     "main",
@@ -330,6 +346,8 @@ export function DemoScreen() {
     h(DemoBanner, { onExit: exitDemo }),
     h(ScenarioPanel, {
       scenario: demo.scenario,
+      open: panelOpen,
+      onToggle: () => setPanelOpen((v) => !v),
       onScenario: changeScenario,
       onBack: back,
       onNext: next,
@@ -365,6 +383,7 @@ export function DemoScreen() {
                 ? h(
                     "div",
                     { "data-testid": "demo-view-turn-summary" },
+                    board,
                     h(TurnSummary, {
                       key: "demo-turn-summary",
                       summary: {
@@ -434,6 +453,7 @@ export function DemoScreen() {
                       ? h(
                           "div",
                           { "data-testid": "demo-view-penalty" },
+                          board,
                           h(TurnSummary, {
                             key: "demo-penalty",
                             summary: {
@@ -472,19 +492,6 @@ export function DemoScreen() {
                               onDone: () => setDemoScenario("winner"),
                               actions: null,
                             })
-                          : view?.code === DEMO_CODE
-                            ? h(Board, {
-                                key: `${demo.scenario}-${demo.scenario}`,
-                                view,
-                                status: status === "ended" ? "online" : status,
-                                toast: toast?.kind === "error" ? toast.text : null,
-                                conn,
-                                rollFailed: 0,
-                                failSignal: 0,
-                                leaving: false,
-                                setLeaving: () => undefined,
-                                liveRollOff: false,
-                              })
-                            : null,
+                          : board,
   );
 }

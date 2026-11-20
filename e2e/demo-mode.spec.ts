@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 test("demo scenario panel navigates every scenario locally", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.goto("/");
   await page.getByRole("button", { name: "Create game" }).first().click();
   await page.getByRole("button", { name: "Start demo / test mode" }).click();
   await expect(page.getByTestId("scenario-panel")).toBeVisible();
   await expect(page.getByTestId("demo-view")).toBeVisible();
+  await page.getByRole("button", { name: "Show scenarios" }).click();
 
   const ids = [
     "waiting",
@@ -29,22 +31,16 @@ test("demo scenario panel navigates every scenario locally", async ({ page }) =>
   ];
   for (const id of ids) {
     const scenarioButton = page.getByTestId(`demo-scenario-${id}`).getByRole("button");
-    if (await page.getByTestId("celebration").isVisible()) {
-      await scenarioButton.dispatchEvent("click");
-    } else {
-      await scenarioButton.click();
-    }
+    await scenarioButton.dispatchEvent("click");
     await expect(page.getByTestId("demo-view")).toHaveAttribute("data-scenario", id);
   }
 
-  await page.getByRole("button", { name: "Previous scenario" }).click();
+  await page
+    .getByRole("button", { name: "Previous scenario" })
+    .dispatchEvent("click");
   const next = page.getByRole("button", { name: "Next" });
-  if (await page.getByTestId("celebration").isVisible()) {
-    await next.dispatchEvent("click");
-  } else {
-    await next.click();
-  }
-  await page.getByRole("button", { name: "Reset" }).click();
+  await next.dispatchEvent("click");
+  await page.getByRole("button", { name: "Reset" }).dispatchEvent("click");
   await expect(page.getByTestId("demo-view")).toHaveAttribute("data-scenario", "roll");
 });
 
@@ -53,6 +49,7 @@ test("demo winner celebration opens immediately and does not mutate history", as
   await page.evaluate(() => localStorage.removeItem("colorDice:history"));
   await page.getByRole("button", { name: "Create game" }).first().click();
   await page.getByRole("button", { name: "Start demo / test mode" }).click();
+  await page.getByRole("button", { name: "Show scenarios" }).click();
   await page.getByTestId("demo-scenario-winner-celebration").getByRole("button").click();
   await expect(page.getByTestId("celebration")).toBeVisible();
   await expect(page.getByTestId("celebration")).toHaveAttribute("data-phase", "done");

@@ -172,22 +172,24 @@ describe("reveal timeline", () => {
   });
 });
 
-describe("skip, reduced motion, buttons", () => {
-  it("Skip completes at once and stops the sounds", () => {
+describe("reveal completion, reduced motion, buttons", () => {
+  it("does not expose a skip button and completes only through the reveal timeline", () => {
     mount(overView([9, 2, 5], [0]));
-    tick(FIRST_STEP_MS);
-    fireEvent.click(screen.getByTestId("rv-skip"));
+    expect(screen.queryByTestId("rv-skip")).toBeNull();
+    tick(revealSchedule(3).doneAt);
     expect(allShow(["RED", "YELLOW", "GREEN", "BLUE", "PEN"])).toBe(true);
     expect(totals()).toBe(3);
     expect(screen.getByTestId("rv-show-cards")).toBeTruthy();
-    for (const h of sound.handles) expect(h.stop).toHaveBeenCalled();
-    tick(10_000);
-    expect(sound.playJingle).not.toHaveBeenCalled();
   });
 
-  it("tapping the backdrop skips; Escape skips, then closes", () => {
+  it("tapping the backdrop or pressing Escape during reveal does not skip or close", () => {
     mount(overView([9, 2], [0]));
     fireEvent.click(screen.getByTestId("celebration"));
+    expect(screen.queryByTestId("rv-skip")).toBeNull();
+    expect(totals()).toBe(0);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(overlay()).not.toBeNull();
+    tick(revealSchedule(2).doneAt);
     expect(totals()).toBe(2);
     expect(overlay()).not.toBeNull();
     fireEvent.keyDown(document, { key: "Escape" });
@@ -209,7 +211,7 @@ describe("skip, reduced motion, buttons", () => {
 
   it("'Show full score cards' closes the overlay onto every player's full card", () => {
     mount(overView([9, 2, 5], [0]));
-    fireEvent.click(screen.getByTestId("rv-skip"));
+    tick(revealSchedule(3).doneAt);
     fireEvent.click(screen.getByRole("button", { name: "Show full score cards" }));
     expect(overlay()).toBeNull();
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
@@ -254,6 +256,12 @@ describe("skip, reduced motion, buttons", () => {
 });
 
 describe("celebrations", () => {
+  it("renders a random reaction GIF during the winner reveal", () => {
+    mount(overView([9, 2], [0]));
+    expect(document.querySelectorAll('[data-testid="celebration-cat"]')).toHaveLength(1);
+    expect(document.querySelector(".rv-cat img.cat-gif")).not.toBeNull();
+  });
+
   it("picks uniformly from the whole set, seedable", () => {
     expect(KINDS).toEqual(expect.arrayContaining(["confetti", "lasers", "hearts"]));
     expect(KINDS.length).toBeGreaterThanOrEqual(6);
@@ -304,7 +312,7 @@ describe("players, ties, names", () => {
 
   it("a tie shows the tie badge and heading, never a crown", () => {
     mount(overView([5, 5, 2], [0, 1]));
-    fireEvent.click(screen.getByTestId("rv-skip"));
+    tick(revealSchedule(3).doneAt);
     expect(screen.getByTestId("rv-title").textContent).toMatch(/Tie: Andrew & Cleo/);
     expect(document.querySelectorAll(".rv-card.is-winner .rv-badge")).toHaveLength(2);
     expect(document.querySelectorAll(".rv-card .rv-name")).toHaveLength(3);
@@ -312,7 +320,7 @@ describe("players, ties, names", () => {
 
   it("an all-way tie says so", () => {
     mount(overView([5, 5], [0, 1]));
-    fireEvent.click(screen.getByTestId("rv-skip"));
+    tick(revealSchedule(2).doneAt);
     expect(screen.getByTestId("rv-title").textContent).toContain("It's a tie!");
   });
 
@@ -321,7 +329,7 @@ describe("players, ties, names", () => {
     const long = "Bartholomew-Maximilian the Magnificent of Dice";
     v.seats = v.seats.map((s, i) => (i === 0 ? { ...s, name: long } : s));
     mount(v);
-    fireEvent.click(screen.getByTestId("rv-skip"));
+    tick(revealSchedule(2).doneAt);
     expect(screen.getByTestId("rv-title").textContent).toContain(long);
     const nm = [...document.querySelectorAll(".rv-name")].find((e) => e.textContent === long);
     expect(nm?.getAttribute("title")).toBe(long);

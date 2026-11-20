@@ -137,6 +137,12 @@ describe("Home", () => {
 });
 
 describe("CreateGame", () => {
+  it("does not show CPU selection on the initial create-game screen", () => {
+    render(<CreateGame />);
+    expect(screen.queryByText("CPU opponents")).toBeNull();
+    expect(screen.queryByLabelText("No CPUs")).toBeNull();
+  });
+
   it("shows inline field errors and does not submit invalid input", () => {
     render(<CreateGame />);
     fireEvent.click(screen.getByRole("button", { name: "Create game" }));
@@ -189,14 +195,11 @@ describe("CreateGame", () => {
     expect(location.search).toBe(`?game=${CODE}`);
   });
 
-  it("bounds CPU opponents by the human and max player counts", () => {
+  it("still offers only human seat configuration on the create screen", () => {
     render(<CreateGame />);
     fireEvent.click(screen.getByRole("radio", { name: "2" }));
-    expect((screen.getByLabelText("No CPUs") as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText("1 CPU") as HTMLInputElement).disabled).toBe(false);
-    fireEvent.click(screen.getByLabelText("1 CPU"));
-    expect((screen.getByLabelText("1 CPU") as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "2" }));
+    expect((screen.getByRole("radio", { name: "2" }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.queryByText("CPU opponents")).toBeNull();
   });
 
   it("shows a friendly rate-limit message", async () => {

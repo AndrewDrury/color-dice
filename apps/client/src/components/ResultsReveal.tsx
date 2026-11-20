@@ -5,7 +5,7 @@
  * Skip completes it at once; "Show full score cards" closes it onto the full results. Rematch / Back home
  * (`actions`) live in the overlay's footer so they are never covered.
  */
-import type { ViewMessage } from "@cd/protocol";
+import type { Reaction, ViewMessage } from "@cd/protocol";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import {
@@ -27,12 +27,31 @@ import { useTween } from "../game/useTween";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
 import { AvatarHover } from "./AvatarHover";
+import { CatReaction, REACTION_MOOD_ORDER } from "./CatReaction";
 import { CrownIcon, TieIcon } from "./icons";
 import { rankNumbers, rankPlayers } from "./ScoreTable";
 import "../styles/celebration.css";
 
-function Total({ value }: { value: number }) {
-  const v = useTween(value, 900, 0);
+function Total({ value, reduced }: { value: number; reduced: boolean }) {
+  const eased = useTween(value, 1400, 0);
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (reduced) {
+      setStep(value);
+      return;
+    }
+    setStep(0);
+    if (value <= 0) return;
+    const stepMs = Math.max(18, Math.floor(2200 / Math.max(1, value)));
+    const id = setInterval(() => {
+      setStep((prev) => {
+        if (prev >= value) return value;
+        return prev + 1;
+      });
+    }, stepMs);
+    return () => clearInterval(id);
+  }, [value, reduced]);
+  const v = reduced ? value : Math.min(step, eased);
   return (
     <span class="rv-total-num num" data-value={value}>
       {v}
@@ -95,12 +114,14 @@ export interface ResultsRevealProps {
   onDone: () => void;
   /** Rematch / Back home buttons, always visible in the footer. */
   actions: ComponentChildren;
+  /** Chat and emoji controls, kept usable above the celebration. */
+  chat?: ComponentChildren;
   /** Tests: fixes the celebration. */
   kind?: CelebrationKind;
   rand?: () => number;
 }
 
-export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsRevealProps) {
+export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: ResultsRevealProps) {
   useT();
   const reduced = useReducedMotion();
   const { winnerSeats, tie, allTied } = tieInfo(view);
@@ -111,6 +132,15 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
   const bySeat = [...ranked].sort((a, b) => a.seat - b.seat);
   const key = celebrationKey(view);
   const [fx] = useState<CelebrationKind>(() => kind ?? queryKind() ?? pickCelebration(rand));
+  const [reaction] = useState<Reaction>(
+    () =>
+      REACTION_MOOD_ORDER[
+        Math.floor((rand ? rand() : Math.random()) * REACTION_MOOD_ORDER.length)
+      ] ?? "cat-dancing-gif-by-unscreen",
+  );
+  const [reactionPos] = useState<"top" | "bottom">(() =>
+    (rand ? rand() : Math.random()) < 0.5 ? "top" : "bottom",
+  );
   const sounds = useRef<SoundHandle[]>([]);
   const stopSounds = () => {
     for (const h of sounds.current) h.stop();
@@ -137,22 +167,20 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
     },
   });
   const done = r.phase === "done";
-  const skip = () => {
-    stopSounds();
-    r.skip();
-  };
   const rootRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   // Tab stays inside, the page behind is inert, and focus lands on Rematch (or Back home) on close.
-  useModalTrap(rootRef, () =>
-    document.querySelector<HTMLElement>(".g-over-actions .btn, .g-over-actions button"),
+  useModalTrap(
+    rootRef,
+    () => document.querySelector<HTMLElement>(".g-over-actions .btn, .g-over-actions button"),
+    false,
   );
   useEffect(() => {
     const off = onPrefs(() => {
       if (!getPrefs().sound) stopSounds();
     });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") (done ? onDone : skip)();
+      if (e.key === "Escape" && done) onDone();
     };
     document.addEventListener("keydown", onKey);
     return () => {
@@ -192,10 +220,15 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
       role="dialog"
       aria-modal="true"
       aria-label={t("celebrate.label")}
-      onClick={done ? undefined : skip}
+      onClick={undefined}
     >
       {allIn || r.phase === "totals" ? <Backdrop kind={fx} rand={rand} still={reduced} /> : null}
       <div class="rv-stage">
+        {reactionPos === "top" ? (
+          <div class="rv-cat rv-cat--top" aria-hidden="true" data-testid="celebration-cat">
+            <CatReaction id={reaction} size={88} />
+          </div>
+        ) : null}
         <h2
           class={`rv-title${allIn ? " is-win" : ""}${r.phase === "hush" ? " is-hush" : ""}`}
           data-testid="rv-title"
@@ -272,15 +305,25 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
                   </span>
                 </span>
                 <span class="rv-total" aria-hidden="true">
-                  {showTotal ? <Total value={total} /> : <span class="rv-total-num rv-q">?</span>}
+                  {showTotal ? (
+                    <Total value={total} reduced={reduced} />
+                  ) : (
+                    <span class="rv-total-num rv-q">?</span>
+                  )}
                   <span class="rv-total-cap">{t("sheet.totalCaption")}</span>
                 </span>
               </li>
             );
           })}
         </ol>
+        {reactionPos === "bottom" ? (
+          <div class="rv-cat rv-cat--bottom" aria-hidden="true" data-testid="celebration-cat">
+            <CatReaction id={reaction} size={88} />
+          </div>
+        ) : null}
       </div>
       <div class="rv-foot">
+        {chat ? <div class="rv-chat">{chat}</div> : null}
         {done ? (
           <button
             type="button"
@@ -291,20 +334,7 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
           >
             {t("celebrate.showCards")}
           </button>
-        ) : (
-          <button
-            type="button"
-            class="btn rv-skip"
-            ref={btnRef}
-            data-testid="rv-skip"
-            onClick={(e) => {
-              e.stopPropagation();
-              skip();
-            }}
-          >
-            {t("celebrate.skip")}
-          </button>
-        )}
+        ) : null}
         <div class="rv-actions">{actions}</div>
       </div>
     </div>

@@ -2,7 +2,7 @@
  * Timeline of the end-of-game reveal (T-NEW-28): every player's card is on screen from the start; the
  * scores drop in one colour at a time for ALL players at once (red, yellow, green, blue), then the
  * penalties, then a longer pause, then the totals slam in one at a time (winner last), then `done`.
- * Reduced motion (or `instant`) skips straight to `done`. `skip()` completes at once. Pure timers, no DOM.
+ * Reduced motion (or `instant`) completes straight away. Pure timers, no DOM.
  */
 import type { ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -11,11 +11,11 @@ import { useEffect, useRef, useState } from "preact/hooks";
 export const STEPS = 5;
 export const FIRST_STEP_MS = 700;
 /** Delay between one colour (or the penalties) and the next. */
-export const STEP_GAP_MS = 900;
+export const STEP_GAP_MS = 1300;
 /** Extra per-player delay inside one step (applied in CSS; the state flips for everyone at once). */
-export const PLAYER_STAGGER_MS = 70;
+export const PLAYER_STAGGER_MS = 100;
 /** Pause after the penalties before the totals (longer than STEP_GAP_MS). */
-export const HUSH_MS = 1900;
+export const HUSH_MS = 2800;
 export const TOTAL_GAP_MS = 600;
 export const SETTLE_MS = 1100;
 
@@ -42,7 +42,7 @@ export function useReveal(
   count: number,
   instant: boolean,
   on: { drop?: (step: number) => void; hush?: () => void; total?: (i: number) => void } = {},
-): RevealState & { skip: () => void } {
+): RevealState {
   const full: RevealState = { step: STEPS, totals: count, phase: "done" };
   const [s, setS] = useState<RevealState>(() =>
     instant ? full : { step: 0, totals: 0, phase: "drop" },
@@ -79,11 +79,7 @@ export function useReveal(
     at(doneAt, () => setS({ step: STEPS, totals: count, phase: "done" }));
     return clear;
   }, [count, instant]);
-  const skip = () => {
-    clear();
-    setS({ step: STEPS, totals: count, phase: "done" });
-  };
-  return { ...s, skip };
+  return s;
 }
 
 /** Room code + game number (the seat records sum to the finished games), so a rematch plays again. */

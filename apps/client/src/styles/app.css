@@ -116,13 +116,24 @@ output {
 
 .demo-scenarios {
   position: relative;
-  z-index: 1000;
+  z-index: 1;
   display: grid;
   gap: var(--s1);
   padding: var(--s2);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--paper);
+}
+.demo-scenario-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+.demo-scenarios #demo-scenario-grid {
+  max-height: min(42vh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .demo-scenario-nav,

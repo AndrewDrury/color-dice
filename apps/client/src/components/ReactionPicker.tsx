@@ -10,11 +10,13 @@ export function ReactionPicker({
   onClose,
   closing = false,
   inChat = false,
+  autoFocusFirst = true,
 }: {
   onPick: (id: Reaction) => void;
   onClose: () => void;
   closing?: boolean;
   inChat?: boolean;
+  autoFocusFirst?: boolean;
 }) {
   const ref = useRef<HTMLFieldSetElement>(null);
   const close = useRef(onClose);
@@ -41,15 +43,16 @@ export function ReactionPicker({
     };
     document.addEventListener("keydown", key);
     document.addEventListener("pointerdown", down);
-    ref.current?.querySelector<HTMLElement>("button")?.focus();
+    if (autoFocusFirst) ref.current?.querySelector<HTMLElement>("button")?.focus();
     return () => {
       document.removeEventListener("keydown", key);
       document.removeEventListener("pointerdown", down);
     };
-  }, []);
+  }, [autoFocusFirst]);
   return (
     <fieldset
       ref={ref}
+      id="reaction-picker"
       class={`rx-picker mo-pop${inChat ? " chat-rx-picker" : ""}${closing ? " mo-exit" : ""}`}
       aria-label={t("chat.reactions")}
     >
