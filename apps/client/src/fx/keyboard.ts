@@ -1,5 +1,6 @@
 /** Desktop shortcuts (H11). Ignored while a text field has focus or a modifier is held. */
 import { useEffect, useRef } from "preact/hooks";
+import { modalOpen } from "./modal";
 
 export interface KeyActions {
   canRoll: boolean;
@@ -83,6 +84,8 @@ const ARROWS: Record<string, "left" | "right" | "up" | "down"> = {
 
 /** Returns true when the key was handled (and default prevented). */
 export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
+  // T-FIX-12: while a modal dialog (reveal, results, sheet, chat) is open, the board's shortcuts stand down.
+  if (modalOpen()) return false;
   if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
     if (isTyping(e.target) || !a.canUndo) return false;
     e.preventDefault();

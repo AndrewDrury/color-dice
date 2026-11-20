@@ -10,6 +10,7 @@ import { t, useT } from "../i18n";
 import { getRoomPassword, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
+import { useTakenColors } from "../takenColors";
 
 /** After a wrong password the Join button stays disabled this long. */
 export const WRONG_PASSWORD_LOCK_MS = 2000;
@@ -34,6 +35,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [profile, setProfile] = useState(rememberedProfile);
+  const { taken, onError } = useTakenColors(code, setProfile);
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState(false);
   const [roomName, setRoomName] = useState<string | null>(null);
@@ -100,6 +102,7 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
       navigate("waiting", res.code);
     } catch (err) {
       if (!alive.current) return;
+      onError(err);
       setFormError(requestErrorText(err));
       if (err instanceof ApiError && err.status === 401) lockFor(WRONG_PASSWORD_LOCK_MS);
     } finally {
@@ -118,22 +121,25 @@ export function JoinDialog({ code, games, onClose }: JoinDialogProps) {
         </p>
       ) : null}
       <form class="stack" onSubmit={submit} noValidate>
-        <Field
-          label={t("field.yourName")}
-          name="name"
-          value={name}
-          onValue={setName}
-          error={errors.name}
-          maxLength={PLAYER_NAME_MAX}
-          autocomplete="nickname"
-          enterkeyhint="next"
-        />
-        <ProfileField value={profile} onChange={setProfile} />
+        <ProfileField value={profile} onChange={setProfile} taken={taken}>
+          <Field
+            label={t("field.yourName")}
+            name="name"
+            value={name}
+            onValue={setName}
+            error={errors.name}
+            maxLength={PLAYER_NAME_MAX}
+            autocomplete="nickname"
+            enterkeyhint="next"
+          />
+        </ProfileField>
         <PasswordField value={password} onValue={setPassword} error={errors.password} />
         <FieldError text={formError} />
-        <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
-          {t("common.join")}
-        </Button>
+        <div class="join-foot">
+          <Button type="submit" variant="primary" block busy={busy} disabled={locked || gone}>
+            {t("common.join")}
+          </Button>
+        </div>
       </form>
       <Button variant="link" onClick={() => navigate("reclaim", code)}>
         {t("join.reclaimLink")}

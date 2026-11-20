@@ -18,6 +18,40 @@
 }
 .g-opp .g-chip {
   cursor: default;
+  /* T-NEW-15: 40 px avatar left of name + penalties; the name clips, never the avatar. */
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-width: 220px;
+}
+.g-opp .g-chip > .av {
+  margin: 3px;
+}
+.g-chip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* Phone: chips share the row (4 fit at 360 px); avatar above, clipped name below. */
+.g-opp.is-phone .g-chip {
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  max-width: 160px;
+  padding-inline: 4px;
+}
+.g-opp.is-phone .g-chip-body {
+  align-self: stretch;
+  align-items: center;
+}
+.g-opp.is-phone .g-chip-top {
+  max-width: 100%;
+  gap: 2px;
 }
 .g-chip-pen {
   font-size: var(--fs-small, 12px);
@@ -59,4 +93,20 @@
 }
 .g-winner[data-tie] .g-name {
   max-width: 14ch;
+}
+
+/* Phone: the chips share the row (no horizontal scroll), so nothing clips; the row keeps its content height. */
+.g-opp.is-phone {
+  overflow: visible;
+  flex-shrink: 0;
+}
+.g-opp.is-phone .g-chip > .av {
+  margin: 1px;
+}
+.g-opp.is-phone .g-chip-pen {
+  font-size: 11px;
+  line-height: 1.1;
+}
+.g-opp.is-phone .g-chip-pen[data-penalties="0"] {
+  display: none;
 }

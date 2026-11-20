@@ -3,10 +3,24 @@
  * Stored in localStorage with an in-memory fallback; storage content is untrusted, so every
  * read is sanitized (shape, bounds, dedupe) and the list is capped at `HISTORY_CAP`.
  */
-import { GameCodeSchema } from "@cd/protocol";
+import {
+  GameCodeSchema,
+  PLAYER_NAME_MAX,
+  PROFILE_CATS,
+  PROFILE_COLORS,
+  type ProfileCat,
+  type ProfileColor,
+} from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 
 export type GameResult = "W" | "T" | "L";
+
+export interface HistoryOpponent {
+  name: string;
+  colour: ProfileColor;
+  cat: ProfileCat;
+  score: number;
+}
 
 export interface HistoryEntry {
   code: string;
@@ -15,6 +29,10 @@ export interface HistoryEntry {
   result: GameResult;
   /** Epoch ms. */
   at: number;
+  /** Detailed shape; absent for legacy entries and result-only transfer codes. */
+  opponents?: HistoryOpponent[];
+  myScore?: number;
+  players?: number;
 }
 
 export const HISTORY_KEY = "colorDice:history";
@@ -64,6 +82,40 @@ export function sanitizeHistory(data: unknown): HistoryEntry[] {
       result,
       at: r.at as number,
     };
+    if (Array.isArray(r.opponents) && r.opponents.length <= 4) {
+      const opponents: HistoryOpponent[] = [];
+      for (const rawOpponent of r.opponents) {
+        if (typeof rawOpponent !== "object" || rawOpponent === null) continue;
+        const o = rawOpponent as Record<string, unknown>;
+        if (
+          typeof o.name !== "string" ||
+          typeof o.colour !== "string" ||
+          typeof o.cat !== "string" ||
+          !PROFILE_COLORS.includes(o.colour as ProfileColor) ||
+          !PROFILE_CATS.includes(o.cat as ProfileCat) ||
+          !Number.isSafeInteger(o.score)
+        )
+          continue;
+        const name = Array.from(o.name)
+          .filter((ch) => ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) !== 127)
+          .join("")
+          .slice(0, PLAYER_NAME_MAX);
+        if (!name) continue;
+        const score = Math.max(-1_000_000, Math.min(1_000_000, o.score as number));
+        opponents.push({ name, colour: o.colour as ProfileColor, cat: o.cat as ProfileCat, score });
+      }
+      if (opponents.length === r.opponents.length) e.opponents = opponents;
+    }
+    if (Number.isSafeInteger(r.myScore)) {
+      e.myScore = Math.max(-1_000_000, Math.min(1_000_000, r.myScore as number));
+    }
+    if (
+      Number.isSafeInteger(r.players) &&
+      (r.players as number) >= 2 &&
+      (r.players as number) <= 5
+    ) {
+      e.players = r.players as number;
+    }
     if (seen.has(keyOf(e))) continue;
     seen.add(keyOf(e));
     out.push(e);
@@ -119,8 +171,18 @@ const TRANSFER_MAX_CHARS = 40_000;
 
 /** Compact, versioned text code for moving the record to another device. No names. */
 export function exportTransferCode(): string {
-  const rows = getHistory().map((e) => [e.code, e.game, e.result, e.at]);
-  const b64 = btoa(JSON.stringify(rows));
+  const detailed = getHistory().map((e) =>
+    e.opponents && e.myScore !== undefined && e.players !== undefined
+      ? [e.code, e.game, e.result, e.at, e.opponents, e.myScore, e.players]
+      : [e.code, e.game, e.result, e.at],
+  );
+  let rows: unknown[] = detailed;
+  const encode = (value: unknown[]) => btoa(JSON.stringify(value));
+  let b64 = encode(rows);
+  if (b64.length > TRANSFER_MAX_CHARS - TRANSFER_PREFIX.length) {
+    rows = getHistory().map((e) => [e.code, e.game, e.result, e.at]);
+    b64 = encode(rows);
+  }
   return TRANSFER_PREFIX + b64.replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
@@ -139,12 +201,15 @@ export function importTransferCode(text: string): ImportResult {
     if (!Array.isArray(rows)) return { ok: false, reason: "bad" };
     const incoming = sanitizeHistory(
       rows.slice(0, HISTORY_CAP * 2).map((r) =>
-        Array.isArray(r) && r.length === 4
+        Array.isArray(r) && (r.length === 4 || r.length === 7)
           ? {
               code: r[0],
               game: r[1],
               result: legacy ? (r[2] === 1 ? "W" : r[2] === 0 ? "L" : r[2]) : r[2],
               at: r[3],
+              opponents: r.length === 7 ? r[4] : undefined,
+              myScore: r.length === 7 ? r[5] : undefined,
+              players: r.length === 7 ? r[6] : undefined,
             }
           : null,
       ),
@@ -177,6 +242,32 @@ export function historyTotals(h: readonly HistoryEntry[] = getHistory()): {
 } {
   const count = (r: GameResult) => h.filter((e) => e.result === r).length;
   return { wins: count("W"), ties: count("T"), losses: count("L") };
+}
+
+export function historyStats(h: readonly HistoryEntry[] = getHistory()) {
+  const totals = historyTotals(h);
+  const gamesPlayed = h.length;
+  let streak = 0;
+  let streakResult: GameResult | null = null;
+  for (let i = h.length - 1; i >= 0; i--) {
+    const result = h[i]?.result;
+    if (!result) break;
+    if (streakResult === null) streakResult = result;
+    if (result !== streakResult) break;
+    streak++;
+  }
+  const bestScore = h.reduce(
+    (best, entry) => (entry.myScore !== undefined ? Math.max(best, entry.myScore) : best),
+    0,
+  );
+  return {
+    ...totals,
+    gamesPlayed,
+    winPercent: gamesPlayed === 0 ? 0 : Math.round((totals.wins / gamesPlayed) * 100),
+    streak,
+    streakResult,
+    bestScore,
+  };
 }
 
 export function onHistory(cb: Listener): () => void {

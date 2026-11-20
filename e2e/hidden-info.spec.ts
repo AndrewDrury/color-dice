@@ -9,7 +9,15 @@ import {
   startGame,
   test,
 } from "./fixtures";
-import { closeAll, expectGameOver, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  expectGameOver,
+  newPlayer,
+  roll,
+  rollFaces,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 interface Frame {
   type?: string;
@@ -35,7 +43,7 @@ test("hidden info: A receives neither B's nor C's Action 1 choice before the rev
     // Record everything A receives, from the very first socket.
     const frames = collectWsFrames(a!.page);
     const code = await createGame(a!, {
-      roomName: `Hidden ${Date.now() % 10000}`,
+      roomName: `Hidden ${uid()}`,
       password: "pw-hide",
       max: 3,
     });
@@ -63,7 +71,7 @@ test("hidden info: A receives neither B's nor C's Action 1 choice before the rev
         return last?.game?.players.filter((p) => p.action1Submitted).length;
       })
       .toBe(2);
-    await expect(a!.page.getByText(/Step 1 of 2/).first()).toBeVisible();
+    await expect(a!.page.getByText(/Pick the white total 7/).first()).toBeVisible();
 
     const before = frames.slice(start).map((f) => JSON.parse(f) as Frame);
     for (const f of before) {
@@ -113,7 +121,7 @@ test("hidden info: opponent cards are not rendered or sent before game over, all
     const framesA = collectWsFrames(a.page);
     const framesB = collectWsFrames(b.page);
     const code = await createGame(a, {
-      roomName: `Cards ${Date.now() % 10000}`,
+      roomName: `Cards ${uid()}`,
       password: "pw-card",
       max: 2,
     });
@@ -126,8 +134,7 @@ test("hidden info: opponent cards are not rendered or sent before game over, all
       expect(await waitForRoller([a, b])).toBe(active);
       await roll(active.page);
       await pass(other.page);
-      await pass(active.page);
-      await pass(active.page);
+      await pass(active.page); // one Submit sends both actions
       if (turn === 3) {
         // Mid-game DOM: only your own card, opponent is a chip.
         for (const p of [a, b]) {

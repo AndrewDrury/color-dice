@@ -1,4 +1,4 @@
-/** Turn steps (K4.1), early Action 2 (K1.2), staging helpers and one-click pass wording (K4.4). */
+/** Turn steps (K4.1), early Action 2 (K1.2), any-order staging candidates and the single Submit. */
 import { applyMark, type Color, canMark } from "@cd/engine";
 import type { ClientMessage, LegalAction2, ViewMessage } from "@cd/protocol";
 import { t } from "../i18n";
@@ -62,42 +62,41 @@ export function early2Options(view: ViewMessage, s1: Mark | null): MarkOption[] 
   return out;
 }
 
-/** Step-2 mark options for the staged state: the server's list, or computed from your step 1. */
+/** Step-2 mark options: the server's list, or (active, step 1) computed from your staged step 1. */
 function step2Options(view: ViewMessage, s1: Mark | null): MarkOption[] {
-  if (currentStep(view) === 1) return s1 && isActive(view) ? early2Options(view, s1) : [];
+  if (currentStep(view) === 1) return isActive(view) ? early2Options(view, s1) : [];
   return view.you.legalAction2.filter((a): a is MarkOption => a.kind === "MARK");
 }
 
-/** Legal boxes keyed `COLOR:number`; with `s1` staged: that box plus the step-2 boxes. */
-export function legalBoxes(view: ViewMessage, s1: Mark | null = null): Set<string> {
-  const out = new Set<string>();
+/**
+ * Boxes you can pick now, split by what they would be (D-L3, D-L5). `white`: the white sum, only
+ * where a staged colour mark `s2` stays legal when the white mark goes first. `colour`: Action 2
+ * boxes given the staged (or hovered) white box. A box in both counts as white unless step 1 is
+ * staged, so each key has one meaning.
+ */
+export function candidates(
+  view: ViewMessage,
+  s1: Mark | null,
+  s2: Mark | null,
+  hover: Mark | null = null,
+): { white: Set<string>; colour: Set<string> } {
+  const white = new Set<string>();
+  const colour = new Set<string>();
   const g = view.game;
   const step = currentStep(view);
-  if (!g || !step) return out;
-  if (step === 1) {
-    if (!g.roll) return out;
+  if (!g || !step) return { white, colour };
+  if (step === 1 && g.roll) {
     for (const a of view.you.legalAction1) {
-      if (a.kind === "MARK") out.add(boxKey(a.color, g.roll.whiteSum));
+      if (a.kind !== "MARK") continue;
+      const w = { color: a.color, number: g.roll.whiteSum };
+      if (!s2 || early2Options(view, w).some((o) => sameMark(o, s2))) {
+        white.add(boxKey(w.color, w.number));
+      }
     }
-    if (s1 && isActive(view)) {
-      out.clear();
-      out.add(boxKey(s1.color, s1.number));
-    }
   }
-  if (step === 2 || (step === 1 && s1)) {
-    for (const a of step2Options(view, s1)) out.add(boxKey(a.color, a.number));
-  }
-  return out;
-}
-
-/** Is there a pass button to show? (Step 2 is always passable after a staged step 1.) */
-export function canPass(view: ViewMessage, s1: Mark | null = null): boolean {
-  const step = currentStep(view);
-  if (step === 1) {
-    return s1 && isActive(view) ? true : view.you.legalAction1.some((a) => a.kind === "PASS");
-  }
-  if (step === 2) return view.you.legalAction2.some((a) => a.kind === "PASS");
-  return false;
+  for (const o of step2Options(view, s1 ?? hover)) colour.add(boxKey(o.color, o.number));
+  if (s1) for (const k of colour) white.delete(k);
+  return { white, colour };
 }
 
 /** Did you mark in this turn's Action 1? (`you.markedThisTurn` if the server sends it.) */
@@ -117,45 +116,11 @@ export function markedInAction1(view: ViewMessage): boolean {
     .some((e) => e.type === "MARKED" && e.playerId === me && e.action === 1);
 }
 
-/** Passing step 2 as the active player without any mark this turn costs −5 (K4.1). */
-export function passTakesPenalty(view: ViewMessage, s1: Mark | null = null): boolean {
-  if (!isActive(view) || s1) return false;
+/** Submitting nothing as the active player without any mark this turn costs −5 (K4.1). */
+export function passTakesPenalty(view: ViewMessage): boolean {
+  if (!isActive(view)) return false;
   const step = currentStep(view);
-  if (step === 1) return penaltyOnly(view);
-  return step === 2 && !markedInAction1(view);
-}
-
-/**
- * T-NEW-9: active player at step 1 with nothing legal to mark in either step. The only outcome is
- * the −5, so one button sends both passes (same commands as skipping, then passing).
- */
-export function penaltyOnly(view: ViewMessage): boolean {
-  if (currentStep(view) !== 1 || !isActive(view) || !view.game?.roll) return false;
-  return (
-    !view.you.legalAction1.some((a) => a.kind === "MARK") && early2Options(view, null).length === 0
-  );
-}
-
-/** The pass for the current step (K4.4: sent at once). With your step 1 staged it is step 2's. */
-export function passMessage(view: ViewMessage, s1: Mark | null): ClientMessage | null {
-  const turn = view.game?.turn?.number;
-  const step = currentStep(view);
-  if (!turn || !step) return null;
-  if (step === 1) {
-    if (s1 && isActive(view)) {
-      return {
-        type: "turn",
-        turn,
-        action1: { kind: "MARK", color: s1.color },
-        action2: { kind: "PASS" },
-      };
-    }
-    if (penaltyOnly(view)) {
-      return { type: "turn", turn, action1: { kind: "PASS" }, action2: { kind: "PASS" } };
-    }
-    return { type: "action1", turn, kind: "PASS" };
-  }
-  return { type: "action2", turn, kind: "PASS" };
+  return step === 1 || (step === 2 && !markedInAction1(view));
 }
 
 /** The matching step-2 option (duplicate white/colour sums make the same number: first wins). */
@@ -163,8 +128,11 @@ export function findOption(view: ViewMessage, s1: Mark | null, s2: Mark): MarkOp
   return step2Options(view, s1).find((a) => a.color === s2.color && a.number === s2.number) ?? null;
 }
 
-/** The socket message for the staged marks, or null when they are no longer legal. */
-export function buildMessage(
+/**
+ * The one Submit (D-L3): the active player sends Action 1 then Action 2 (each a mark or a pass) in
+ * rule order; a passive player sends Action 1. Null when the staged marks are no longer legal.
+ */
+export function submitMessage(
   view: ViewMessage,
   s1: Mark | null,
   s2: Mark | null,
@@ -172,22 +140,19 @@ export function buildMessage(
   const turn = view.game?.turn?.number;
   const step = currentStep(view);
   if (!turn || !step) return null;
-  if (step === 1) {
-    if (!s1 || !legalBoxes(view).has(boxKey(s1.color, s1.number))) return null;
-    if (!s2) return { type: "action1", turn, kind: "MARK", color: s1.color };
-    const m = findOption(view, s1, s2);
-    if (!m) return null;
-    return {
-      type: "turn",
-      turn,
-      action1: { kind: "MARK", color: s1.color },
-      action2: { kind: "MARK", whiteDie: m.whiteDie, color: m.color },
-    };
+  const m = s2 ? findOption(view, s1, s2) : null;
+  if (s2 && !m) return null;
+  const a2 = m
+    ? ({ kind: "MARK", whiteDie: m.whiteDie, color: m.color } as const)
+    : ({ kind: "PASS" } as const);
+  if (step === 2) return { type: "action2", turn, ...a2 };
+  if (s1 && !view.you.legalAction1.some((a) => a.kind === "MARK" && a.color === s1.color)) {
+    return null;
   }
-  if (!s2) return null;
-  const m = findOption(view, null, s2);
-  if (!m) return null;
-  return { type: "action2", turn, kind: "MARK", whiteDie: m.whiteDie, color: m.color };
+  const a1 = s1 ? ({ kind: "MARK", color: s1.color } as const) : ({ kind: "PASS" } as const);
+  return isActive(view)
+    ? { type: "turn", turn, action1: a1, action2: a2 }
+    : { type: "action1", turn, ...a1 };
 }
 
 /** Dice to ring in the tray while a step-2 box is staged. */
@@ -224,12 +189,10 @@ export function noWhiteSumMove(view: ViewMessage): boolean {
   return !view.you.legalAction1.some((a) => a.kind === "MARK");
 }
 
-export function passLabel(view: ViewMessage, s1: Mark | null = null): string {
-  if (passTakesPenalty(view, s1)) return t("action.passPenalty");
-  const step = currentStep(view);
-  return step === 2 || (step === 1 && s1 && isActive(view))
-    ? t("action.passColour")
-    : t("action.pass");
+/** The Submit label (D-L4): "Submit" with something staged, else Pass (or Pass (−5) when it costs). */
+export function submitLabel(view: ViewMessage, staged: boolean): string {
+  if (staged) return t("action.submit");
+  return passTakesPenalty(view) ? t("action.passPenalty") : t("action.pass");
 }
 
 /** Seats still to decide (or the active player in Action 2): the "Waiting for …" list. */

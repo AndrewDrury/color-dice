@@ -11,6 +11,10 @@ import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 
 const ROLL: DiceTrayProps["roll"] = { white: [3, 5], colored: { RED: 2, GREEN: 6, BLUE: 1 } };
+const FULL: DiceTrayProps["roll"] = {
+  white: [3, 5],
+  colored: { RED: 2, YELLOW: 4, GREEN: 6, BLUE: 1 },
+};
 
 function props(over: Partial<DiceTrayProps> = {}): DiceTrayProps {
   return {
@@ -70,7 +74,7 @@ describe("DiceTray", () => {
     view.rerender(<DiceTray {...props({ roll: ROLL, lockedColors: ["YELLOW"] })} />);
     expect(dieEl(view.container, "RED")?.hasAttribute("data-face")).toBe(false);
     await act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(3000);
     });
     const c = view.container;
     expect(dieEl(c, "WHITE_1")?.dataset.face).toBe("3");
@@ -80,6 +84,81 @@ describe("DiceTray", () => {
     expect(dieEl(c, "BLUE")?.dataset.face).toBe("1");
     expect(dieEl(c, "RED")?.getAttribute("aria-label")).toBe("Red die: 2");
     expect(c.querySelector(".tray__sum")?.textContent).toContain("8");
+  });
+
+  it("reveals faces one die at a time, left to right, 400 ms apart; sum after the 2nd white", () => {
+    const onLanded = vi.fn();
+    const locked = { lockedColors: ["YELLOW"] as const, onLanded };
+    const view = render(<DiceTray {...props({ roll: null, ...locked })} />);
+    view.rerender(<DiceTray {...props({ roll: ROLL, ...locked })} />);
+    const c = view.container;
+    const faced = () =>
+      Array.from(c.querySelectorAll<HTMLElement>("[data-die][data-face]")).map(
+        (d) => d.dataset.die,
+      );
+    const tick = (ms: number) =>
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    tick(550 + 239);
+    expect(faced()).toEqual([]);
+    expect(c.querySelector(".tray__sum")).toBeNull();
+    tick(1);
+    expect(faced()).toEqual(["WHITE_1"]);
+    expect(dieEl(c, "WHITE_1")?.getAttribute("aria-label")).toBe("White die: 3");
+    expect(c.querySelector(".tray__sum")).toBeNull();
+    tick(399);
+    expect(faced()).toEqual(["WHITE_1"]);
+    tick(1);
+    expect(faced()).toEqual(["WHITE_1", "WHITE_2"]);
+    expect(c.querySelector(".tray__sum")?.textContent).toBe("8");
+    // YELLOW is locked: the next landing is RED, one gap later, no hole in the timing.
+    tick(400);
+    expect(faced()).toEqual(["WHITE_1", "WHITE_2", "RED"]);
+    tick(400);
+    expect(faced()).toEqual(["WHITE_1", "WHITE_2", "RED", "GREEN"]);
+    expect(onLanded).not.toHaveBeenCalled();
+    expect(c.querySelector(".tray[data-settled]")).toBeNull();
+    tick(400);
+    expect(faced()).toEqual(["WHITE_1", "WHITE_2", "RED", "GREEN", "BLUE"]);
+    tick(110);
+    expect(onLanded).toHaveBeenCalledTimes(1);
+    expect(c.querySelector(".tray[data-settled]")).not.toBeNull();
+  });
+
+  it("skips locked colours in the landing order", () => {
+    const view = render(<DiceTray {...props({ roll: null, lockedColors: ["YELLOW"] })} />);
+    view.rerender(<DiceTray {...props({ roll: ROLL, lockedColors: ["YELLOW"] })} />);
+    const c = view.container;
+    expect(dieEl(c, "RED")?.dataset.order).toBe("2");
+    expect(dieEl(c, "GREEN")?.dataset.order).toBe("3");
+    expect(dieEl(c, "BLUE")?.dataset.order).toBe("4");
+  });
+
+  it("a tap on the tray skips to the end (all faces, onLanded)", () => {
+    const onLanded = vi.fn();
+    const view = render(<DiceTray {...props({ roll: null, onLanded })} />);
+    view.rerender(<DiceTray {...props({ roll: FULL, onLanded })} />);
+    const c = view.container;
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(c.querySelectorAll("[data-die][data-face]")).toHaveLength(1);
+    const tray = c.querySelector<HTMLElement>(".tray");
+    if (!tray) throw new Error("no tray");
+    fireEvent.click(tray);
+    expect(c.querySelectorAll("[data-die][data-face]")).toHaveLength(6);
+    expect(onLanded).toHaveBeenCalledTimes(1);
+    expect(c.querySelector(".tray__sum")?.textContent).toBe("8");
+  });
+
+  it("reduced motion shows every face at once", () => {
+    setPrefs({ motion: "reduced" });
+    const onLanded = vi.fn();
+    const view = render(<DiceTray {...props({ roll: null, onLanded })} />);
+    view.rerender(<DiceTray {...props({ roll: FULL, onLanded })} />);
+    expect(view.container.querySelectorAll("[data-die][data-face]")).toHaveLength(6);
+    expect(onLanded).toHaveBeenCalledTimes(1);
   });
 
   it("keeps six dice in one grid row W W | R Y G B, locked colour keeping its slot", () => {
@@ -99,7 +178,7 @@ describe("DiceTray", () => {
     expect(slot()[0]?.textContent).toBe("");
     view.rerender(<DiceTray {...props({ roll: ROLL })} />);
     await act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(3000);
     });
     const sums = view.container.querySelectorAll(".tray__sum");
     expect(sums).toHaveLength(1);

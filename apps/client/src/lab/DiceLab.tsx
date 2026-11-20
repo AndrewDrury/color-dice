@@ -75,9 +75,9 @@ export function DiceLab() {
   const toggleTheme = () => {
     const html = document.documentElement;
     const dark =
-      html.dataset.theme === "dark" ||
-      (!html.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
-    html.dataset.theme = dark ? "light" : "dark";
+      html.dataset.scheme === "dark" ||
+      (!html.dataset.scheme && matchMedia("(prefers-color-scheme: dark)").matches);
+    html.dataset.scheme = dark ? "light" : "dark";
   };
 
   const hl =

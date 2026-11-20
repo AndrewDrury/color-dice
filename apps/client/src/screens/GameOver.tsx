@@ -1,16 +1,17 @@
 /** Results card (H7) over the dimmed board: winners, reason, ranked table, Rematch / Back home. */
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { Avatar } from "../components/Avatar";
+import { AvatarHover } from "../components/AvatarHover";
 import { Button } from "../components/Button";
-import { Celebration, celebrationKey, claimCelebration } from "../components/Celebration";
 import { ChatControls } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
+import { ResultsReveal } from "../components/ResultsReveal";
 import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
 import { Sheet } from "../components/Sheet";
 import { reducedMotion } from "../fx/motion";
 import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { endReasonText } from "../game/status";
+import { celebrationKey, claimCelebration } from "../game/useReveal";
 import { type GameResult, recordGame } from "../history";
 import { t, useT } from "../i18n";
 import "../styles/opponents.css";
@@ -66,11 +67,27 @@ function useDeviceHistory(view: ViewMessage, result: GameResult) {
     if (view.game?.phase !== "GAME_OVER" || view.you.seat === null) return;
     const mine = view.seats.find((s) => s.seatId === view.you.seatId);
     if (!mine) return;
+    const minePlayer = view.game.players.find((p) => p.seat === view.you.seat);
+    const opponents = view.game.players
+      .filter((p) => p.seat !== view.you.seat)
+      .map((p) => {
+        const seat = view.seats.find((s) => s.seatId === p.seatId);
+        return {
+          name: seat?.name ?? "",
+          colour: seat?.profile?.color ?? ("slate" as const),
+          cat: seat?.profile?.cat ?? ("mad-cat" as const),
+          score: p.score.total,
+        };
+      })
+      .filter((p) => p.name.length > 0);
     recordGame({
       code: view.code,
       game: mine.record.wins + mine.record.ties + mine.record.losses,
       result,
       at: Date.now(),
+      opponents,
+      myScore: minePlayer?.score.total,
+      players: view.game.players.length,
     });
   }, []);
 }
@@ -92,6 +109,16 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   const ranked = rankPlayers(view);
   const ranks = new Map(
     rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
+  );
+  const actions = (
+    <>
+      {view.you.host ? (
+        <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
+          {t("over.rematch")}
+        </Button>
+      ) : null}
+      <Button onClick={onHome}>{t("over.home")}</Button>
+    </>
   );
   return (
     <div class="g-backdrop g-over">
@@ -135,7 +162,11 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
             >
               <h3 class="g-final-head">
                 <span class="num">{ranks.get(p.seat)}.</span>{" "}
-                <Avatar profile={seatInfo(view, p)?.profile} size={28} />{" "}
+                <AvatarHover
+                  profile={seatInfo(view, p)?.profile}
+                  size={28}
+                  name={seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                />{" "}
                 <span class="g-name">
                   {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
                 </span>
@@ -157,16 +188,13 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         <div class="chat-over">
           <ChatControls send={send} />
         </div>
-        <div class="g-over-actions">
-          {view.you.host ? (
-            <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
-              {t("over.rematch")}
-            </Button>
-          ) : null}
-          <Button onClick={onHome}>{t("over.home")}</Button>
+        <div class="g-over-actions" hidden={celebrating}>
+          {actions}
         </div>
       </section>
-      {celebrating ? <Celebration view={view} onDone={() => setCelebrating(false)} /> : null}
+      {celebrating ? (
+        <ResultsReveal view={view} onDone={() => setCelebrating(false)} actions={actions} />
+      ) : null}
     </div>
   );
 }

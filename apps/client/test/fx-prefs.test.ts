@@ -26,7 +26,7 @@ describe("prefs", () => {
       sound: true,
       haptics: true,
       motion: "system",
-      theme: "system",
+      theme: "classic",
     });
   });
 
@@ -42,7 +42,7 @@ describe("prefs", () => {
       JSON.stringify({ sound: "yes", motion: "warp", theme: "dark" }),
     );
     _resetPrefsForTests();
-    expect(getPrefs()).toMatchObject({ sound: true, motion: "system", theme: "dark" });
+    expect(getPrefs()).toMatchObject({ sound: true, motion: "system", theme: "classic-dark" });
   });
 
   it("falls back to memory when localStorage throws", () => {

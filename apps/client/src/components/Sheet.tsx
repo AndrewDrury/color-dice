@@ -7,7 +7,7 @@ import type { FullViewPlayer } from "@cd/protocol";
 import { Fragment } from "preact";
 import { COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
-import { colorLetter, colorLower, colorName, t, useT } from "../i18n";
+import { colorLower, t, useT } from "../i18n";
 import { LockIcon } from "./icons";
 import { Row, stagedGain } from "./Row";
 import { ScoreFloat } from "./ScoreFloat";
@@ -24,6 +24,8 @@ export interface SheetProps {
   player: FullViewPlayer;
   lockedColors: readonly Color[];
   legal: ReadonlySet<string>;
+  /** The legal keys that are colour moves (the rest of `legal` are white-sum boxes). */
+  colour?: ReadonlySet<string>;
   /** Staged marks in order (step 1, then step 2). */
   staged: readonly { color: Color; number: number; step?: 1 | 2 }[];
   /** Sent / decided marks waiting for the reveal (50 % ✕). */
@@ -37,6 +39,7 @@ export interface SheetProps {
   /** A staged Pass will cost a penalty: the next empty penalty box shakes. */
   warnPenalty?: boolean;
   onPick: (color: Color, number: number) => void;
+  onHover?: (color: Color, number: number | null) => void;
   onFloatDone?: (id: number) => void;
 }
 
@@ -49,12 +52,7 @@ function RowScore(p: {
   const v = useTween(p.value);
   return (
     <span class={`g-score c-${cssColor(p.color)}`}>
-      <abbr
-        title={colorName(p.color)}
-        aria-label={t("sheet.scoreAbbr", { color: colorLower(p.color) })}
-      >
-        {colorLetter(p.color)}
-      </abbr>{" "}
+      <span class="sr-only">{t("sheet.scoreAbbr", { color: colorLower(p.color) })}</span>
       <span class="num" data-value={p.value}>
         {v}
       </span>
@@ -102,10 +100,10 @@ function Total(p: { total: number; next: number | null }) {
 export function Sheet(p: SheetProps) {
   useT();
   const { sheet, score } = p.player;
-  const allLegal = (c: Color) =>
+  const pick = (c: Color, keys: ReadonlySet<string> | undefined) =>
     p.readOnly
       ? []
-      : Array.from({ length: 11 }, (_, i) => i + 2).filter((n) => p.legal.has(`${c}:${n}`));
+      : Array.from({ length: 11 }, (_, i) => i + 2).filter((n) => keys?.has(`${c}:${n}`));
   const numbersOf = (list: SheetProps["staged"], c: Color) =>
     list.filter((m) => m.color === c).map((m) => m.number);
   const gain = COLORS.reduce(
@@ -126,7 +124,8 @@ export function Sheet(p: SheetProps) {
           color={c}
           row={sheet.rows[c]}
           lockedColors={p.lockedColors}
-          legal={allLegal(c)}
+          legal={pick(c, p.legal)}
+          colour={pick(c, p.colour)}
           stagedNumbers={numbersOf(p.staged, c)}
           stagedSteps={p.staged.filter((m) => m.color === c && m.step).map((m) => m.step as 1 | 2)}
           ghostNumbers={numbersOf(p.ghost, c)}
@@ -135,6 +134,7 @@ export function Sheet(p: SheetProps) {
           shake={!!p.errorShake}
           glint={p.fx.glint === c}
           onPick={p.onPick}
+          onHover={p.onHover}
         />
       ))}
       <div class="g-foot">

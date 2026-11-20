@@ -29,6 +29,10 @@ export const ProfileSchema = z
   .strict();
 export type Profile = z.infer<typeof ProfileSchema>;
 
+/** Public room info for the join dialogs: colours only (no names). `GET /api/games/:code/colors`. */
+export const TakenColorsResSchema = z.object({ taken: z.array(z.enum(PROFILE_COLORS)) }).strict();
+export type TakenColorsRes = z.infer<typeof TakenColorsResSchema>;
+
 /** Colour for the n-th seat (1-based join order) when the client sent no profile. */
 export function defaultProfile(order: number): Profile {
   const i = (Math.max(1, Math.floor(order)) - 1) % PROFILE_COLORS.length;

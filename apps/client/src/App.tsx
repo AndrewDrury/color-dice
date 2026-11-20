@@ -4,7 +4,7 @@ import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
 import { UpdateToast } from "./components/UpdateToast";
 import { useLocale } from "./i18n";
-import { getPrefs, onPrefs } from "./prefs";
+import { getPrefs, onPrefs, THEME_SCHEME } from "./prefs";
 import { useRoute } from "./router";
 import { CreateGame } from "./screens/CreateGame";
 import { Game } from "./screens/Game";
@@ -14,22 +14,40 @@ import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
 import { WaitingRoom } from "./screens/WaitingRoom";
 import { useAppState } from "./store";
+import { useDocumentTitle } from "./useDocumentTitle";
 import "./styles/polish.css";
 
-/** Mirror the theme and motion prefs onto <html> (tokens.css and polish.css key off them). */
+/**
+ * Mirror the theme and motion prefs onto <html> (tokens.css, themes.css and polish.css key off
+ * them): data-theme = theme id, data-scheme = its light/dark base. Classic (auto) has no
+ * data-scheme, so CSS prefers-color-scheme decides and follows the system live.
+ */
 export function applyPrefs(root: HTMLElement = document.documentElement): void {
   const { theme, motion } = getPrefs();
-  if (theme === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", theme);
-  if (motion === "reduced") root.setAttribute("data-motion", "reduced");
-  else root.removeAttribute("data-motion");
+  root.dataset.theme = theme;
+  const scheme = THEME_SCHEME[theme];
+  if (scheme === "auto") delete root.dataset.scheme;
+  else root.dataset.scheme = scheme;
+  if (motion === "reduced") root.dataset.motion = motion;
+  else delete root.dataset.motion;
+  const bar = getComputedStyle(root).getPropertyValue("--table").trim();
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m, i) => {
+    m.setAttribute("content", theme === "classic" ? (["#EFE9DF", "#0E131C"][i] ?? bar) : bar);
+  });
+}
+
+/** Boot (main.tsx, before the first render so nothing flashes): apply now and on every change. */
+export function startPrefs(): void {
+  onPrefs(() => applyPrefs());
+  applyPrefs();
 }
 
 export function App() {
   useLocale(); // re-render the whole tree when the language changes
   const route = useRoute();
-  const { status } = useAppState();
+  const { status, view } = useAppState();
   const [DemoScreen, setDemoScreen] = useState<ComponentType | null>(null);
+  useDocumentTitle(route, route.code !== null && view?.code === route.code ? view : null);
   useEffect(() => {
     if (route.screen !== "demo") return;
     let alive = true;

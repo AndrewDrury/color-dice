@@ -1,8 +1,16 @@
 import { createGame, expect, joinGame, pass, queueDice, startGame, test } from "./fixtures";
-import { closeAll, expectGameOver, finalScores, newPlayer, roll, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  expectGameOver,
+  finalScores,
+  newPlayer,
+  roll,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 // EC-13: the active player's 4th penalty ends the game at once.
-test("two players: game ends on the 4th penalty, scores match on both pages", async ({
+test("two players: game ends on the 4th penalty, scores match on both pages @smoke", async ({
   browser,
 }) => {
   test.setTimeout(120_000);
@@ -10,7 +18,7 @@ test("two players: game ends on the 4th penalty, scores match on both pages", as
   const b = await newPlayer(browser, "Boris");
   try {
     const code = await createGame(a, {
-      roomName: `Duel ${Date.now() % 10000}`,
+      roomName: `Duel ${uid()}`,
       password: "pw-duel",
       max: 2,
     });
@@ -26,8 +34,7 @@ test("two players: game ends on the 4th penalty, scores match on both pages", as
       expect(await waitForRoller([a, b])).toBe(active);
       await roll(active.page);
       await pass(other.page);
-      await pass(active.page); // Action 1
-      await pass(active.page); // Action 2 (no mark -> penalty)
+      await pass(active.page); // both actions in one Submit (no mark -> penalty)
     }
     await expectGameOver(a.page);
     await expectGameOver(b.page);

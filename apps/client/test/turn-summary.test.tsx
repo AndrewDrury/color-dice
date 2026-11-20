@@ -1,7 +1,7 @@
 import type { GameEvent } from "@cd/engine";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TURN_SUMMARY_MS, TurnSummary } from "../src/components/TurnSummary";
+import { SUMMARY_MS, TurnSummary } from "../src/components/TurnSummary";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { summarizeTurn } from "../src/game/turnSummary";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
@@ -101,6 +101,14 @@ describe("summarizeTurn (T-NEW-12)", () => {
     expect(both?.players[0]?.penalty).toBe(true);
   });
 
+  it("turn 1 has no TURN_STARTED in the engine log: summarised from the start of the log", () => {
+    const evs = [rolled, m1, started(2, 1)];
+    const s = sum(evs);
+    expect(s?.turn).toBe(1);
+    expect(s?.players[0]?.seat).toBe(0);
+    expect(s?.players.find((p) => p.seat === 1)?.marks.length).toBe(1);
+  });
+
   it("orders the active player first, the rest by seat", () => {
     const evs = [started(1, 2), rolled, started(2, 0)];
     expect(sum(evs, evs.slice(-1), 4)?.players.map((p) => p.seat)).toEqual([2, 0, 1, 3]);
@@ -130,24 +138,50 @@ describe("TurnSummary popup", () => {
   });
   const data = () => sum(turn(m1, m2, { type: "PENALTY", playerId: "seat-2", total: -5 })) as never;
 
-  it("renders names, marks, dice and the penalty chip for everyone", () => {
+  it("renders header, avatar+name, row-coloured marked numbers, penalty, and no dice", () => {
     render(<TurnSummary summary={data()} onClose={() => {}} />);
+    expect(screen.getByRole("heading").textContent).toBe("Turn 1");
     expect(screen.getByText("Red 5 ✓")).toBeTruthy();
-    expect(screen.getByText("Green 7 ✓")).toBeTruthy();
+    const marks = screen.getAllByTestId("ts-mark");
+    expect(marks.map((m) => m.className.match(/c-\w+/)?.[0]).sort()).toEqual(["c-green", "c-red"]);
     expect(screen.getAllByTestId("ts-penalty").length).toBe(1);
-    expect(document.querySelectorAll(".die[data-face]").length).toBe(4);
+    expect(document.querySelectorAll(".die, .ts-die").length).toBe(0);
+    expect(document.querySelectorAll(".ts-who .ts-name").length).toBe(3);
   });
 
-  it("auto-closes, and a tap anywhere dismisses", () => {
+  it("a player with nothing shows Passed", () => {
+    render(<TurnSummary summary={sum(turn(m1)) as never} onClose={() => {}} />);
+    expect(screen.getAllByText("Passed").length).toBe(2);
+  });
+
+  it("auto-closes at 4 s and the close button closes; tapping elsewhere does not", () => {
     const close = vi.fn();
     render(<TurnSummary summary={data()} onClose={close} />);
+    fireEvent.pointerDown(document.body);
+    expect(close).not.toHaveBeenCalled();
     act(() => {
-      vi.advanceTimersByTime(TURN_SUMMARY_MS);
+      vi.advanceTimersByTime(SUMMARY_MS - 1);
+    });
+    expect(close).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
     });
     expect(close).toHaveBeenCalledTimes(1);
+    expect(SUMMARY_MS).toBe(4000);
     close.mockClear();
-    fireEvent.pointerDown(document.body);
-    expect(close).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("placement class differs, long names carry a title", () => {
+    const d = sum(turn(m1, m2)) as NonNullable<ReturnType<typeof sum>>;
+    (d.players[0] as { name: string }).name =
+      "A very long player name that must not break the card";
+    const { rerender } = render(<TurnSummary summary={d} onClose={() => {}} />);
+    expect(screen.getByTestId("turn-summary").classList.contains("is-log")).toBe(true);
+    expect(screen.getByTitle((d.players[0] as { name: string }).name)).toBeTruthy();
+    rerender(<TurnSummary summary={d} onClose={() => {}} placement="sheet" />);
+    expect(screen.getByTestId("turn-summary").classList.contains("is-sheet")).toBe(true);
   });
 
   it("reduced motion: static card, same content", () => {
@@ -170,7 +204,7 @@ describe("Game integration", () => {
   });
   afterEach(cleanup);
 
-  it("pops up when a new turn starts live, is replaced, and hides at game over", () => {
+  it("pops up when a new turn starts live, is replaced, and hides at game over", async () => {
     act(() => {
       applyView(makeGameView({ version: 1, events: [started(1, 0), rolled, m1] }));
     });
@@ -179,7 +213,7 @@ describe("Game integration", () => {
     act(() => {
       applyView(makeGameView({ version: 2, events: [started(1, 0), rolled, m1, started(2, 1)] }));
     });
-    expect(screen.getByTestId("turn-summary").getAttribute("data-turn")).toBe("1");
+    expect((await screen.findByTestId("turn-summary")).getAttribute("data-turn")).toBe("1");
     const t2: GameEvent[] = [started(1, 0), rolled, m1, started(2, 1), rolled, started(3, 0)];
     act(() => {
       applyView(makeGameView({ version: 3, events: t2 }));

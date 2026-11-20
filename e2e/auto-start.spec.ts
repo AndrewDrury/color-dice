@@ -1,5 +1,5 @@
-import { createGame, expect, joinGame, newPlayer, playRollOff, queueDice, test } from "./fixtures";
-import { closeAll } from "./helpers";
+import { createGame, expect, joinGame, playRollOff, queueDice, test } from "./fixtures";
+import { closeAll, newPlayer, uid } from "./helpers";
 
 test("a 2-player room starts the moment the guest joins, with no Start press", async ({
   browser,
@@ -8,7 +8,7 @@ test("a 2-player room starts the moment the guest joins, with no Start press", a
   const b = await newPlayer(browser, "Bea");
   try {
     const code = await createGame(a, {
-      roomName: `Auto ${Date.now() % 10000}`,
+      roomName: `Auto ${uid()}`,
       password: "pw-auto",
       max: 2,
     });
@@ -31,7 +31,7 @@ test("a 3-player room with 2 joined waits for Start; the host can start it short
   const b = await newPlayer(browser, "Bo");
   try {
     const code = await createGame(a, {
-      roomName: `Tri ${Date.now() % 10000}`,
+      roomName: `Tri ${uid()}`,
       password: "pw-tri",
       max: 3,
     });

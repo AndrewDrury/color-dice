@@ -4,10 +4,10 @@ import { ApiError, getMe } from "../api";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
+import { SelfBadge } from "../components/SelfBadge";
 import { GearButton, type Panel, Panels } from "../components/Settings";
-import { useHistoryTotals } from "../history";
 import { type MessageKey, t, useT } from "../i18n";
-import { removeRoomPassword } from "../remembered";
+import { getRemembered, removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
 import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
@@ -92,7 +92,22 @@ function YourGames() {
 /** "Your record: 12 W – 2 T – 7 L" from this device's history; hidden while empty. */
 function YourRecord() {
   useT();
-  const { wins, ties, losses } = useHistoryTotals();
+  const [totals, setTotals] = useState({ wins: 0, ties: 0, losses: 0 });
+  useEffect(() => {
+    let off = () => {};
+    let alive = true;
+    void import("../history").then((m) => {
+      if (!alive) return;
+      const update = () => setTotals(m.historyTotals());
+      update();
+      off = m.onHistory(update);
+    });
+    return () => {
+      alive = false;
+      off();
+    };
+  }, []);
+  const { wins, ties, losses } = totals;
   if (wins + ties + losses === 0) return null;
   return (
     <p class="muted" data-testid="your-record" style={{ margin: 0 }}>
@@ -156,6 +171,7 @@ export interface HomeProps {
 
 export function Home({ route }: HomeProps) {
   useT();
+  const remembered = getRemembered();
   const [games, setGames] = useState<PublicGame[] | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
@@ -181,13 +197,23 @@ export function Home({ route }: HomeProps) {
       <header class="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <h1 style={{ fontSize: "var(--fs-title)" }}>Color Dice</h1>
         <div class="row">
+          <SelfBadge
+            profile={remembered.profile}
+            name={remembered.name || t("waiting.you")}
+            onClick={() => setPanel("profile")}
+          />
           <GearButton onClick={() => setPanel("settings")} />
           <Button variant="primary" onClick={() => navigate("create")}>
             {t("home.createGame")}
           </Button>
         </div>
       </header>
-      <Panels panel={panel} onPanel={setPanel} />
+      <Panels
+        panel={panel}
+        onPanel={setPanel}
+        profile={remembered.profile}
+        name={remembered.name || t("waiting.you")}
+      />
       <div class="cols-2 stack">
         <div class="stack">
           <YourRecord />

@@ -1,8 +1,14 @@
-/** Bottom bar (inline on desktop): step text, one-click Pass / Skip and the Confirm button. */
+/** Bottom bar (inline on desktop): the status line, one Submit (reads Pass when nothing is staged) and Undo. */
 import type { ViewMessage } from "@cd/protocol";
-import { cssColor, seatName } from "../game/model";
-import { canPass, type Mark, passLabel, passTakesPenalty, waitingNames } from "../game/staging";
-import { colorName, joinNames, t, useT } from "../i18n";
+import { seatName } from "../game/model";
+import {
+  currentStep,
+  type Mark,
+  passTakesPenalty,
+  submitLabel,
+  waitingNames,
+} from "../game/staging";
+import { joinNames, t, useT } from "../i18n";
 import { StatusBar } from "./StatusBar";
 
 export interface ActionBarProps {
@@ -18,22 +24,20 @@ export interface ActionBarProps {
   gated: boolean;
   /** K4.9: passive player with no white-sum move (auto-passed). */
   noMove: boolean;
-  onPass: () => void;
-  onConfirm: () => void;
+  onSubmit: () => void;
   onUndo: () => void;
+  /** Desktop: the Roll button, shown as the primary action while it is your roll. */
+  roll?: preact.ComponentChildren;
 }
 
 export function ActionBar(p: ActionBarProps) {
   useT();
-  const { view, s1, s2 } = p;
-  const disabled = p.sent || p.gated;
-  const last = s2 ?? s1;
-  const showPass = canPass(view, s1) && !view.you.canRoll && !p.noMove;
-  const penalty = passTakesPenalty(view, s1);
-  // Staged marks undo locally; otherwise only when the server says the decision can be undone.
-  const canUndo = !!(p.s1 || p.s2 || view.you.canUndo);
+  const { view } = p;
+  const staged = p.s1 !== null || p.s2 !== null;
+  // D-L11: Undo exists only while there is something to undo (a staged box or an undoable decision).
+  const canUndo = staged || (view.you.canUndo && !p.sent);
 
-  let primary: preact.JSX.Element | null = null;
+  let primary: preact.ComponentChildren = null;
   if (p.noMove) {
     const active = view.game?.turn?.activeSeat ?? -1;
     primary = (
@@ -42,27 +46,27 @@ export function ActionBar(p: ActionBarProps) {
       </button>
     );
   } else if (view.you.canRoll) {
-    primary = null;
-  } else if (last) {
+    primary = p.roll ?? null;
+  } else if (currentStep(view) !== null && !p.sent) {
     primary = (
       <button
         type="button"
-        class={`btn g-primary g-mark c-${cssColor(last.color)}`}
-        disabled={disabled}
-        onClick={p.onConfirm}
+        class={`btn g-primary g-submit${!staged && passTakesPenalty(view) ? " is-danger" : ""}`}
+        disabled={p.gated}
+        onClick={p.onSubmit}
       >
-        {s1 && s2
-          ? t("action.markBoth")
-          : t("action.mark", { color: colorName(last.color), n: last.number })}
+        {submitLabel(view, staged)}
       </button>
     );
   } else {
     const who = waitingNames(view, (seat) => seatName(view, seat));
-    const idle =
-      who.length > 0 ? t("action.waitingFor", { names: joinNames(who) }) : t("action.waiting");
     primary = (
       <button type="button" class="btn g-primary g-waiting" disabled>
-        {p.sent ? t("action.sent") : canPass(view) ? t("action.pickBox") : idle}
+        {p.sent
+          ? t("action.sent")
+          : who.length > 0
+            ? t("action.waitingFor", { names: joinNames(who) })
+            : t("action.waiting")}
       </button>
     );
   }
@@ -70,20 +74,10 @@ export function ActionBar(p: ActionBarProps) {
   return (
     <div class="g-actionbar">
       <StatusBar text={p.status} announce={p.announce} />
-      {showPass || primary || canUndo ? (
+      {primary || canUndo ? (
         <div class="g-actions">
-          {showPass ? (
-            <button
-              type="button"
-              class={`btn g-pass${penalty ? " is-danger" : ""}`}
-              disabled={disabled}
-              onClick={p.onPass}
-            >
-              {passLabel(view, s1)}
-            </button>
-          ) : null}
           {canUndo ? (
-            <button type="button" class="btn g-undo" disabled={p.sent} onClick={p.onUndo}>
+            <button type="button" class="btn g-undo" onClick={p.onUndo}>
               {t("action.undo")}
             </button>
           ) : null}

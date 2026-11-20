@@ -1,43 +1,82 @@
-/** Human-readable move log lines from engine events (names from view.seats). */
-import type { GameEvent } from "@cd/engine";
-import type { ViewMessage } from "@cd/protocol";
+/** Move log lines from engine events (names and avatars from view.seats). */
+import type { Color, GameEvent } from "@cd/engine";
+import type { Profile, ViewMessage } from "@cd/protocol";
 import { colorName, t } from "../i18n";
-import { seatName, seatOfPlayer } from "./model";
+import { seatName, seatOfPlayer, seatProfile } from "./model";
 
-export function describeEvent(view: ViewMessage, e: GameEvent): string[] {
-  const g = view.game;
-  const name = (id: string) => seatName(view, seatOfPlayer(id, g));
+export interface LogLine {
+  id: number;
+  /** Full sentence: screen readers and e2e helpers read this. */
+  text: string;
+  kind: "turn" | "mark" | "pass" | "penalty" | "lock" | "over";
+  /** The part the typewriter types: the name (or the whole short text for turn/lock/over). */
+  typed: string;
+  profile?: Profile;
+  color?: Color;
+  number?: number;
+}
+
+type Line = Omit<LogLine, "id">;
+
+export function describeEvent(view: ViewMessage, e: GameEvent): Line[] {
+  /** A line about a player: avatar + name typed, `text` for screen readers. */
+  const by = (
+    id: string,
+    kind: Line["kind"],
+    key: "log.passed" | "log.marked" | "log.penalty",
+    extra: Partial<Line> = {},
+  ): Line => {
+    const seat = seatOfPlayer(id, view.game);
+    const name = seatName(view, seat);
+    const profile = seatProfile(view, seat);
+    const color = extra.color ? colorName(extra.color) : "";
+    return {
+      kind,
+      text: t(key, { name, color, n: extra.number ?? "" }),
+      typed: name,
+      ...(profile && { profile }),
+      ...extra,
+    };
+  };
+  const plain = (kind: Line["kind"], text: string, extra: Partial<Line> = {}): Line => ({
+    kind,
+    text,
+    typed: text,
+    ...extra,
+  });
   switch (e.type) {
-    case "TURN_STARTED":
-      return [t("log.turn", { n: e.turnNumber, name: seatName(view, e.activeSeat) })];
-    case "DICE_ROLLED":
-      return [t("log.dice", { a: e.white[0], b: e.white[1], sum: e.whiteSum })];
+    case "TURN_STARTED": {
+      const profile = seatProfile(view, e.activeSeat);
+      const text = t("log.turn", { n: e.turnNumber, name: seatName(view, e.activeSeat) });
+      return [plain("turn", text, profile && { profile })];
+    }
+    // The white-dice sum (DICE_ROLLED) is not logged: the dice tray shows it.
     case "ACTION1_REVEALED":
       return e.decisions
         .filter((d) => d.decision.kind === "PASS")
-        .map((d) => t("log.passed", { name: name(d.playerId) }));
+        .map((d) => by(d.playerId, "pass", "log.passed"));
     case "MARKED":
-      return [t("log.marked", { name: name(e.playerId), color: colorName(e.color), n: e.number })];
+      return [by(e.playerId, "mark", "log.marked", { color: e.color, number: e.number })];
     case "ACTION2_PASSED":
-      return [t("log.passed", { name: name(e.playerId) })];
+      return [by(e.playerId, "pass", "log.passed")];
     case "PENALTY":
-      return [t("log.penalty", { name: name(e.playerId) })];
+      return [by(e.playerId, "penalty", "log.penalty")];
     case "ROW_LOCKED":
-      return [t("log.locked", { color: colorName(e.color) })];
+      return [plain("lock", t("log.locked", { color: colorName(e.color) }), { color: e.color })];
     case "GAME_ENDED":
-      return [t("log.gameOver")];
+      return [plain("over", t("log.gameOver"))];
     default:
       return [];
   }
 }
 
 /** Newest first. */
-export function logLines(view: ViewMessage): { id: number; text: string }[] {
-  const out: { id: number; text: string }[] = [];
+export function logLines(view: ViewMessage): LogLine[] {
+  const out: LogLine[] = [];
   const events = view.game?.events ?? [];
   events.forEach((e, i) => {
-    describeEvent(view, e).forEach((text, j) => {
-      out.push({ id: i * 10 + j, text });
+    describeEvent(view, e).forEach((line, j) => {
+      out.push({ id: i * 10 + j, ...line });
     });
   });
   return out.reverse();

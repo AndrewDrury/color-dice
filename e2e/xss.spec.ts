@@ -1,5 +1,5 @@
 import { createGame, expect, joinGame, playRollOff, startGame, test } from "./fixtures";
-import { closeAll, newPlayer } from "./helpers";
+import { closeAll, newPlayer, settle } from "./helpers";
 
 const PAYLOAD = "<img src=x onerror=alert(1)>";
 
@@ -30,7 +30,7 @@ test("room and player names render as text and never run script", async ({ brows
     // In game, a player sees the opponents' names: Bystander sees the payload name as text.
     await expect(b.page.getByText(PAYLOAD).first()).toBeVisible();
     await expect(a.page.getByText("Bystander").first()).toBeVisible();
-    await a.page.waitForTimeout(500);
+    await settle(a.page);
     expect(dialogs).toEqual([]);
   } finally {
     await closeAll([a, b]);

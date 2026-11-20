@@ -112,6 +112,7 @@
 .c-red {
   --row-color: var(--row-red);
   --row-tint: var(--row-red-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-red) var(--hl-mix), white);
   --row-ink: var(--row-red-ink);
   --row-on: var(--row-red-on);
   --row-pattern: var(--pattern-red);
@@ -121,6 +122,7 @@
 .c-yellow {
   --row-color: var(--row-yellow);
   --row-tint: var(--row-yellow-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-yellow) var(--hl-mix), white);
   --row-ink: var(--row-yellow-ink);
   --row-on: var(--row-yellow-on);
   --row-pattern: var(--pattern-yellow);
@@ -130,6 +132,7 @@
 .c-green {
   --row-color: var(--row-green);
   --row-tint: var(--row-green-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-green) var(--hl-mix), white);
   --row-ink: var(--row-green-ink);
   --row-on: var(--row-green-on);
   --row-pattern: var(--pattern-green);
@@ -139,6 +142,7 @@
 .c-blue {
   --row-color: var(--row-blue);
   --row-tint: var(--row-blue-tint);
+  --row-white-hl: color-mix(in srgb, var(--row-blue) var(--hl-mix), white);
   --row-ink: var(--row-blue-ink);
   --row-on: var(--row-blue-on);
   --row-pattern: var(--pattern-blue);
@@ -168,7 +172,7 @@
   opacity: 1;
 }
 .g-box.s-skipped .g-num {
-  opacity: 0.3;
+  opacity: 0.25;
   text-decoration: line-through;
 }
 .g-box.s-closed {
@@ -192,6 +196,29 @@
     0 0 0 2px var(--row-color),
     0 0 10px color-mix(in srgb, var(--row-color) 55%, transparent);
   animation: g-breathe 1.6s ease-in-out infinite;
+}
+:root {
+  --hl-mix: 12%;
+}
+:root[data-scheme="dark"] {
+  --hl-mix: 22%;
+}
+/* D-L5, T-NEW-26: a white-sum candidate is a light, row-tinted fill (white mixed with the row colour,
+   dark ink in every scheme) with a white border (thin dark outer edge for light themes); a colour
+   (white + colour die) candidate keeps its tint with a bright border in the row colour. */
+.g-box.is-cw {
+  background: var(--row-pattern), var(--row-white-hl);
+  color: var(--row-vivid-ink);
+  box-shadow:
+    0 0 0 3px white,
+    0 0 0 4px rgb(0 0 0 / 0.5);
+  animation: none;
+}
+.g-box.is-cc {
+  background: var(--row-pattern), var(--row-tint);
+  color: var(--row-ink);
+  box-shadow: 0 0 0 3px var(--row-vivid);
+  animation: none;
 }
 .g-box.is-legal:active {
   transform: scale(0.97);
@@ -235,19 +262,22 @@
   opacity: 0.85;
   stroke-width: 3;
 }
+/* T-NEW-19: the step number fills the box like the ✕ (about 85 % of its height). */
 .g-step {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  min-width: 14px;
-  height: 14px;
-  border-radius: 7px;
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.5px solid currentColor;
-  font: 700 10px / 11px var(--font);
-  text-align: center;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--row-on);
+  font: 900 34px / 1 var(--font);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 3px var(--row-ink);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  pointer-events: none;
   animation: g-pop var(--t-med) var(--ease-spring);
+}
+.g-box:has(> .g-step) .g-num {
+  opacity: 0;
 }
 .g-box.is-flash {
   animation: g-pop var(--t-med) var(--ease-spring);
@@ -329,10 +359,6 @@
 .g-score {
   position: relative;
 }
-.g-score abbr {
-  text-decoration: none;
-  color: var(--row-color);
-}
 .g-float {
   position: absolute;
   left: 0;
@@ -408,6 +434,23 @@
 .g-glyph.is-thinking {
   animation: g-blink 1.2s ease-in-out infinite;
 }
+/* T-FIX-12: the automatic-pause banner is a clear pill (theme tokens, AA pair from the turn banner). */
+.g-paused {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  max-width: 100%;
+  padding: 6px var(--s3);
+  border-radius: var(--r-pill);
+  border: 2px solid var(--btn-border);
+  background: var(--turn-other-bg);
+  color: var(--turn-other-fg);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+}
+.g-paused .icon {
+  flex: none;
+}
 /* ---------- Action bar, status, log, toast ---------- */
 .g-actionbar {
   display: flex;
@@ -432,27 +475,25 @@
 .g-actions .btn {
   min-height: 48px;
   flex: 1;
-  background: var(--paper);
-  box-shadow: var(--e1);
 }
 .g-actions .g-primary {
   flex: 2;
   font-weight: var(--fw-heavy);
 }
-.g-actions .btn-primary {
-  background: var(--accent);
+.g-actions .g-submit {
+  border-color: var(--btn-primary-border);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
-.g-actions .g-mark {
-  background: var(--row-color);
-  color: var(--row-on);
+.g-actions .g-submit.is-danger {
+  border-color: var(--btn-danger-border);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
 }
-.g-actions .g-danger,
-.g-actions .g-pass.is-danger {
-  background: var(--danger);
-  color: var(--on-danger);
-}
-.g-pass.is-staged {
-  box-shadow: 0 0 0 2px var(--accent);
+.g-actions .btn:disabled {
+  border-color: var(--btn-disabled-border);
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-fg);
 }
 .g-log {
   max-height: 260px;
@@ -491,6 +532,78 @@
 .g-log-title {
   font-size: var(--fs-body);
   margin-bottom: var(--s2);
+}
+.g-log li {
+  overflow-wrap: anywhere;
+}
+/* T-NEW-26: a line is avatar + name + the move as a graphic (the full sentence is sr-only). */
+.g-log .lg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  min-width: 0;
+}
+.lg .av,
+.lg-lock,
+.lg-sym {
+  flex: none;
+}
+.lg-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--fw-bold);
+}
+.k-turn .lg-name,
+.k-lock .lg-name,
+.k-over .lg-name {
+  font-weight: var(--fw-regular);
+}
+.lg-sym {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+}
+.lg-lock {
+  display: inline-grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--row-vivid);
+  color: var(--row-vivid-ink);
+  animation: ts-pop 260ms var(--ease-out) both;
+}
+.lg-box {
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  font-size: 15px;
+}
+.lg-box::after {
+  font-size: 24px;
+}
+.lg-pen {
+  flex: none;
+  font-size: 13px;
+}
+.lg-pass {
+  flex: none;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+.g-untyped {
+  visibility: hidden;
+}
+.g-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-inline: 1px;
+  vertical-align: text-bottom;
+  background: currentColor;
 }
 .g-log ol {
   margin: 0;
@@ -605,9 +718,6 @@
   .g-box {
     height: 48px;
   }
-  .g-actionbar {
-    position: static;
-  }
 }
 @media (max-height: 699.98px) {
   .g-chips {
@@ -690,7 +800,7 @@
 @keyframes g-blink {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.25;
   }
   50% {
     opacity: 1;
@@ -797,6 +907,9 @@
   .g-box {
     height: 34px;
   }
+  .g-step {
+    font-size: 29px;
+  }
   .g-foot {
     min-height: 24px;
   }
@@ -860,6 +973,7 @@
   }
   .g-game {
     gap: 4px;
+    padding-top: 4px;
   }
   .g-actionbar {
     padding-block: 2px;
@@ -880,6 +994,21 @@
     flex: 1 1 0;
     text-align: end;
   }
+  /* Narrow phones: no step counter; the call to action gets its own full-width, wrapping line. */
+  @media (max-width: 399.98px) {
+    .g-game .g-turnbar {
+      flex-wrap: wrap;
+      row-gap: 0;
+    }
+    .g-game .g-turnbar-step {
+      display: none;
+    }
+    .g-game .g-turnbar-cta {
+      flex-basis: 100%;
+      white-space: normal;
+      text-align: start;
+    }
+  }
   .g-box {
     height: 36px;
   }
@@ -898,35 +1027,75 @@
   .g-top {
     min-height: 44px;
   }
+  /* The banner's call to action already says what to press; the hint row (48 px) would push the
+     page into scrolling on 360x640 / 375x667 phones. */
+  .g-game .g-hintline {
+    display: none;
+  }
 }
 
-/* ---------- T-NEW-12: end-of-turn summary popup (never intercepts input) ---------- */
-.ts-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 35;
-  pointer-events: none;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 104px var(--s3) 0;
+/* ---------- T-NEW-20: end-of-turn summary (over the moves card; centre sheet on phones) ---------- */
+.g-logslot {
+  position: relative;
+  min-width: 0;
 }
 .ts-card {
-  width: min(100%, 340px);
-  max-height: 46dvh;
-  overflow: hidden;
-  padding: var(--s2) var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3);
   border-radius: var(--r-card);
   background: var(--paper);
   color: var(--ink);
   box-shadow: var(--e2, 0 8px 24px rgb(0 0 0 / 0.3));
+  font-size: 15px;
+  overflow: hidden auto;
   pointer-events: none;
   animation: ts-in 220ms var(--ease-out) both;
 }
+.ts-card.is-log {
+  position: absolute;
+  inset: 0 0 auto 0;
+  min-height: 100%;
+  max-height: 70dvh;
+  z-index: 5;
+}
+.ts-card.is-sheet {
+  position: fixed;
+  z-index: 35;
+  top: 104px;
+  left: 50%;
+  translate: -50% 0;
+  width: min(calc(100% - 2 * var(--s3)), 380px);
+  max-height: 52dvh;
+}
+.ts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
 .ts-title {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0;
+  font-size: 20px;
   font-weight: var(--fw-heavy);
+}
+.ts-close {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  margin: -4px -4px -4px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ts-close:hover {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
 }
 .ts-list {
   list-style: none;
@@ -935,62 +1104,89 @@
   display: grid;
   gap: var(--s2);
 }
-.ts-head {
+.ts-player {
   display: flex;
   align-items: center;
-  gap: var(--s2);
+  gap: var(--s3);
   min-width: 0;
 }
-.ts-name {
-  font-weight: var(--fw-heavy);
+.ts-who {
+  flex: 0 0 76px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ts-name {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  text-align: center;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.ts-marks {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ts-box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding-inline: 4px;
+  border-radius: 6px;
+  background: var(--row-vivid);
+  color: var(--row-vivid-ink);
+  font-size: 18px;
+  font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--row-vivid-ink) 35%, transparent);
+  animation: ts-pop 260ms var(--ease-out) both;
+}
+.ts-box::after {
+  content: "✕";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: var(--fw-heavy);
+  opacity: 0.25;
 }
 .ts-lock {
   display: inline-grid;
   place-items: center;
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--row-color);
-  color: var(--row-on);
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--row-vivid);
+  color: var(--row-vivid-ink);
 }
 .ts-penalty {
-  padding: 0 var(--s2);
-  border-radius: 999px;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
   background: var(--danger, #b3261e);
-  color: #fff;
+  color: var(--on-danger, #fff);
   font-weight: var(--fw-heavy);
-  font-size: 13px;
+  font-size: 16px;
   animation: ts-penalty 500ms var(--ease-out) 200ms both;
 }
-.ts-marks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px var(--s3);
-  align-items: center;
-}
-.ts-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s2);
-}
-.ts-dice {
-  --die-size: 26px;
-  display: inline-flex;
-  gap: 4px;
-}
-.ts-die {
-  display: inline-flex;
-  animation: ts-pop 260ms var(--ease-out) both;
-}
-.ts-text {
-  font-weight: var(--fw-heavy);
-  color: var(--row-ink);
+.ts-none {
+  font-style: italic;
 }
 .ts-card.is-reduced,
-.ts-card.is-reduced .ts-die,
+.ts-card.is-reduced .ts-box,
 .ts-card.is-reduced .ts-penalty {
   animation: none;
 }
@@ -1028,13 +1224,15 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ts-card,
-  .ts-die,
+  .lg-lock,
+  .ts-box,
   .ts-penalty {
     animation: none;
   }
 }
 :root[data-motion="reduced"] .ts-card,
-:root[data-motion="reduced"] .ts-die,
+:root[data-motion="reduced"] .lg-lock,
+:root[data-motion="reduced"] .ts-box,
 :root[data-motion="reduced"] .ts-penalty {
   animation: none;
 }

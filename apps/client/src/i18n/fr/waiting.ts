@@ -59,7 +59,8 @@ export const waiting: Record<keyof typeof en, string> = {
     "Ta session est terminée (tu as peut-être rejoint depuis un autre appareil).",
   "profile.title": "Ton style",
   "profile.colors": "Corail,Ambre,Citron vert,Sarcelle,Ciel,Indigo,Violet,Rose,Ardoise,Marron",
-  "profile.cats": "Choisir ton chat",
-  "profile.colorGroup": "Couleur",
-  "profile.catGroup": "Chat",
+  "profile.chooseColor": "Choisir la couleur",
+  "profile.taken": "(prise)",
+  "profile.chooseAvatar": "Choisir l'avatar",
+  "profile.chooseTheme": "Choisir le thème",
 };

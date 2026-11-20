@@ -8,6 +8,7 @@ import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
 import { GameMenu } from "../components/GameMenu";
+import IdleNudge from "../components/IdleNudge";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
@@ -19,18 +20,17 @@ import {
   rollOffPlayed,
 } from "../components/RollOff";
 import { ScoreGuide } from "../components/ScoreGuide";
+import { SelfBadge } from "../components/SelfBadge";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
 import { TurnBanner } from "../components/TurnBanner";
-import { TurnSummary } from "../components/TurnSummary";
 import { feedback } from "../fx/feedback";
 import { useGameKeys } from "../fx/keyboard";
-import { useTabAttention } from "../fx/tabAttention";
 import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
 import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
-import { canPass, decidedMarks, isActive, legalBoxes } from "../game/staging";
+import { candidates, currentStep, decidedMarks, isActive } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
 import { type TurnSummary as Summary, summarizeTurn } from "../game/turnSummary";
 import { useBackGuard } from "../game/useBackGuard";
@@ -47,10 +47,9 @@ import "../styles/flow.css";
 import "../styles/game.css";
 import "../styles/scoring.css";
 import { GameHint } from "./GameHint";
-import { GameOver } from "./GameOver";
 
 /** Fallback if the tray never reports landing (so legal boxes can't stay dark). */
-const LAND_FALLBACK_MS = 3000;
+const LAND_FALLBACK_MS = 4000;
 const LAND_GLOW_DELAY_MS = 100;
 
 interface Info {
@@ -75,7 +74,8 @@ export function Game({ code }: { code: string }) {
     showToast(errorText(e.code, e.reason), "error");
     feedback("error");
     if (e.command === "roll") setRollFailed((n) => n + 1);
-    if (e.command === "action1" || e.command === "action2") setFailSignal((n) => n + 1);
+    if (e.command === "action1" || e.command === "action2" || e.command === "turn")
+      setFailSignal((n) => n + 1);
   });
 
   useEffect(() => {
@@ -88,7 +88,8 @@ export function Game({ code }: { code: string }) {
     return () => clearTimeout(t);
   }, [toast?.id]);
 
-  // The live roll-off: this player watched the rounds happen, so only the deciding one replays.
+  // The live roll-off: this player watched the rounds happen, so only the deciding one replays
+  // (its already-landed dice stay put); the result then waits for "Let's go" (D-L2).
   const sawLive = useRef(false);
   if (view?.rollOff && !view.game) sawLive.current = true;
   if (view && !view.game && view.rollOff) return <RollOffLive view={view} send={conn.send} />;
@@ -219,8 +220,11 @@ export function Board({
 
   const me = youPlayer(view);
   const g = game as NonNullable<typeof game>;
-  const legal = landed && !st.sent ? legalBoxes(view, st.s1) : new Set<string>();
+  const cand = landed && !st.sent ? candidates(view, st.s1, st.s2, st.hover) : null;
+  const legal = new Set([...(cand?.white ?? []), ...(cand?.colour ?? [])]);
+  const colour = new Set([...(cand?.colour ?? [])].filter((k) => !cand?.white.has(k)));
   const act = isActive(view);
+  const anyStaged = st.s1 !== null || st.s2 !== null;
   const staged = [st.s1 && { ...st.s1, step: 1 as const }, st.s2 && { ...st.s2, step: 2 as const }]
     .filter((m) => m !== null)
     .map((m) => (act ? m : { color: m.color, number: m.number }));
@@ -236,6 +240,13 @@ export function Board({
     const next = summarizeTurn(view, cur.fresh);
     if (next) setSummary(next);
   }, [view.version]);
+  // Lazy: the summary UI is loaded on the first summary (keeps the initial bundle small).
+  const [late, setLate] = useState<typeof import("../components/lateUi") | null>(null);
+  useEffect(() => {
+    import("../components/lateUi").then(setLate);
+  }, []);
+  const SummaryCard = late?.TurnSummary;
+  const GameOverView = late?.GameOver; // lazy: the results + reveal only run at game over
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
   const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
@@ -249,16 +260,21 @@ export function Board({
   const rollControls = useRef<RollControls | null>(null);
   const [rolling, setRolling] = useState(false);
   const gameOver = g.phase === "GAME_OVER";
+  const summaryShown = summary !== null && !gameOver;
+  const mine = view.seats.find((s) => s.seatId === view.you.seatId);
 
   const myMove =
     view.you.canRoll ||
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
+  // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
   useWakeLock(!gameOver);
-  useTabAttention(myMove);
   useGameKeys({
-    canRoll: view.you.canRoll && panel === null && !leaving && !rematching && !gameOver,
+    canRoll:
+      view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
     canPass:
-      canPass(view, st.s1) &&
+      currentStep(view) !== null &&
+      st.s1 === null &&
+      st.s2 === null &&
       !noMove &&
       !st.sent &&
       !view.you.canRoll &&
@@ -268,7 +284,7 @@ export function Board({
     canUndo: st.s1 !== null || st.s2 !== null || view.you.canUndo,
     undo: st.undo,
     roll: onRoll,
-    pass: st.pass,
+    pass: st.submit,
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
@@ -276,21 +292,27 @@ export function Board({
   });
 
   const hint = gameOver ? null : <GameHint view={view} />;
+  // T-FIX-12: on desktop Roll lives in the sticky action bar (always in view); elsewhere under the dice.
+  const rollButton = view.you.canRoll ? (
+    <RollButton controls={rollControls} class="btn btn-primary g-primary" disabled={rolling}>
+      {t("action.roll")}
+    </RollButton>
+  ) : null;
   const actionBar = (
     <>
       {hint}
       <ActionBar
         view={view}
-        status={statusText(view, st.s1 !== null)}
+        status={statusText(view)}
         announce={cur.announce}
         s1={st.s1}
         s2={st.s2}
         sent={st.sent !== null}
         gated={!landed}
         noMove={noMove}
-        onPass={st.pass}
-        onConfirm={st.confirm}
+        onSubmit={st.submit}
         onUndo={st.undo}
+        roll={viewport === "desktop" ? rollButton : null}
       />
     </>
   );
@@ -316,15 +338,15 @@ export function Board({
             aria-label={status === "online" ? t("game.online") : t("game.reconnecting")}
           />
           {gameOver ? null : <ChatControls send={conn.send} />}
+          <SelfBadge
+            profile={mine?.profile}
+            name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
+            onClick={() => setPanel("profile")}
+          />
           <GearButton onClick={() => setPanel("settings")} />
         </span>
       </header>
-      <TurnBanner
-        view={view}
-        staged={st.s1 !== null || st.s2 !== null}
-        noMove={noMove}
-        s1={st.s1}
-      />
+      <TurnBanner view={view} staged={anyStaged} noMove={noMove} />
       <AwayControls view={view} />
       {viewport === "phone" ? (
         <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
@@ -336,12 +358,14 @@ export function Board({
               player={me}
               lockedColors={g.lockedColors}
               legal={legal}
+              colour={colour}
               staged={staged}
               ghost={ghost}
               disabled={st.sent !== null || !landed}
               fx={fx.sheet}
               errorShake={st.shake > 0 && staged.length > 0}
               onPick={st.stageBox}
+              onHover={st.hoverBox}
               onFloatDone={fx.dropFloat}
             />
           ) : null}
@@ -362,16 +386,8 @@ export function Board({
               controls={rollControls}
               onBusyChange={setRolling}
             />
-            {view.you.canRoll ? (
-              <div class="g-rollslot">
-                <RollButton
-                  controls={rollControls}
-                  class="btn btn-primary g-primary"
-                  disabled={rolling}
-                >
-                  {t("action.roll")}
-                </RollButton>
-              </div>
+            {rollButton && viewport !== "desktop" ? (
+              <div class="g-rollslot">{rollButton}</div>
             ) : null}
           </div>
           {viewport === "desktop" ? actionBar : null}
@@ -379,29 +395,41 @@ export function Board({
         {viewport !== "phone" ? (
           <aside class="g-right">
             <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
-            <MoveLog view={view} />
+            <div class="g-logslot">
+              <MoveLog view={view} paused={summaryShown} />
+              {summaryShown && SummaryCard ? (
+                <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="log" />
+              ) : null}
+            </div>
           </aside>
         ) : null}
       </main>
       {viewport !== "desktop" ? actionBar : null}
       <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
       {toast ? <div class="g-toast">{toast}</div> : null}
-      {summary && !gameOver ? (
-        <TurnSummary summary={summary} onClose={() => setSummary(null)} />
+      {summaryShown && SummaryCard && viewport === "phone" ? (
+        <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
       ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
+      <IdleNudge
+        view={view}
+        staged={anyStaged}
+        noMove={noMove}
+        blocked={!!(st.sent || showRollOff || panel || leaving || rematching)}
+      />
       {showRollOff && rollOff ? (
         <RollOff
           view={view}
-          rounds={liveRollOff ? rollOff.rounds.slice(-1) : rollOff.rounds}
+          rounds={rollOff.rounds}
+          live={liveRollOff}
           onDone={() => {
             markRollOffPlayed(rollOffId as string);
             setRollOffDone(true);
           }}
         />
       ) : null}
-      {gameOver ? (
-        <GameOver
+      {gameOver && GameOverView ? (
+        <GameOverView
           view={view}
           rematchBusy={rematchBusy}
           send={conn.send}
@@ -412,7 +440,12 @@ export function Board({
           }}
         />
       ) : null}
-      <Panels panel={panel} onPanel={setPanel} />
+      <Panels
+        panel={panel}
+        onPanel={setPanel}
+        profile={mine?.profile}
+        name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
+      />
       {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
       {rematching ? (
         <ConfirmDialog

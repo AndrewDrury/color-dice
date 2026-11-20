@@ -9,6 +9,8 @@ export interface BoxProps {
   number: number;
   status: BoxStatus;
   legal: boolean;
+  /** A legal box that would be a colour (white + colour die) mark; others are white-sum boxes. */
+  colour?: boolean;
   staged: boolean;
   /** Active player only: which step the staged mark is for (badge instead of the corner ✕). */
   step?: 1 | 2;
@@ -21,6 +23,8 @@ export interface BoxProps {
   /** Shake after a server error. */
   shake?: boolean;
   onPick: () => void;
+  /** Pointer / focus enters (true) or leaves (false): previews the colour boxes (D-L5). */
+  onHover?: (on: boolean) => void;
 }
 
 export function Cross() {
@@ -61,7 +65,7 @@ export function Box(p: BoxProps) {
     "g-box",
     `c-${cssColor(p.color)}`,
     `s-${status.toLowerCase().replace(/_/g, "-")}`,
-    legal && !staged ? "is-legal" : "",
+    legal && !staged ? `is-legal ${p.colour ? "is-cc" : "is-cw"}` : "",
     staged ? "is-staged" : "",
     p.ghost ? "is-ghost" : "",
     p.flash ? "is-flash" : "",
@@ -69,14 +73,20 @@ export function Box(p: BoxProps) {
   ]
     .filter(Boolean)
     .join(" ");
+  const hint = legal && !staged ? t(p.colour ? "box.colourMove" : "box.whiteSum") : undefined;
   return (
     <button
       type="button"
       class={cls}
       aria-label={boxLabel(p.color, p.number, status, legal, staged ? p.step : undefined)}
       aria-pressed={staged ? "true" : undefined}
+      aria-description={hint}
       disabled={p.disabled || !legal}
       onClick={p.onPick}
+      onMouseEnter={() => p.onHover?.(true)}
+      onMouseLeave={() => p.onHover?.(false)}
+      onFocus={() => p.onHover?.(true)}
+      onBlur={() => p.onHover?.(false)}
     >
       {status === "MARKED" ? (
         <Cross />

@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio, PAIRS, type Theme, TOKENS } from "../src/styles/contrast";
+import { THEMES } from "../src/prefs";
+import appCss from "../src/styles/app.css?raw";
+import {
+  BUTTON_PAIRS,
+  contrastRatio,
+  DERIVED,
+  mixHex,
+  PAIRS,
+  resolvedTokens,
+  THEME_BASE,
+  THEME_OVERRIDES,
+  type Theme,
+  TOKENS,
+  themeTokens,
+} from "../src/styles/contrast";
+import gameCss from "../src/styles/game.css?raw";
+import themesCss from "../src/styles/themes.css?raw";
 import css from "../src/styles/tokens.css?raw";
+
+/** The CSS text app.css must declare for a derived token. */
+function derivedCss(name: string): string {
+  const d = DERIVED[name] as (typeof DERIVED)[string];
+  return typeof d === "string"
+    ? `${name}: var(${d});`
+    : `${name}: color-mix(in srgb, var(${d[0]}) ${d[1]}%, var(${d[2]}));`;
+}
 
 const themes: Theme[] = ["light", "dark"];
 
@@ -33,10 +57,37 @@ describe("contrast", () => {
     }
   }
 
+  // T-NEW-26: the white-sum candidate is the row colour mixed into white (12 % light, 22 % dark: --hl-mix
+  // in game.css) with dark vivid ink; row colours never change per theme.
+  for (const theme of themes) {
+    for (const c of ["red", "yellow", "green", "blue"]) {
+      it(`${theme}: ${c} white-sum highlight keeps 4.5:1 ink and stays apart from the tint`, () => {
+        const hl = mixHex(
+          TOKENS[theme][`--row-${c}`] as string,
+          theme === "dark" ? 22 : 12,
+          "#FFFFFF",
+        );
+        expect(
+          contrastRatio(TOKENS[theme][`--row-${c}-vivid-ink`] as string, hl),
+        ).toBeGreaterThanOrEqual(4.5);
+        expect(hl).not.toBe(TOKENS[theme][`--row-${c}-tint`]);
+      });
+    }
+  }
+
+  it("white-sum highlight in game.css mixes the row colour into white by --hl-mix", () => {
+    for (const c of ["red", "yellow", "green", "blue"])
+      expect(gameCss).toContain(
+        `--row-white-hl: color-mix(in srgb, var(--row-${c}) var(--hl-mix), white);`,
+      );
+    expect(gameCss).toContain("--hl-mix: 12%;");
+    expect(gameCss).toContain("--hl-mix: 22%;");
+  });
+
   it("contrast.ts matches tokens.css", () => {
     const light = block(":root");
-    const dark = block(':root[data-theme="dark"]');
-    const media = block(':root:not([data-theme="light"])');
+    const dark = block(':root[data-scheme="dark"]');
+    const media = block(":root:not([data-scheme])");
     for (const [name, value] of Object.entries(TOKENS.light)) {
       expect(declared(light, name), name).toBe(value.toUpperCase());
     }
@@ -45,5 +96,53 @@ describe("contrast", () => {
       expect(declared(dark, name) ?? declared(light, name), name).toBe(expected);
       expect(declared(media, name) ?? declared(light, name), name).toBe(expected);
     }
+  });
+
+  it("covers every theme id", () => {
+    expect(Object.keys(THEME_BASE).sort()).toEqual([...THEMES].sort());
+  });
+
+  for (const id of THEMES) {
+    const base = THEME_BASE[id] as Theme;
+    for (const { fg, bg, large } of PAIRS[base]) {
+      const min = large ? 3 : 4.5;
+      it(`theme ${id}: ${fg} on ${bg} >= ${min}`, () => {
+        const tok = themeTokens(id);
+        expect(contrastRatio(tok[fg] as string, tok[bg] as string)).toBeGreaterThanOrEqual(min);
+      });
+    }
+  }
+
+  it("themes.css matches the theme overrides in contrast.ts", () => {
+    for (const [id, tokens] of Object.entries(THEME_OVERRIDES)) {
+      const start = themesCss.indexOf(`:root[data-theme="${id}"]`);
+      expect(start, id).toBeGreaterThanOrEqual(0);
+      const text = themesCss.slice(start, themesCss.indexOf("--bg-pattern", start));
+      for (const [name, value] of Object.entries(tokens)) {
+        expect(declared(text, name), `${id} ${name}`).toBe(value.toUpperCase());
+      }
+    }
+  });
+
+  it("only classic has no pattern and nothing sets a row colour", () => {
+    for (const id of THEMES) {
+      if (id.startsWith("classic")) continue;
+      expect(themesCss).toContain(`:root[data-theme="${id}"]`);
+    }
+    expect(themesCss).not.toMatch(/--(row|die)-/);
+  });
+
+  // T-NEW-22: button variants and both turn-banner states, every theme.
+  for (const id of THEMES) {
+    for (const { fg, bg, min } of BUTTON_PAIRS) {
+      it(`buttons ${id}: ${fg} on ${bg} >= ${min}`, () => {
+        const tok = resolvedTokens(id);
+        expect(contrastRatio(tok[fg] as string, tok[bg] as string)).toBeGreaterThanOrEqual(min);
+      });
+    }
+  }
+
+  it("app.css declares every derived button / banner token as contrast.ts models it", () => {
+    for (const name of Object.keys(DERIVED)) expect(appCss, name).toContain(derivedCss(name));
   });
 });

@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { createGame, expect, joinGame, queueDice, startGame, test } from "./fixtures";
-import { closeAll, newPlayer, rollFaces, waitForRoller } from "./helpers";
+import { closeAll, newPlayer, rollFaces, settle, uid, waitForRoller } from "./helpers";
 
 const OUT = new URL("./screenshots/", import.meta.url).pathname;
 const SIZES = [
@@ -49,7 +49,7 @@ test("dice land left to right and outlines keep clear of their text", async ({ b
   const b = await newPlayer(browser, "Boris");
   try {
     const code = await createGame(a, {
-      roomName: `Layout ${Date.now() % 10000}`,
+      roomName: `Layout ${uid()}`,
       password: "pw-layout",
       max: 2,
     });
@@ -61,7 +61,7 @@ test("dice land left to right and outlines keep clear of their text", async ({ b
 
     // No invite code and no server address anywhere in the game screen.
     await expect(page.locator(".g-top")).not.toContainText(code);
-    await expect(page.locator("body")).not.toContainText(/workers\.dev|localhost:8787/);
+    await expect(page.locator("body")).not.toContainText(/workers\.dev|localhost:\d+/);
 
     const start = Date.now();
     await page.locator(".g-primary", { hasText: "Roll" }).click();
@@ -69,12 +69,12 @@ test("dice land left to right and outlines keep clear of their text", async ({ b
     await expect
       .poll(() => page.locator("[data-die]:not(.is-removed):not([data-face])").count())
       .toBe(0);
-    // Fast: tumble (>= 550 ms) + staggered landing (< 1 s) + round trip.
-    expect(Date.now() - start).toBeLessThan(3500);
+    // Tumble (>= 550 ms) + one-at-a-time landing, 400 ms apart (D-L9, < 2.5 s) + round trip.
+    expect(Date.now() - start).toBeLessThan(5000);
 
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
-      await page.waitForTimeout(300);
+      await settle(page);
 
       const dice = page.locator("[data-die]:not(.is-removed)");
       expect(await dice.count()).toBe(6);

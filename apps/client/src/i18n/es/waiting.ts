@@ -58,7 +58,8 @@ export const waiting: Record<keyof typeof en, string> = {
   "toast.sessionEnded": "Tu sesión terminó (quizá entraste desde otro dispositivo).",
   "profile.title": "Tu estilo",
   "profile.colors": "Coral,Ámbar,Lima,Turquesa,Cielo,Índigo,Violeta,Rosa,Pizarra,Marrón",
-  "profile.cats": "Elige tu gato",
-  "profile.colorGroup": "Color",
-  "profile.catGroup": "Gato",
+  "profile.chooseColor": "Elige el color",
+  "profile.taken": "(ocupado)",
+  "profile.chooseAvatar": "Elige el avatar",
+  "profile.chooseTheme": "Elige el tema",
 };

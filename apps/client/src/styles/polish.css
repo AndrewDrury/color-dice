@@ -110,11 +110,11 @@
 }
 .st-seg {
   margin: 0;
-  border: 0;
   min-width: 0;
   display: inline-flex;
   border-radius: var(--r-box);
-  background: var(--table);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
   padding: 2px;
 }
 .st-seg button {
@@ -124,6 +124,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
+  color: var(--btn-fg);
   font-weight: var(--fw-bold);
   cursor: pointer;
 }
@@ -137,13 +138,6 @@
   align-items: flex-start;
   gap: var(--s1);
   font-weight: var(--fw-bold);
-}
-.st-pair {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s3) var(--s4);
 }
 .st-col .st-seg {
   flex-wrap: wrap;

@@ -2,9 +2,9 @@ import type { Color } from "@cd/engine";
 import type { ViewMessage, ViewRow } from "@cd/protocol";
 import { h } from "preact";
 import { useEffect } from "preact/hooks";
-import { Celebration } from "./components/Celebration";
 import { DemoBanner } from "./components/DemoBanner";
 import { LockPopup } from "./components/LockPopup";
+import { ResultsReveal } from "./components/ResultsReveal";
 import { RollOff } from "./components/RollOff";
 import { DEMO_SCENARIOS, ScenarioPanel } from "./components/ScenarioPanel";
 import { SeatList } from "./components/SeatList";
@@ -459,16 +459,18 @@ export function DemoScreen() {
                           }),
                         )
                       : canonical === "winner-celebration" && view
-                        ? h(Celebration, {
+                        ? h(ResultsReveal, {
                             key: "demo-celebration",
                             view,
                             onDone: () => setDemoScenario("winner"),
+                            actions: null,
                           })
                         : canonical === "dramatic-reveal" && view
-                          ? h(Celebration, {
+                          ? h(ResultsReveal, {
                               key: "demo-dramatic",
                               view,
                               onDone: () => setDemoScenario("winner"),
+                              actions: null,
                             })
                           : view?.code === DEMO_CODE
                             ? h(Board, {

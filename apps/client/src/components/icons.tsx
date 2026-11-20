@@ -83,6 +83,12 @@ export const WarningIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const PauseIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 5v14M15 5v14" />
+  </Svg>
+);
+
 export const ShareIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 15V3.5M7.5 8L12 3.5 16.5 8" />
@@ -114,5 +120,16 @@ export const SoundOffIcon = (p: IconProps) => (
 export const CloseIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M6 6l12 12M18 6L6 18" />
+  </Svg>
+);
+
+export const CatFaceIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 8.5 9.7 5.5 12 8.2 14.3 5.5 17 8.5" />
+    <path d="M6.5 10.5a5.5 5.5 0 1 0 11 0v1a5.5 5.5 0 1 1-11 0z" />
+    <circle cx="10" cy="11.8" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="14" cy="11.8" r="0.7" fill="currentColor" stroke="none" />
+    <path d="M12 13.3 11.2 14.5h1.6z" fill="currentColor" stroke="none" />
+    <path d="M8.4 13.9 10.1 14.4M15.6 13.9 13.9 14.4M8.2 15.2 9.9 15.5M15.8 15.2 14.1 15.5" />
   </Svg>
 );

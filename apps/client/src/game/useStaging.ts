@@ -1,4 +1,4 @@
-/** Staging state: tap a box to stage, tap it again (or Confirm) to send; Pass sends at once (K4.4). */
+/** Staging state: tap a box to stage it, tap it again to unselect, Submit sends (D-L3). */
 import type { Color } from "@cd/engine";
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -7,15 +7,12 @@ import { t } from "../i18n";
 import { showToast } from "../store";
 import { boxKey } from "./model";
 import {
-  buildMessage,
-  canPass,
+  candidates,
   currentStep,
   highlightFor,
-  isActive,
-  legalBoxes,
   type Mark,
-  passMessage,
   sameMark,
+  submitMessage,
 } from "./staging";
 
 interface Staged {
@@ -37,6 +34,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
   const [staged, setStagedState] = useState<Staged>(NONE);
   const [sent, setSent] = useState<Staged | null>(null);
   const [shake, setShake] = useState(0);
+  const [hover, setHover] = useState<Mark | null>(null);
   const latest = useRef({ view, staged, sent });
   latest.current = { view, staged, sent };
   const sentAt = useRef<string | null>(null);
@@ -54,12 +52,15 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
     }
     const cur = latest.current.staged;
     if (!cur.s1 && !cur.s2) return;
-    const legal = legalBoxes(view, cur.s1);
+    const c = candidates(view, cur.s1, null);
     const ok1 =
-      !cur.s1 || (currentStep(view) === 1 && legal.has(boxKey(cur.s1.color, cur.s1.number)));
-    const ok2 = !cur.s2 || legal.has(boxKey(cur.s2.color, cur.s2.number));
+      !cur.s1 || (currentStep(view) === 1 && c.white.has(boxKey(cur.s1.color, cur.s1.number)));
+    const ok2 = !cur.s2 || c.colour.has(boxKey(cur.s2.color, cur.s2.number));
     if (!ok1) setStaged(NONE);
-    else if (!ok2) setStaged({ s1: cur.s1, s2: null });
+    else if (!ok2) {
+      setStaged({ s1: cur.s1, s2: null });
+      showToast(t("sel.dropped"), "error");
+    }
   }, [view.version]);
 
   const transmit = (msg: ClientMessage, marks: Staged) => {
@@ -76,47 +77,40 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
     return false;
   };
 
-  const confirm = () => {
-    const { view: v, staged: s, sent: already } = latest.current;
-    if (already || (!s.s1 && !s.s2)) return;
-    const msg = buildMessage(v, s.s1, s.s2);
-    if (!msg) {
-      setStaged(NONE);
-      return;
-    }
-    transmit(msg, s);
-  };
-
-  const stageBox = (color: Color, number: number) => {
+  /** The single Submit: nothing staged = a pass. */
+  const submit = () => {
     const { view: v, staged: s, sent: already } = latest.current;
     if (already) return;
-    const box: Mark = { color, number };
-    const step = currentStep(v);
-    if (!step) return;
-    if (step === 1 && (!s.s1 || !isActive(v))) {
-      if (sameMark(s.s1, box)) confirm();
-      else if (legalBoxes(v).has(boxKey(color, number))) {
-        feedback("pick");
-        setStaged({ s1: box, s2: null });
-      }
-    } else if (step === 1 && sameMark(s.s1, box)) {
-      confirm();
-    } else if (sameMark(s.s2, box)) {
-      confirm();
-    } else if (legalBoxes(v, s.s1).has(boxKey(color, number))) {
-      feedback("pick");
-      setStaged({ s1: s.s1, s2: box });
-    }
+    const msg = submitMessage(v, s.s1, s.s2);
+    if (!msg) setStaged(NONE);
+    else transmit(msg, s);
   };
 
-  /** One click, one pass command. The marks staged for the passed step are dropped. */
-  const pass = () => {
+  /** Tap a staged box to unselect it (the white box takes the colour box with it), else stage it. */
+  const stageBox = (color: Color, number: number) => {
     const { view: v, staged: s, sent: already } = latest.current;
-    if (already || !canPass(v, s.s1)) return;
-    const msg = passMessage(v, s.s1);
-    if (!msg) return;
-    const keep = msg.type === "turn" ? s.s1 : null;
-    transmit(msg, { s1: keep, s2: null });
+    if (already || !currentStep(v)) return;
+    const box: Mark = { color, number };
+    const key = boxKey(color, number);
+    setHover(null);
+    if (sameMark(s.s1, box)) return setStaged(NONE);
+    if (sameMark(s.s2, box)) return setStaged({ s1: s.s1, s2: null });
+    const c = candidates(v, s.s1, s.s2);
+    if (c.white.has(key)) setStaged({ s1: box, s2: s.s2 });
+    else if (c.colour.has(key)) setStaged({ s1: s.s1, s2: box });
+    else return;
+    feedback("pick");
+  };
+
+  /** Hovering / focusing a white candidate previews the colour boxes it would leave (D-L5). */
+  const hoverBox = (color: Color, number: number | null) => {
+    const { view: v, staged: s } = latest.current;
+    const key = number === null ? "" : boxKey(color, number);
+    setHover(
+      !s.s1 && candidates(v, null, s.s2).white.has(key)
+        ? { color, number: number as number }
+        : null,
+    );
   };
 
   /** Server rejected the send: restore the staging, shake the box. */
@@ -153,7 +147,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
       if (e.key === "Escape" && (s.s1 || s.s2)) setStaged(NONE);
       else if (e.key === "Enter" && (s.s1 || s.s2)) {
         const el = document.activeElement;
-        if (!el || el === document.body) confirm();
+        if (!el || el === document.body) submit();
       }
     };
     // Tapping outside the sheet and action bar cancels.
@@ -176,9 +170,10 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
     sent,
     shake,
     lastEarly,
+    hover,
     stageBox,
-    pass,
-    confirm,
+    hoverBox,
+    submit,
     cancel,
     undo,
     fail,

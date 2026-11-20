@@ -2,6 +2,8 @@ import type { ErrorCode, IllegalReason } from "./errors";
 
 export type Color = "RED" | "YELLOW" | "GREEN" | "BLUE";
 export type Face = 1 | 2 | 3 | 4 | 5 | 6;
+/** A roll-off face, or 0 for a seat that did not roll that round (not tied for the lead). */
+export type RolledFace = Face | 0;
 export type PlayerId = string;
 export type Penalties = 0 | 1 | 2 | 3 | 4;
 
@@ -87,8 +89,8 @@ export type GameEvent =
       type: "FIRST_PLAYER_CHOSEN";
       seat: number;
       method: "CONFIGURED" | "ROLL_OFF";
-      /** `rounds[r][seat]` = face rolled by `seat` in round r (spec §17 A-1). Empty if CONFIGURED. */
-      rounds: Face[][];
+      /** `rounds[r][seat]` = face rolled by `seat` in round r, 0 if out of it (spec §17 A-2). Empty if CONFIGURED. */
+      rounds: RolledFace[][];
     }
   | { type: "TURN_STARTED"; turnNumber: number; activeSeat: number }
   | {

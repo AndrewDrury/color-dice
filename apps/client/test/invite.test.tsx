@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api";
 import { AwayControls } from "../src/components/AwayControls";
 import { GameMenu } from "../src/components/GameMenu";
-import { GearButton, Settings } from "../src/components/Settings";
+import { GearButton } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import { _resetInviteForTests, isInviteHash, parseInviteHash } from "../src/invite";
 import { _resetPrefsForTests, getPrefs, setPrefs } from "../src/prefs";
 import { _resetRememberedForTests, getRoomPassword, rememberSubmit } from "../src/remembered";
@@ -19,6 +20,7 @@ vi.mock("../src/api", async (orig) => {
   return {
     ApiError: actual.ApiError,
     getMe: vi.fn().mockResolvedValue({ status: "lobby" }),
+    getTakenColors: vi.fn().mockResolvedValue({ taken: [] }),
     joinGame: vi.fn(),
     reclaimSeat: vi.fn(),
     leaveGame: vi.fn(),

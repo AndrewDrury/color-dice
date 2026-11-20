@@ -10,7 +10,10 @@ import {
 export { expect };
 export const test = base;
 
-export const SERVER = "http://localhost:8787";
+// Minimal typing for the Node global (no @types/node dependency).
+declare const process: { env: Record<string, string | undefined> };
+export const CLIENT = `http://localhost:${process.env.E2E_CLIENT_PORT ?? "5173"}`;
+export const SERVER = `http://localhost:${process.env.E2E_SERVER_PORT ?? "8787"}`;
 
 export interface Player {
   context: BrowserContext;
@@ -30,7 +33,18 @@ export interface CreateOpts {
 export async function newPlayer(browser: Browser, name: string): Promise<Player> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  await autoDismissRollOff(page);
   return { context, page, name };
+}
+
+/**
+ * T-NEW-17 (D-L2): the roll-off result stays until "Let's go" is pressed. Specs that are not
+ * about the roll-off get it pressed for them whenever it blocks an action or assertion.
+ */
+export async function autoDismissRollOff(page: Page) {
+  await page.addLocatorHandler(page.getByTestId("rolloff-go"), async (go) => {
+    await go.click();
+  });
 }
 
 export function codeOf(page: Page): string {
@@ -54,7 +68,8 @@ export async function createGame(player: Player, o: CreateOpts): Promise<string>
   }
   if (o.listed === false) await page.getByLabel("Show in public list").uncheck();
   await page.getByRole("button", { name: "Create game" }).last().click();
-  await expect(page.getByRole("button", { name: "Leave" })).toBeVisible();
+  // Generous: the first rooms of a run hit a cold server while every worker starts at once.
+  await expect(page.getByRole("button", { name: "Leave" })).toBeVisible({ timeout: 30_000 });
   return codeOf(page);
 }
 
@@ -85,7 +100,7 @@ async function fillJoin(player: Player, password: string) {
       .or(page.locator(".g-main"))
       .or(page.getByTestId("rolloff-roll"))
       .first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 /**
@@ -106,8 +121,9 @@ export async function startGame(host: Player) {
 }
 
 /**
- * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every player
- * taps Roll each round until every page shows the game board.
+ * Plays the interactive opening roll-off (T-NEW-2) for unscripted games: every rolling player
+ * taps Roll each round (after a tie only the tied pages have an enabled Roll), then "Let's go" on the result (T-NEW-17, D-L2), until every page
+ * shows the game board with no roll-off screen over it.
  */
 export async function playRollOff(players: Player[]) {
   await expect
@@ -115,13 +131,18 @@ export async function playRollOff(players: Player[]) {
       async () => {
         let boards = 0;
         for (const { page } of players) {
-          if (await page.locator(".g-main").isVisible()) boards += 1;
+          const go = page.getByTestId("rolloff-go");
+          if (await go.isVisible()) await go.click({ timeout: 2000 }).catch(() => {});
           const roll = page.getByTestId("rolloff-roll");
-          if (await roll.isVisible()) await roll.click().catch(() => {});
+          if ((await roll.isVisible()) && (await roll.isEnabled())) {
+            await roll.click({ timeout: 2000 }).catch(() => {});
+          }
+          const covered = await page.locator(".ro-screen").isVisible();
+          if (!covered && (await page.locator(".g-main").isVisible())) boards += 1;
         }
         return boards === players.length;
       },
-      { timeout: 30_000, intervals: [250] },
+      { timeout: 45_000, intervals: [250] },
     )
     .toBe(true);
 }
@@ -163,19 +184,30 @@ export function boxLocator(page: Page, color: string, n: number) {
 /** Tap a box to stage it, then tap the primary button to confirm. */
 export async function mark(page: Page, color: string, n: number) {
   await boxLocator(page, color, n).click();
-  await page.locator(".g-primary.g-mark").click();
+  await page.locator(".g-submit").click();
 }
 
 /** One-click pass / skip (K4.4): it sends at once. */
 export async function pass(page: Page) {
-  await page.locator(".g-pass").click();
+  await page.locator(".g-submit").click();
 }
 
-/** Tap Roll and wait until every die has settled (has data-face). */
+/** Tap Roll and wait until every die has landed (has data-face) and the tray has settled. */
 export async function roll(page: Page) {
-  await page.locator(".g-primary", { hasText: "Roll" }).click();
+  // The waiting room hands over to the game screen with a fresh socket; a tap while it is still
+  // (re)connecting is dropped silently. Tap again until the dice appear (a tap after the roll
+  // landed is impossible: the Roll button is gone).
+  const rollBtn = page.locator(".g-primary", { hasText: "Roll" });
+  await expect(async () => {
+    if ((await rollBtn.isVisible()) && (await rollBtn.isEnabled())) {
+      await rollBtn.click({ timeout: 2000 });
+    }
+    await expect(page.locator("[data-die][data-face]").first()).toBeVisible({ timeout: 4000 });
+  }).toPass({ timeout: 25_000, intervals: [100] });
+  // A tap on the tray skips the landing animation (a product feature): the end state is the
+  // same, so the helper does not sit through 6 x 400 ms of it. Specs that time the dice tap Roll themselves.
+  await page.locator(".tray").dispatchEvent("click");
   const dice = page.locator("[data-die]");
-  await expect(dice.first()).toBeVisible();
   await expect
     .poll(
       async () =>
@@ -183,4 +215,6 @@ export async function roll(page: Page) {
         (await page.locator("[data-die]:not([data-face])").count()) === 0,
     )
     .toBe(true);
+  // D-L9: dice land one at a time, 400 ms apart; the tray is `data-settled` after the last.
+  await expect(page.locator(".tray[data-settled]")).toBeVisible();
 }

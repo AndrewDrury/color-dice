@@ -1,9 +1,10 @@
 import type { PublicGame } from "@cd/protocol";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { ApiError } from "../src/api";
 import { t } from "../src/i18n";
+import { rememberedProfile } from "../src/remembered";
 import { getRoute, navigate, startRouter } from "../src/router";
 import { JoinDialog, WRONG_PASSWORD_LOCK_MS } from "../src/screens/JoinDialog";
 import { _resetMemoryForTests, getSession } from "../src/session";
@@ -29,6 +30,7 @@ vi.mock("../src/api", async (orig) => {
     ApiError: actual.ApiError,
     getMe: vi.fn(),
     createGame: vi.fn(),
+    getTakenColors: vi.fn().mockResolvedValue({ taken: [] }),
     joinGame: vi.fn(),
     reclaimSeat: vi.fn(),
   };
@@ -136,6 +138,33 @@ describe("JoinDialog", () => {
     expect(getRoute()).toEqual({ screen: "waiting", code: CODE });
   });
 
+  it("T-NEW-32: preselects a free colour when the remembered one is taken, and shows a lost race", async () => {
+    const taken = rememberedProfile().color;
+    const taken2 = taken === "sky" ? "teal" : "sky";
+    vi.mocked(api.getTakenColors).mockResolvedValueOnce({ taken: [taken] });
+    vi.mocked(api.joinGame).mockRejectedValueOnce(
+      new ApiError(409, "E_COLOUR_TAKEN", `${taken},${taken2}`),
+    );
+    render(<JoinDialog code={CODE} games={[ROOM]} onClose={() => {}} />);
+    await screen.findByRole("group", { name: "Choose colour" });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const radios = within(screen.getByRole("group", { name: "Choose colour" })).getAllByRole(
+      "radio",
+    ) as HTMLInputElement[];
+    expect(radios.filter((r) => r.disabled).length).toBe(1);
+    expect(radios.find((r) => r.checked)?.disabled).toBe(false);
+    fill("Cleo", "secret");
+    await submit();
+    expect(screen.getByText(/just taken/)).toBeTruthy();
+    const updated = within(screen.getByRole("group", { name: "Choose colour" })).getAllByRole(
+      "radio",
+    ) as HTMLInputElement[];
+    expect(updated.filter((r) => r.disabled).length).toBe(2);
+    expect(updated.find((r) => r.checked)?.disabled).toBe(false);
+  });
+
   it("links to Reclaim", () => {
     render(<JoinDialog code={CODE} games={null} onClose={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Reclaim my seat" }));
@@ -151,5 +180,24 @@ describe("App", () => {
     expect(screen.getByRole("dialog", { name: "Join game" })).toBeTruthy();
     expect(screen.queryByText(CODE)).toBeNull();
     expect(location.search).toBe(`?game=${CODE}`);
+  });
+});
+
+describe("ProfilePicker taken colours (T-NEW-32)", () => {
+  it("disables taken colours with an accessible label", async () => {
+    const { ProfilePicker } = await import("../src/components/ProfilePicker");
+    const onChange = vi.fn();
+    render(
+      <ProfilePicker
+        value={{ color: "sky", cat: "mad-cat" }}
+        onChange={onChange}
+        taken={["teal"]}
+      />,
+    );
+    const teal = screen.getByRole("radio", { name: /Teal \(taken\)/ }) as HTMLInputElement;
+    expect(teal.disabled).toBe(true);
+    fireEvent.click(teal);
+    expect(onChange).not.toHaveBeenCalled();
+    expect((screen.getByRole("radio", { name: "Lime" }) as HTMLInputElement).disabled).toBe(false);
   });
 });

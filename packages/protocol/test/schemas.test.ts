@@ -214,7 +214,7 @@ describe("client messages", () => {
     expect(parseClientMessage('{"type":"undo","turn":3}')).toEqual({ type: "undo", turn: 3 });
     expect(parseClientMessage("{not json")).toBeNull();
     expect(parseClientMessage(new ArrayBuffer(4))).toBeNull();
-    expect(parseClientMessage(`{"type":"ping","x":"${"a".repeat(2000)}"}`)).toBeNull();
+    expect(parseClientMessage(`{"type":"ping","x":"${"a".repeat(3000)}"}`)).toBeNull();
     expect(parseClientMessage('{"type":"__proto__"}')).toBeNull();
   });
 });
@@ -256,5 +256,15 @@ describe("constants", () => {
       invite?: string | undefined;
       profile?: { color: ProfileColor; cat: ProfileCat } | undefined;
     }>();
+  });
+});
+
+describe("T-NEW-32 unique colours", () => {
+  it("has E_COLOUR_TAKEN and a colours-only room info schema", async () => {
+    const p = await import("../src");
+    expect(p.isErrorCode("E_COLOUR_TAKEN")).toBe(true);
+    expect(p.TakenColorsResSchema.safeParse({ taken: ["teal"] }).success).toBe(true);
+    expect(p.TakenColorsResSchema.safeParse({ taken: ["red"] }).success).toBe(false);
+    expect(p.TakenColorsResSchema.safeParse({ taken: [], names: ["Ann"] }).success).toBe(false);
   });
 });

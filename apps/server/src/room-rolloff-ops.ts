@@ -1,9 +1,9 @@
 /**
  * Opening roll-off (T-NEW-2). Every seated player asks the server to roll their one die;
  * faces come from the server's dice (crypto, or scripted by test hooks), never from a client.
- * A round is revealed to everyone at once, only after every expected seat has rolled. Rounds
- * repeat until exactly one 6 is rolled; that seat starts. Seats that left are rolled by the
- * server so they can't stall the room. Callers run inside the room's serial queue.
+ * Each face is visible to everyone as soon as it is rolled (D-L1). The highest
+ * face starts (A-2); a tie for highest re-rolls with only the tied seats (the others hold 0 =
+ * out). Seats that left are rolled by the server so they can't stall the room. Callers run inside the room's serial queue.
  */
 import {
   createGame,
@@ -12,6 +12,7 @@ import {
   isValidRollOff,
   MAX_ROLL_OFF_ROUNDS,
   rollFace,
+  rollOffLeaders,
 } from "@cd/engine";
 import type { ErrorCode } from "@cd/protocol";
 import { playerId } from "./room-lobby-ops";
@@ -54,6 +55,9 @@ export class RollOffOps {
     if (!ro || me.seatIndex === null) return { code: "E_WRONG_PHASE" };
     if (me.left) return { code: "E_INVALID_COMMAND", reason: "seat left" };
     if (round !== ro.round) return { code: "E_STALE_TURN" };
+    if (ro.current[me.seatIndex] === 0) {
+      return { code: "E_INVALID_COMMAND", reason: "out of this round" };
+    }
     if (ro.current[me.seatIndex] !== null) {
       return { code: "E_INVALID_COMMAND", reason: "already rolled" };
     }
@@ -72,6 +76,13 @@ export class RollOffOps {
     return true;
   }
 
+  /** A failed roll-off must not wedge the room: reopen the current round for every seat. */
+  private resetRound(ro: RollOffState, reason: string): void {
+    console.error(`roll-off reset: ${reason}`);
+    ro.completed = [];
+    ro.current = ro.current.map(() => null);
+  }
+
   private async settle(
     meta: RoomMeta,
     seats: SeatRecord[],
@@ -87,32 +98,36 @@ export class RollOffOps {
       }
       if (ro.current.some((f) => f === null)) break;
       const round = ro.current as number[];
-      if (round.filter((f) => f === 6).length === 1) {
+      const leaders = rollOffLeaders(round);
+      if (leaders.length === 1) {
         const rounds = [...ro.completed, round];
         const ordered = seats
           .filter((s): s is SeatRecord & { seatIndex: number } => s.seatIndex !== null)
           .sort((a, b) => a.seatIndex - b.seatIndex);
-        if (!isValidRollOff(rounds, ordered.length)) break;
+        if (!isValidRollOff(rounds, ordered.length)) {
+          this.resetRound(ro, "invalid roll-off");
+          break;
+        }
         const res = createGame(
           ordered.map((s) => ({ id: playerId(s.seatIndex), displayName: s.name })),
           { dice: dice.dice, rollOffRounds: rounds as never },
         );
-        if (!res.ok) break;
+        if (!res.ok) {
+          this.resetRound(ro, `createGame failed: ${res.error.code}`);
+          break;
+        }
         await this.d.storage.delete(ROLL_OFF_KEY);
         await this.d.finish(meta, seats, res.state, dice);
         return;
       }
       ro.completed.push(round);
       ro.round += 1;
-      ro.current = ro.current.map(() => null);
-      if (ro.round > MAX_ROLL_OFF_ROUNDS) break;
-      await this.d.storage.put(ROLL_OFF_KEY, ro);
-      await dice.save();
-      await this.d.commit(meta, seats);
-      if (seats.some((s) => s.kind === "cpu")) {
-        await this.settle(meta, seats, ro, dice);
+      // Only the seats tied for the highest face roll again; the rest are out (0).
+      ro.current = round.map((_, seat) => (leaders.includes(seat) ? null : 0));
+      if (ro.round > MAX_ROLL_OFF_ROUNDS) {
+        this.resetRound(ro, "round cap reached");
+        break;
       }
-      return;
     }
     await this.d.storage.put(ROLL_OFF_KEY, ro);
     await dice.save();

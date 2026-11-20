@@ -55,7 +55,8 @@ export const waiting = {
   "toast.sessionEnded": "Your session ended (maybe you joined from another device).",
   "profile.title": "Your look",
   "profile.colors": "Coral,Amber,Lime,Teal,Sky,Indigo,Violet,Pink,Slate,Brown",
-  "profile.cats": "Pick your cat",
-  "profile.colorGroup": "Color",
-  "profile.catGroup": "Cat",
+  "profile.chooseColor": "Choose colour",
+  "profile.taken": "(taken)",
+  "profile.chooseAvatar": "Choose avatar",
+  "profile.chooseTheme": "Choose theme",
 } as const;

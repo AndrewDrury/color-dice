@@ -20,5 +20,8 @@ export default defineConfig({
   ],
   test: {
     include: ["test/**/*.test.ts"],
+    // Cold workers start slowly when `npm run check` runs every suite at once.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

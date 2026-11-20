@@ -124,15 +124,21 @@ export interface ViewYou {
 }
 
 /**
- * Opening roll-off in progress (T-NEW-2). Nobody's current die is revealed until every
- * expected seat has rolled; then the round moves to `completed` for everyone at once.
+ * Opening roll-off in progress (T-NEW-2, spec A-2). Dice are server-rolled and carry no
+ * strategy, so a seat's face is public as soon as it rolls (D-L1, `faces`). When the top
+ * face is tied, the round moves to `completed` and only the tied seats roll the next one;
+ * the others are out of it (`eligible` false, face 0).
  */
 export interface ViewRollOff {
   /** 1-based round being rolled now. */
   round: number;
-  /** Per seat index: has this seat rolled in the current round? */
+  /** Per seat index: has this seat rolled in the current round? (Out seats count as rolled.) */
   rolled: boolean[];
-  /** Fully revealed rounds, one face per seat each (all without a unique 6). */
+  /** Per seat index: seats rolling this round (the others are out of it). */
+  eligible: boolean[];
+  /** Per seat index: the face rolled this round, null before it rolls, 0 if out of the round. */
+  faces: (number | null)[];
+  /** Fully revealed rounds, one entry per seat each (0 = out); each ended in a tie for highest. */
   completed: number[][];
 }
 
@@ -180,7 +186,29 @@ export interface ChatHistoryMessage {
   messages: ChatEntry[];
 }
 
+/** A pending rematch request (T-NEW-30). Display data only: no tokens, no hidden state. */
+export interface RematchOffer {
+  fromSeatId: string;
+  fromName: string;
+  fromProfile: Profile;
+  /** Seats that said yes (the requester included). */
+  accepted: string[];
+  /** Epoch ms; the offer is dropped 10 minutes after it was sent. */
+  expiresAt: number;
+}
+/** Why an offer went away (absent while it is pending). */
+export type RematchEnd = "started" | "declined" | "cancelled" | "expired";
+/** Sent to the room's game sockets and watch sockets of non-left seats: the offer now, or null. */
+export interface RematchOfferMessage {
+  type: "rematchOffer";
+  offer: RematchOffer | null;
+  reason?: RematchEnd;
+  /** Display name of the seat that declined. */
+  by?: string;
+}
+
 export type ServerMessage =
+  | RematchOfferMessage
   | ViewMessage
   | ErrorMessage
   | KickedMessage
@@ -336,7 +364,9 @@ export const ViewMessageSchema = z
       .object({
         round: z.number().int().min(1),
         rolled: z.array(z.boolean()).max(5),
-        completed: z.array(z.array(z.number().int().min(1).max(6)).max(5)).max(1000),
+        eligible: z.array(z.boolean()).max(5),
+        faces: z.array(z.number().int().min(0).max(6).nullable()).max(5),
+        completed: z.array(z.array(z.number().int().min(0).max(6)).max(5)).max(1000),
       })
       .strict()
       .nullable()
@@ -372,12 +402,34 @@ export const ErrorMessageSchema = z
         "turn",
         "undo",
         "rematch",
+        "rematchRequest",
+        "rematchAccept",
+        "rematchDecline",
+        "watch",
         "ping",
         "chat",
         "react",
         "profile",
       ] as const satisfies readonly ClientMessageType[])
       .nullable(),
+  })
+  .strict();
+
+export const RematchOfferSchema = z
+  .object({
+    fromSeatId: SeatIdSchema,
+    fromName: z.string().min(1).max(PLAYER_NAME_MAX),
+    fromProfile: ProfileSchema,
+    accepted: z.array(SeatIdSchema).max(5),
+    expiresAt: z.number().int().min(0),
+  })
+  .strict();
+export const RematchOfferMessageSchema = z
+  .object({
+    type: z.literal("rematchOffer"),
+    offer: RematchOfferSchema.nullable(),
+    reason: z.enum(["started", "declined", "cancelled", "expired"]).optional(),
+    by: z.string().min(1).max(PLAYER_NAME_MAX).optional(),
   })
   .strict();
 

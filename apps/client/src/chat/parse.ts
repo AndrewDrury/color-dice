@@ -16,7 +16,7 @@ function entry(v: unknown): ChatEntry | null {
   if (typeof o.at !== "number" || !Number.isFinite(o.at)) return null;
   const base = { id: o.id as number, seatId: o.seatId, at: o.at };
   if (o.kind === "text") {
-    if (typeof o.text !== "string" || o.text.length === 0 || o.text.length > CHAT_TEXT_MAX) {
+    if (typeof o.text !== "string" || o.text.length === 0 || [...o.text].length > CHAT_TEXT_MAX) {
       return null;
     }
     return { ...base, kind: "text", text: o.text };
@@ -43,10 +43,9 @@ export function parseChatFrame(raw: unknown): ServerMessage | null {
   }
   if (m.type === "chatHistory") {
     if (!Array.isArray(m.messages) || m.messages.length > MAX_HISTORY) return null;
-    const messages = m.messages.map(entry);
-    return messages.every((e) => e !== null)
-      ? { type: "chatHistory", messages: messages as ChatEntry[] }
-      : null;
+    // Drop only the bad entries; one invalid message must not erase the whole history.
+    const messages = m.messages.map(entry).filter((e): e is ChatEntry => e !== null);
+    return { type: "chatHistory", messages };
   }
   if (
     m.type === "error" &&

@@ -1,50 +1,66 @@
-/* Profile avatar (T-NEW-13): round cat GIF with a ring in the profile colour. */
+/* Profile avatar (T-NEW-13, T-NEW-15): round cat GIF with a ring in the profile colour.
+   Vivid hues; each keeps ≥ 2.4:1 against paper in light and dark (test/profile-colors.test.ts). */
 .pc-coral {
-  --pc: #d9442f;
+  --pc: #f5402c;
 }
 .pc-amber {
-  --pc: #b87400;
+  --pc: #f28c00;
 }
 .pc-lime {
-  --pc: #5c8a00;
+  --pc: #5cb800;
 }
 .pc-teal {
-  --pc: #0f8b8d;
+  --pc: #00a9a5;
 }
 .pc-sky {
-  --pc: #1b7fc4;
+  --pc: #0a8ff0;
 }
 .pc-indigo {
-  --pc: #4a4ae0;
+  --pc: #5b5bff;
 }
 .pc-violet {
-  --pc: #8a3fd0;
+  --pc: #a445f5;
 }
 .pc-pink {
-  --pc: #d0338f;
+  --pc: #f0359a;
 }
 .pc-slate {
-  --pc: #5b6b7e;
+  --pc: #64809f;
 }
 .pc-brown {
-  --pc: #8a5230;
+  --pc: #b0662a;
 }
+/* --av-ring is set per avatar from its size (Avatar.ringWidth); one var drives every ring. */
 .av {
   display: inline-flex;
   flex: 0 0 auto;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--pc);
+  box-shadow: 0 0 0 var(--av-ring, 2px) var(--pc);
   background: var(--paper);
   overflow: hidden;
   vertical-align: middle;
+  line-height: 0;
 }
 .av img {
   border-radius: 50%;
   object-fit: cover;
   display: block;
 }
-.g-chip .av,
-.g-turnbar .av {
-  box-shadow: 0 0 0 1.5px var(--pc);
-  line-height: 0;
+
+/* Shared long-name clip (T-NEW-15): one line, ellipsis; pair with title = full name. */
+.name-clip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Two-line variant where there is vertical room (results, summary). */
+.name-clamp {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }

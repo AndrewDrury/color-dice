@@ -79,4 +79,93 @@ describe("profile", () => {
     expect(text).not.toContain("cat-gif");
     expect(text).not.toContain("profile");
   });
+
+  it("reclaim applies a profile only in the lobby", async () => {
+    const cr = await api("POST", "/api/games", { body: body({ maxPlayers: 2 }) });
+    const host = (await cr.json()) as AuthRes;
+    const mine = { color: "pink", cat: "cat-gif" };
+    const lobby = await api("POST", `/api/games/${host.code}/reclaim`, {
+      body: { name: "Ann", password: PASSWORD, profile: mine },
+    });
+    expect(lobby.status).toBe(200);
+    const t1 = ((await lobby.json()) as AuthRes).token;
+    const c = await connect(host.code, t1);
+    expect(c.view().seats[0]?.profile).toEqual(mine);
+    c.close();
+    await api("POST", `/api/games/${host.code}/join`, { body: { name: "Bo", password: PASSWORD } });
+    const c2 = await connect(host.code, t1);
+    await c2.until(() => c2.view().game !== null || c2.view().rollOff !== null);
+    c2.close();
+    const late = await api("POST", `/api/games/${host.code}/reclaim`, {
+      body: { name: "Ann", password: PASSWORD, profile: { color: "teal", cat: "mad-cat" } },
+    });
+    expect(late.status).toBe(200);
+    const c3 = await connect(host.code, ((await late.json()) as AuthRes).token);
+    expect(c3.view().seats[0]?.profile).toEqual(mine);
+  });
+
+  describe("unique colours (T-NEW-32)", () => {
+    const P = (color: string) => ({ color, cat: "mad-cat" });
+    const make = async (color: string, maxPlayers = 4) => {
+      const cr = await api("POST", "/api/games", {
+        body: body({ maxPlayers, profile: P(color) }),
+      });
+      return (await cr.json()) as AuthRes;
+    };
+    const join = (code: string, name: string, profile?: unknown) =>
+      api("POST", `/api/games/${code}/join`, {
+        body: { name, password: PASSWORD, ...(profile ? { profile } : {}) },
+      });
+
+    it("rejects a taken colour on join, lists colours only, and picks a free default", async () => {
+      const host = await make("amber");
+      const r = await join(host.code, "Bo", P("amber"));
+      expect(r.status).toBe(409);
+      expect(await r.json()).toEqual({ code: "E_COLOUR_TAKEN", reason: "amber" });
+      // No profile: the order-2 default (amber) is taken, so the first free colour is used.
+      const ok = await join(host.code, "Cy");
+      expect(ok.status).toBe(201);
+      const c = await connect(host.code, host.token);
+      expect(c.view().seats.map((s) => s.profile?.color)).toEqual(["amber", "coral"]);
+      const info = await api("GET", `/api/games/${host.code}/colors`);
+      expect(await info.json()).toEqual({ taken: ["amber", "coral"] });
+      expect((await api("GET", "/api/games/ZZZZZZ/colors")).status).toBe(404);
+    });
+
+    it("concurrent joins with the same colour: exactly one wins", async () => {
+      const host = await make("teal");
+      const rs = await Promise.all(["Bo", "Cy", "Di"].map((n) => join(host.code, n, P("pink"))));
+      expect(rs.map((r) => r.status).sort()).toEqual([201, 409, 409]);
+    });
+
+    it("setProfile: taken colour refused, own colour kept, a free swap works, left frees it", async () => {
+      const host = await make("teal");
+      const g = (await (await join(host.code, "Bo", P("pink"))).json()) as AuthRes;
+      const c = await connect(host.code, host.token);
+      await c.until(() => c.view().seats.length === 2);
+      c.send({ type: "profile", profile: P("pink") });
+      expect((await c.next("error")).code).toBe("E_COLOUR_TAKEN");
+      c.send({ type: "profile", profile: { color: "teal", cat: "cat-gif" } });
+      await c.until(() => c.view().seats[0]?.profile?.cat === "cat-gif");
+      c.send({ type: "profile", profile: P("sky") });
+      await c.until(() => c.view().seats[0]?.profile?.color === "sky");
+      // Bo leaves; pink is free again.
+      await api("POST", `/api/games/${host.code}/leave`, { token: g.token });
+      expect((await join(host.code, "Cy", P("pink"))).status).toBe(201);
+    });
+
+    it("reclaim in the lobby cannot take another seat's colour", async () => {
+      const host = await make("teal");
+      await join(host.code, "Bo", P("pink"));
+      const r = await api("POST", `/api/games/${host.code}/reclaim`, {
+        body: { name: "Ann", password: PASSWORD, profile: P("pink") },
+      });
+      expect(r.status).toBe(409);
+      expect(((await r.json()) as { code: string }).code).toBe("E_COLOUR_TAKEN");
+      const same = await api("POST", `/api/games/${host.code}/reclaim`, {
+        body: { name: "Ann", password: PASSWORD, profile: P("teal") },
+      });
+      expect(same.status).toBe(200);
+    });
+  });
 });

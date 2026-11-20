@@ -1,9 +1,9 @@
 import { request } from "@playwright/test";
 import type { Player } from "./fixtures";
-import { createGame, expect, playRollOff, SERVER, startGame, test } from "./fixtures";
-import { closeAll, newPlayer, uniqueIp } from "./helpers";
+import { CLIENT, createGame, expect, playRollOff, SERVER, startGame, test } from "./fixtures";
+import { closeAll, newPlayer, uid, uniqueIp } from "./helpers";
 
-const ORIGIN = "http://localhost:5173";
+const ORIGIN = CLIENT;
 const LINK = /#\/join\/([A-Z0-9]{5})\/([A-Za-z0-9_-]{43})$/;
 
 /** Host clicks "Copy invite link" and the link is read back from the clipboard. */
@@ -14,14 +14,14 @@ async function copyInvite(host: Player): Promise<string> {
   return host.page.evaluate(() => navigator.clipboard.readText());
 }
 
-test("invite link: copy, open in another browser, type only a name, land in the room", async ({
+test("invite link: copy, open in another browser, type only a name, land in the room @smoke", async ({
   browser,
 }) => {
   const host = await newPlayer(browser, "Hana");
   const guest = await newPlayer(browser, "Gus");
   try {
     const code = await createGame(host, {
-      roomName: `Link ${Date.now() % 100000}`,
+      roomName: `Link ${uid()}`,
       password: "pw-link",
       max: 2,
     });
@@ -58,7 +58,7 @@ test("a tampered invite key is refused with 'Link is invalid or expired.'", asyn
   const host = await newPlayer(browser, "Hana");
   const guest = await newPlayer(browser, "Gus");
   try {
-    await createGame(host, { roomName: `Bad ${Date.now() % 100000}`, password: "pw-bad", max: 2 });
+    await createGame(host, { roomName: `Bad ${uid()}`, password: "pw-bad", max: 2 });
     const link = await copyInvite(host);
     const tampered = `${link.slice(0, -1)}${link.endsWith("A") ? "B" : "A"}`;
     await guest.page.goto(tampered);
@@ -82,7 +82,7 @@ test("both players leave mid-game: the room is gone from the list and /me no lon
     extraHTTPHeaders: { "cf-connecting-ip": uniqueIp() },
   });
   try {
-    const roomName = `Leave ${Date.now() % 100000}`;
+    const roomName = `Leave ${uid()}`;
     const code = await createGame(host, { roomName, password: "pw-leave", max: 2 });
     const link = await copyInvite(host);
     await guest.page.goto(link);

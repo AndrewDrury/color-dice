@@ -9,6 +9,8 @@ export const SHORTCUTS: readonly (readonly [MessageKey, MessageKey])[] = [
   ["keys.cap.move", "keys.move"],
   ["keys.cap.enter", "keys.enter"],
   ["keys.cap.esc", "keys.esc"],
+  ["keys.cap.undo", "keys.undo"],
+  ["keys.cap.chat", "keys.chat"],
   ["keys.cap.mute", "keys.mute"],
   ["keys.cap.help", "keys.help"],
 ];

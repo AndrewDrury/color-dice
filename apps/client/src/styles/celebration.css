@@ -1,0 +1,560 @@
+/* End-of-game reveal (T-NEW-25). Panels use theme tokens; the backdrop effects have their own colours. */
+.rv {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top) + var(--s3)) var(--s2) 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #2b1d5c 0%, rgb(0 0 0 / 0) 60%),
+    linear-gradient(#0d0b22, #05040f);
+  color: #fff;
+  overflow: hidden;
+}
+.rv.is-reduced {
+  background: linear-gradient(135deg, #3a1c71, #8e2a6a 55%, #c2603a);
+}
+
+/* ---- backdrop (behind the cards, never intercepts input) ---- */
+.rv-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  animation: rv-fade 700ms ease-out both;
+}
+.rv-fx canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rv-fx i {
+  position: absolute;
+  font-style: normal;
+  will-change: transform;
+}
+.rv-fx--still {
+  background:
+    radial-gradient(circle at 20% 20%, rgb(255 120 180 / 0.35), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgb(120 160 255 / 0.35), transparent 50%);
+}
+/* lasers */
+.rv-fx--lasers i {
+  left: 50%;
+  bottom: -4%;
+  width: 7px;
+  height: 150vmax;
+  margin-left: -3px;
+  transform-origin: 50% 100%;
+  --base: calc(-70deg + var(--i) * 20deg);
+  background: linear-gradient(to top, hsl(calc(var(--i) * 47) 100% 62%), transparent 90%);
+  box-shadow: 0 0 14px hsl(calc(var(--i) * 47) 100% 62% / 0.8);
+  mix-blend-mode: screen;
+  animation: rv-sweep var(--d) ease-in-out var(--w) infinite alternate;
+}
+/* pink hearts */
+.rv-fx--hearts i {
+  left: var(--x);
+  bottom: -60px;
+  font-size: var(--sz);
+  line-height: 1;
+  color: hsl(calc(322 + var(--h) * 0.08) 92% 66%);
+  text-shadow: 0 0 10px rgb(255 105 180 / 0.7);
+  animation: rv-rise var(--d) linear var(--w) infinite;
+}
+/* aurora */
+.rv-fx--aurora {
+  background: linear-gradient(180deg, #06122b, #0b1f3a 60%, #10163a);
+}
+.rv-fx--aurora i {
+  width: 90vmax;
+  height: 60vmax;
+  left: calc(var(--i) * 30% - 30vmax);
+  top: calc(var(--i) * 22% - 10vmax);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    hsl(calc(150 + var(--i) * 70) 95% 58% / 0.8),
+    transparent
+  );
+  animation: rv-drift var(--d) ease-in-out var(--w) infinite alternate;
+}
+/* disco */
+.rv-fx--disco {
+  background: radial-gradient(60% 40% at 50% 105%, rgb(255 80 200 / 0.35), transparent);
+}
+.rv-fx--disco i {
+  top: -2%;
+  left: var(--x);
+  width: 38vmax;
+  height: 120vh;
+  margin-left: -19vmax;
+  transform-origin: 50% 0;
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  background: linear-gradient(hsl(calc(var(--i) * 60) 100% 70% / 0.6), transparent 85%);
+  mix-blend-mode: screen;
+  --base: calc(var(--i) * 6deg - 15deg);
+  animation: rv-sweep var(--d) ease-in-out var(--w) infinite alternate;
+}
+.rv-fx--starfield {
+  background: radial-gradient(circle at 50% 50%, #1a1446, #02010a 70%);
+}
+.rv-fx--fireworks {
+  background: linear-gradient(#050818, #14102e);
+}
+
+/* ---- content ---- */
+.rv-stage {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 600px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--s3) var(--s3);
+}
+.rv-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: rgb(8 6 28 / 0.72);
+  color: #fff;
+  font-size: clamp(1.05rem, 4.6vw, 1.6rem);
+  font-weight: var(--fw-heavy);
+  text-align: center;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.6);
+}
+.rv-title-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rv-title.is-hush {
+  animation: rv-pulse 700ms ease-in-out infinite alternate;
+}
+.rv-title.is-win {
+  color: #ffd23f;
+  box-shadow:
+    0 0 0 2px #ffd23f,
+    0 0 26px rgb(255 210 63 / 0.55);
+  animation: rv-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.rv-cards {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.rv-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "who total"
+    "pills total";
+  column-gap: var(--s3);
+  row-gap: 4px;
+  align-items: center;
+  min-width: 0;
+  padding: var(--s2) var(--s3);
+  border: 2px solid transparent;
+  border-radius: var(--r-card);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.45);
+}
+.rv-who {
+  grid-area: who;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+.rv-rank {
+  min-width: 1.1em;
+  color: var(--ink-muted);
+  font-weight: var(--fw-bold);
+}
+.rv-name {
+  flex: 0 1 auto;
+}
+.rv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+}
+.rv-pills {
+  grid-area: pills;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.15fr);
+  gap: 5px;
+}
+.rv-pill {
+  min-width: 0;
+  padding: 2px 0;
+  border: 2px solid var(--row-color);
+  border-radius: 999px;
+  background: var(--row-tint);
+  color: var(--row-ink);
+  font-weight: var(--fw-heavy);
+  font-size: 0.95rem;
+  line-height: 1.25;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* Not yet revealed: an empty slot. Revealed: the score drops in from the top (staggered per player). */
+.rv-pill:not(.is-in) {
+  border-color: var(--ink-muted);
+  border-style: dotted;
+  background: transparent;
+  color: transparent;
+  opacity: 0.35;
+}
+.rv-pill.is-in {
+  animation: rv-pill-drop 640ms cubic-bezier(0.33, 0, 0.67, 1) var(--p, 0ms) both;
+}
+.rv-pill.rv-pen {
+  --row-color: var(--ink-muted);
+  background: transparent;
+  color: var(--ink);
+  border-style: dashed;
+}
+.rv-pill.rv-pen:not(.is-in) {
+  color: transparent;
+  border-style: dotted;
+}
+.rv-total {
+  grid-area: total;
+  min-width: 4.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.rv-total-num {
+  font-size: 2.1rem;
+  font-weight: var(--fw-heavy);
+  font-variant-numeric: tabular-nums;
+}
+.rv-q {
+  color: var(--ink-muted);
+  animation: rv-pulse 600ms ease-in-out infinite alternate;
+}
+.rv-total-cap {
+  margin-top: 2px;
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rv-card.has-total {
+  animation: rv-hit 560ms ease-out both;
+}
+.rv-card.has-total .rv-total-num {
+  display: inline-block;
+  animation: rv-slam 620ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.rv-card.is-winner {
+  border-color: #ffc20a;
+  scale: 1.03;
+  animation:
+    rv-hit-win 900ms ease-out both,
+    rv-glow 1.6s ease-in-out 900ms infinite alternate;
+}
+.rv-card.is-winner .rv-total-num {
+  animation-name: rv-slam-win;
+  animation-duration: 900ms;
+}
+
+/* ---- footer: Skip / Show full cards, then Rematch + Back (always reachable) ---- */
+.rv-foot {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 600px);
+  padding-inline: var(--s3);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding-block: var(--s2) calc(var(--s3) + env(safe-area-inset-bottom));
+}
+.rv-skip,
+.rv-show {
+  width: 100%;
+  min-height: 48px;
+}
+.rv-show {
+  animation: rv-pop 520ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.rv-actions {
+  display: flex;
+  gap: var(--s2);
+}
+.rv-actions .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 700px) and (min-height: 720px) {
+  .rv-stage,
+  .rv-foot {
+    width: min(100%, 760px);
+  }
+  .rv-title {
+    font-size: 2rem;
+    padding: 8px 26px;
+  }
+  .rv-card {
+    padding: var(--s3) var(--s4);
+    row-gap: 8px;
+  }
+  .rv-pill {
+    font-size: 1.15rem;
+    padding: 4px 0;
+  }
+  .rv-total-num {
+    font-size: 3rem;
+  }
+  .rv-name {
+    font-size: 1.2rem;
+  }
+  .rv-cards {
+    gap: var(--s3);
+  }
+}
+@media (max-height: 700px) {
+  .rv-card {
+    padding: 6px var(--s3);
+    row-gap: 2px;
+  }
+  .rv-total-num {
+    font-size: 1.8rem;
+  }
+  .rv-pill {
+    font-size: 0.85rem;
+    line-height: 1.15;
+  }
+  .rv-stage {
+    gap: var(--s2);
+  }
+  .rv-cards {
+    gap: 6px;
+  }
+}
+
+/* ---- reduced motion: no drop, no slam, no moving backdrop ---- */
+.rv.is-reduced .rv-pill.is-in,
+.rv.is-reduced .rv-card.has-total,
+.rv.is-reduced .rv-card.is-winner,
+.rv.is-reduced .rv-card.has-total .rv-total-num,
+.rv.is-reduced .rv-title,
+.rv.is-reduced .rv-show,
+.rv.is-reduced .rv-fx {
+  animation: none;
+}
+.rv.is-reduced .rv-card.is-winner {
+  box-shadow: 0 0 0 3px #ffc20a;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-fx i,
+  .rv-card,
+  .rv-pill,
+  .rv-title,
+  .rv-show {
+    animation: none;
+  }
+}
+
+@keyframes rv-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rv-pill-drop {
+  0% {
+    transform: translateY(-60vh);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-9px);
+  }
+  88% {
+    transform: translateY(0);
+  }
+  94% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes rv-hit {
+  0% {
+    filter: brightness(1.9);
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes rv-hit-win {
+  0% {
+    filter: brightness(2.4);
+    transform: translateX(0) scale(1);
+  }
+  15% {
+    transform: translateX(-12px) scale(1.1);
+  }
+  30% {
+    transform: translateX(10px) scale(1.06);
+  }
+  45% {
+    transform: translateX(-6px);
+  }
+  65% {
+    transform: translateX(4px);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes rv-glow {
+  from {
+    box-shadow:
+      0 0 0 2px #ffc20a,
+      0 0 14px rgb(255 194 10 / 0.5);
+  }
+  to {
+    box-shadow:
+      0 0 0 4px #ffc20a,
+      0 0 36px rgb(255 194 10 / 0.9);
+  }
+}
+@keyframes rv-slam {
+  0% {
+    scale: 3.2;
+    opacity: 0;
+  }
+  55% {
+    scale: 0.9;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes rv-slam-win {
+  0% {
+    scale: 5;
+    opacity: 0;
+    rotate: -8deg;
+  }
+  50% {
+    scale: 0.85;
+    opacity: 1;
+    rotate: 3deg;
+  }
+  75% {
+    scale: 1.25;
+  }
+  100% {
+    scale: 1.08;
+    rotate: 0deg;
+  }
+}
+@keyframes rv-pop {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  60% {
+    scale: 1.12;
+  }
+}
+@keyframes rv-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes rv-sweep {
+  from {
+    rotate: calc(var(--base) - 22deg);
+  }
+  to {
+    rotate: calc(var(--base) + 22deg);
+  }
+}
+@keyframes rv-rise {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    translate: 24px -60vh;
+  }
+  100% {
+    translate: -16px -125vh;
+    opacity: 0.85;
+  }
+}
+@keyframes rv-drift {
+  from {
+    translate: -8vmax -4vmax;
+    scale: 0.9;
+  }
+  to {
+    translate: 10vmax 6vmax;
+    scale: 1.15;
+  }
+}
+
+/* The results card's own Rematch / Back home row is replaced by the overlay's while the reveal runs. */
+.g-over-actions[hidden] {
+  display: none;
+}
+.rv-title svg {
+  flex: none;
+}

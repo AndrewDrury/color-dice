@@ -274,12 +274,12 @@
   pointer-events: none;
 }
 
-:root[data-theme="dark"] .die__shadow {
+:root[data-scheme="dark"] .die__shadow {
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .die__shadow {
+  :root:not([data-scheme]) .die__shadow {
     background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
   }
 }

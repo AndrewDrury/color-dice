@@ -98,6 +98,7 @@ export const common = {
   "err.E_ROOM_FULL": "This game is full.",
   "err.E_NOT_IN_LOBBY": "This game has already started.",
   "err.E_NAME_TAKEN": "Someone at the table already has that name.",
+  "err.E_COLOUR_TAKEN": "That colour was just taken. Pick another.",
   "err.E_RATE_LIMITED": "Too many tries. Please wait a moment.",
   "err.E_NOT_AUTHED": "Your session has expired. Please join again.",
   "err.E_SEAT_ONLINE": "That player is still online.",
@@ -130,6 +131,8 @@ export const common = {
   "field.yourName": "Your name",
   "field.roomName.label": "Room name",
   "field.gameCode.label": "Game code",
+  "profile.youLabel": "You: {name}",
+  "profile.youCaption": "You · {name}",
   "update.done": "Updated to the latest version",
   "update.updating": "New version — updating…",
 } as const;

@@ -132,17 +132,18 @@ export function CreateGame() {
           enterkeyhint="next"
           autofocus
         />
-        <Field
-          label={t("field.yourName")}
-          name="name"
-          value={name}
-          onValue={setName}
-          error={errors.name}
-          maxLength={PLAYER_NAME_MAX}
-          autocomplete="nickname"
-          enterkeyhint="next"
-        />
-        <ProfileField value={profile} onChange={setProfile} />
+        <ProfileField value={profile} onChange={setProfile}>
+          <Field
+            label={t("field.yourName")}
+            name="name"
+            value={name}
+            onValue={setName}
+            error={errors.name}
+            maxLength={PLAYER_NAME_MAX}
+            autocomplete="nickname"
+            enterkeyhint="next"
+          />
+        </ProfileField>
         <PasswordField
           value={password}
           onValue={setPassword}

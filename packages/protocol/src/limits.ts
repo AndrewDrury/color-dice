@@ -74,7 +74,7 @@ export const CLOSE = {
 } as const;
 export type CloseCode = (typeof CLOSE)[keyof typeof CLOSE];
 
-export const CHAT_TEXT_MAX = 200;
+export const CHAT_TEXT_MAX = 500;
 /** Raw (pre-cleaning) cap on chat text. */
 export const CHAT_RAW_MAX = 1000;
 export const CHAT_HISTORY_MAX = 30;
@@ -83,3 +83,8 @@ export const CHAT_RATE = {
   text: { limit: 5, windowMs: 10_000 },
   react: { limit: 10, windowMs: 10_000 },
 } as const;
+
+/** T-NEW-30: a rematch offer is dropped after 10 minutes. */
+export const REMATCH_OFFER_TTL_MS = 10 * 60 * 1000;
+/** T-NEW-30: one rematch request per seat per 5 seconds. */
+export const REMATCH_RATE_MS = 5000;

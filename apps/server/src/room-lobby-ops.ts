@@ -4,9 +4,13 @@
  */
 import {
   ABANDONED_ROOM_MS,
+  defaultProfile,
   type ErrorCode,
   FINISHED_ROOM_TTL_MS,
   IDLE_ROOM_TTL_MS,
+  PROFILE_COLORS,
+  type Profile,
+  type ProfileColor,
   type PublicGame,
 } from "@cd/protocol";
 import type { RoomMeta, SeatRecord } from "./room-store";
@@ -49,6 +53,29 @@ export function sameName(a: string, b: string): boolean {
 
 export function findByName(seats: SeatRecord[], name: string): SeatRecord | undefined {
   return seats.find((s) => sameName(s.name, name));
+}
+
+/** Colours held by seats that have not left, optionally ignoring one seat (T-NEW-32). */
+export function takenColors(seats: SeatRecord[], exceptSeatId?: string): ProfileColor[] {
+  const set = new Set<ProfileColor>();
+  for (const s of seats) {
+    if (s.left || s.seatId === exceptSeatId) continue;
+    set.add((s.profile ?? defaultProfile(s.joinOrder)).color);
+  }
+  return [...set];
+}
+
+/** `E_COLOUR_TAKEN` (409); the reason lists the taken colours (public info, no names). */
+export const colourTaken = (taken: ProfileColor[]): Fail =>
+  fail(409, "E_COLOUR_TAKEN", taken.join(","));
+
+/** The profile a joiner gets: theirs if its colour is free, else the first free colour. */
+export function firstFreeProfile(taken: ProfileColor[], order: number): Profile {
+  const d = defaultProfile(order);
+  const color = taken.includes(d.color)
+    ? (PROFILE_COLORS.find((c) => !taken.includes(c)) ?? d.color)
+    : d.color;
+  return { ...d, color };
 }
 
 /** Seats sorted by joinOrder (copy). */

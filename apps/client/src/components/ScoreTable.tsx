@@ -3,8 +3,8 @@ import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { Fragment } from "preact";
 import { COLORS, cssColor, recordLabel, recordText, seatInfo, tieInfo } from "../game/model";
 import { useTween } from "../game/useTween";
-import { colorLetter, t, useT } from "../i18n";
-import { Avatar } from "./Avatar";
+import { t, useT } from "../i18n";
+import { AvatarHover } from "./AvatarHover";
 import { CrownIcon, TieIcon } from "./icons";
 
 export function rankPlayers(view: ViewMessage): ViewPlayer[] {
@@ -40,7 +40,7 @@ function Count({
 }
 
 /**
- * `R + Y + G + B − penalties = total` (K5.6), each term in its row colour with the same classes and
+ * Row scores − penalties = total (K5.6, no colour letters), each term in its row colour with the same classes and
  * tokens as the in-game footer equation. Only the total carries `.num[data-value]`.
  */
 export function ResultEquation({
@@ -73,7 +73,7 @@ export function ResultEquation({
         <Fragment key={c}>
           {i > 0 ? <span class="g-op">+</span> : null}
           <span class={`g-score c-${cssColor(c)}`} data-term={c}>
-            <abbr>{colorLetter(c)}</abbr> <Count value={rows?.[c] ?? 0} cls="eqn" ms={ms} />
+            <Count value={rows?.[c] ?? 0} cls="eqn" ms={ms} />
           </span>
         </Fragment>
       ))}
@@ -123,7 +123,11 @@ export function ScoreTable({ view }: { view: ViewMessage }) {
                 ) : win ? (
                   <CrownIcon size={16} title={t("table.winner")} />
                 ) : null}{" "}
-                <Avatar profile={seatInfo(view, p)?.profile} size={20} />{" "}
+                <AvatarHover
+                  profile={seatInfo(view, p)?.profile}
+                  size={20}
+                  name={seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                />{" "}
                 <span class="g-name">
                   {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
                 </span>

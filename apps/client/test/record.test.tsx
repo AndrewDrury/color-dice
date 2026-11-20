@@ -1,13 +1,15 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ProfilePanel } from "../src/components/ProfilePanel";
 import { SeatList } from "../src/components/SeatList";
-import { Settings } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import {
   _resetHistoryForTests,
   exportTransferCode,
   getHistory,
   HISTORY_CAP,
   HISTORY_KEY,
+  historyStats,
   historyTotals,
   importTransferCode,
   recordGame,
@@ -78,6 +80,8 @@ describe("GameOver record column and device history", () => {
     expect(cells.sort()).toEqual(["0–0–2", "2–0–0"]);
     expect(getHistory()).toHaveLength(1);
     expect(getHistory()[0]).toMatchObject({ code: CODE, game: 2, result: "L" });
+    expect(getHistory()[0]?.players).toBe(2);
+    expect(getHistory()[0]?.myScore).toBeTypeOf("number");
     unmount();
     mount(v); // reload at game over: same game number, no duplicate
     expect(getHistory()).toHaveLength(1);
@@ -86,6 +90,33 @@ describe("GameOver record column and device history", () => {
 });
 
 describe("device history storage", () => {
+  it("sanitizes detailed history and computes record stats", () => {
+    const clean = sanitizeHistory([
+      {
+        code: CODE,
+        game: 1,
+        result: "W",
+        at: 10,
+        opponents: [{ name: "<b>Alex</b>", colour: "coral", cat: "mad-cat", score: 64 }],
+        myScore: 87,
+        players: 2,
+      },
+      { code: CODE, game: 2, result: "T", at: 20, myScore: 70 },
+      { code: CODE, game: 3, result: "W", at: 30, myScore: 92 },
+    ]);
+    expect(clean[0]?.opponents?.[0]?.name).toBe("<b>Alex</b>");
+    expect(historyStats(clean)).toEqual({
+      wins: 2,
+      ties: 1,
+      losses: 0,
+      gamesPlayed: 3,
+      winPercent: 67,
+      streak: 1,
+      streakResult: "W",
+      bestScore: 92,
+    });
+  });
+
   it("loads legacy boolean-won entries as W / L", () => {
     localStorage.setItem(
       HISTORY_KEY,
@@ -148,6 +179,32 @@ describe("device history storage", () => {
     expect(getHistory()).toEqual([]);
     expect(screen.getByText(/Your record: 0 W – 0 T – 0 L/)).toBeTruthy();
   });
+
+  it("profile panel renders record, theme, history, and opens settings", () => {
+    recordGame({
+      code: CODE,
+      game: 1,
+      result: "W",
+      at: Date.now(),
+      opponents: [{ name: "Alex", colour: "coral", cat: "mad-cat", score: 64 }],
+      myScore: 87,
+      players: 2,
+    });
+    const onPanel = vi.fn();
+    render(
+      <ProfilePanel
+        profile={{ color: "sky", cat: "mad-cat" }}
+        name="Me"
+        onClose={vi.fn()}
+        onPanel={onPanel}
+      />,
+    );
+    expect(screen.getByRole("dialog", { name: "Profile" })).toBeTruthy();
+    expect(screen.getByText("1–0–0")).toBeTruthy();
+    expect(screen.getByText(/Alex 64/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Open settings" }));
+    expect(onPanel).toHaveBeenCalledWith("settings");
+  });
 });
 
 describe("transfer code", () => {
@@ -181,6 +238,27 @@ describe("transfer code", () => {
     _resetHistoryForTests();
     expect(importTransferCode(code)).toEqual({ ok: true, added: 3 });
     expect(historyTotals()).toEqual({ wins: 1, ties: 1, losses: 1 });
+  });
+
+  it("round-trips detailed history", () => {
+    recordGame({
+      code: CODE,
+      game: 1,
+      result: "W",
+      at: 10,
+      opponents: [{ name: "Alex", colour: "coral", cat: "mad-cat", score: 64 }],
+      myScore: 87,
+      players: 2,
+    });
+    const code = exportTransferCode();
+    localStorage.clear();
+    _resetHistoryForTests();
+    expect(importTransferCode(code)).toEqual({ ok: true, added: 1 });
+    expect(getHistory()[0]).toMatchObject({
+      opponents: [{ name: "Alex", colour: "coral", cat: "mad-cat", score: 64 }],
+      myScore: 87,
+      players: 2,
+    });
   });
 
   it("still imports a legacy CD1 code (won -> W, lost -> L)", () => {

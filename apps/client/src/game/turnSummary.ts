@@ -45,8 +45,17 @@ export function summarizeTurn(view: ViewMessage, fresh: readonly GameEvent[]): T
       break;
     }
   }
-  if (start < 0) return null;
-  const turnEvent = all[start] as Extract<GameEvent, { type: "TURN_STARTED" }>;
+  if (end < 0) return null;
+  const endEvent = all[end] as Extract<GameEvent, { type: "TURN_STARTED" }>;
+  // The engine logs no TURN_STARTED for turn 1: it begins at the start of the log.
+  if (start < 0 && endEvent.turnNumber !== 2) return null;
+  const turnEvent =
+    start >= 0
+      ? (all[start] as Extract<GameEvent, { type: "TURN_STARTED" }>)
+      : {
+          turnNumber: 1,
+          activeSeat: (endEvent.activeSeat + g.players.length - 1) % g.players.length,
+        };
   const evs = all.slice(start + 1, end);
   let roll: Extract<GameEvent, { type: "DICE_ROLLED" }> | null = null;
   const by = new Map<number, SummaryPlayer>();

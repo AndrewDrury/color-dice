@@ -1,8 +1,9 @@
-/** Transient `Name: message` toasts at the top (never intercept taps) + the polite live region. */
+/** Transient avatar + coloured-bubble toasts (no names) at the top (never intercept taps) + the polite live region. */
 import { useEffect, useState } from "preact/hooks";
-import { dropToast, seatName, type TextEntry, useChat } from "../chat/store";
+import { dropToast, seatProfile, type TextEntry, useChat } from "../chat/store";
 import { EXIT_MS } from "../fx/motion";
 import "../styles/motion.css";
+import { Avatar } from "./Avatar";
 
 export const TOAST_MS = 4000;
 
@@ -16,19 +17,24 @@ function ToastItem({ entry }: { entry: TextEntry }) {
       clearTimeout(drop);
     };
   }, [entry.id]);
+  const profile = seatProfile(entry.seatId);
   return (
-    <p class={`chat-toast mo-enter${leaving ? " mo-exit" : ""}`} aria-hidden="true">
-      <b>{seatName(entry.seatId)}:</b> {entry.text}
+    <p
+      class={`chat-toast pc-${profile?.color ?? "slate"} mo-enter${leaving ? " mo-exit" : ""}`}
+      aria-hidden="true"
+    >
+      {profile ? <Avatar profile={profile} size={24} /> : null}
+      <span class="chat-toast-text">{entry.text}</span>
     </p>
   );
 }
 
 export function ChatToasts() {
-  const { toasts, announce } = useChat();
+  const { toasts, announce, panelOpen } = useChat();
   return (
     <>
       <div class="chat-toasts" data-testid="chat-toasts">
-        {toasts.map((t) => (
+        {(panelOpen ? [] : toasts).map((t) => (
           <ToastItem key={t.id} entry={t} />
         ))}
       </div>

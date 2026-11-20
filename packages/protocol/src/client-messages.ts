@@ -68,7 +68,19 @@ export const TurnMsgSchema = z
   })
   .strict();
 
+/** Host only (legacy): same as `rematchRequest`; the other seats still have to accept. */
 export const RematchMsgSchema = z.object({ type: z.literal("rematch") }).strict();
+/** T-NEW-30: any non-left seat asks for a rematch once the game is over (the sender accepts). */
+export const RematchRequestMsgSchema = z.object({ type: z.literal("rematchRequest") }).strict();
+/** Accept the pending offer; the game restarts when every non-left seat has accepted. */
+export const RematchAcceptMsgSchema = z.object({ type: z.literal("rematchAccept") }).strict();
+/** Decline the pending offer (the requester's own decline is a cancel). Clears it for everyone. */
+export const RematchDeclineMsgSchema = z.object({ type: z.literal("rematchDecline") }).strict();
+/**
+ * View-only attachment (T-NEW-30): the first frame of a watch socket, in place of `auth`.
+ * It authenticates with the same seat token but never counts as the seat being online.
+ */
+export const WatchMsgSchema = z.object({ type: z.literal("watch"), token: TokenSchema }).strict();
 export const UndoMsgSchema = z.object({ type: z.literal("undo"), turn: TurnSchema }).strict();
 
 export const PingMsgSchema = z.object({ type: z.literal("ping") }).strict();
@@ -97,6 +109,10 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   TurnMsgSchema,
   UndoMsgSchema,
   RematchMsgSchema,
+  RematchRequestMsgSchema,
+  RematchAcceptMsgSchema,
+  RematchDeclineMsgSchema,
+  WatchMsgSchema,
   PingMsgSchema,
   ChatMsgSchema,
   ReactMsgSchema,
@@ -109,8 +125,8 @@ export type Action1Msg = z.infer<typeof Action1MsgSchema>;
 export type Action2Msg = z.infer<typeof Action2MsgSchema>;
 export type TurnMsg = z.infer<typeof TurnMsgSchema>;
 
-/** Upper bound on a raw client frame; anything larger is rejected before JSON.parse. */
-export const MAX_CLIENT_MESSAGE_CHARS = 1024;
+/** Upper bound on a raw client frame (a CHAT_RAW_MAX chat with JSON escapes fits); anything larger is rejected before JSON.parse. */
+export const MAX_CLIENT_MESSAGE_CHARS = 2048;
 
 /**
  * Parse one raw WebSocket frame. Returns `null` for anything that is not a valid

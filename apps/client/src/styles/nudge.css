@@ -1,0 +1,65 @@
+/* T-NEW-22: idle nudge. Never intercepts taps (pointer-events: none), so the game stays usable. */
+.nudge {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--table) 45%, transparent);
+}
+.nudge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  max-width: min(100%, 360px);
+  padding: var(--s6) var(--s6);
+  border: 3px solid var(--on-accent);
+  border-radius: var(--r-card);
+  background: var(--accent);
+  color: var(--on-accent);
+  text-align: center;
+  overflow-wrap: anywhere;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
+  animation:
+    nudge-shake 700ms ease-in-out 2,
+    nudge-pulse 1.4s ease-in-out 0.7s infinite;
+}
+.nudge-title {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 800;
+}
+.nudge-hint {
+  font-size: 1.125rem;
+  font-weight: var(--fw-bold);
+}
+@keyframes nudge-shake {
+  0%,
+  100% {
+    translate: 0;
+  }
+  20%,
+  60% {
+    translate: -8px;
+  }
+  40%,
+  80% {
+    translate: 8px;
+  }
+}
+@keyframes nudge-pulse {
+  50% {
+    scale: 1.05;
+  }
+}
+:root[data-motion="reduced"] .nudge-card {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nudge-card {
+    animation: none;
+  }
+}

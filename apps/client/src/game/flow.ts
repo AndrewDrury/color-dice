@@ -23,7 +23,7 @@ export function lockMessage(view: ViewMessage, e: RowLocked): string {
   const names = [...(mine.length > 0 ? [t("lock.you")] : []), ...others];
   const color = colorName(e.color);
   if (others.length === 0 && mine.length > 0) return t("lock.byYou", { color });
-  return t("lock.by", { names: joinNames(names), color });
+  return t(names.length > 1 ? "lock.byMany" : "lock.by", { names: joinNames(names), color });
 }
 
 /** The roll-off that decided who starts, while nobody has rolled yet (or null). */
@@ -38,12 +38,4 @@ export function rollOffEvent(view: ViewMessage): FirstChosen | null {
     return null;
   }
   return ev.slice(i).some((x) => x.type === "DICE_ROLLED") ? null : e;
-}
-
-/** Caption for one round: no 6, several 6s, or the unique 6 (the winner). */
-export function roundCaption(view: ViewMessage, faces: readonly number[]): string {
-  const sixes = faces.flatMap((f, seat) => (f === 6 ? [seat] : []));
-  if (sixes.length === 0) return t("rolloff.none");
-  if (sixes.length > 1) return t("rolloff.many", { n: sixes.length });
-  return t("rolloff.winner", { name: seatName(view, sixes[0] as number) });
 }

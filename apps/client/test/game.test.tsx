@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { diffViews } from "../src/game/feedback";
-import { passLabel, passTakesPenalty } from "../src/game/staging";
+import { passTakesPenalty, submitLabel } from "../src/game/staging";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
 import { _resetMemoryForTests, saveSession } from "../src/session";
@@ -105,7 +105,7 @@ describe("Game screen", () => {
   it("ACTION_1 before and after submitting", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
-    expect(status()).toBe("Step 1 of 2 · Mark the white total 8 in any row, or skip.");
+    expect(status()).toBe("Pick the white total 8 and / or a white + colour box, then Submit.");
     act(() => {
       applyView(
         makeGameView({
@@ -123,13 +123,14 @@ describe("Game screen", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    expect(screen.getByText("Mark Red 8")).toBeTruthy();
+    expect(screen.getByText("Submit")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(screen.queryByText("Mark Red 8")).toBeNull();
+    expect(screen.queryByText("Submit")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
     expect(sent).toHaveLength(0);
   });
 
-  it("ACTION_2: tap stages, second tap sends with turn and whiteDie, Esc cancels", () => {
+  it("ACTION_2: tap stages, Submit sends with turn and whiteDie, Esc cancels, tapping again unselects", () => {
     show(
       makeGameView({
         phase: "ACTION_2",
@@ -142,31 +143,35 @@ describe("Game screen", () => {
     mount();
     const box = screen.getByLabelText("Green 9, can mark");
     fireEvent.click(box);
-    expect(screen.getByText("Mark Green 9")).toBeTruthy();
+    expect(screen.getByText("Submit")).toBeTruthy();
     expect(sent).toHaveLength(0);
     expect(screen.getByLabelText("Green 9, can mark, step 2").getAttribute("aria-pressed")).toBe(
       "true",
     );
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByText("Mark Green 9")).toBeNull();
+    expect(screen.queryByText("Submit")).toBeNull();
     fireEvent.click(screen.getByLabelText("Green 9, can mark"));
     fireEvent.click(screen.getByLabelText("Green 9, can mark, step 2"));
+    expect(screen.queryByText("Submit")).toBeNull();
+    expect(sent).toHaveLength(0);
+    fireEvent.click(screen.getByLabelText("Green 9, can mark"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
   });
 
-  it("Pass sends at once (one click, one command) and shows the penalty wording", () => {
+  it("Pass (−5) sends at once (one click, one command) and shows the penalty wording", () => {
     const v = makeGameView({ phase: "ACTION_2" });
     show(v);
     mount();
     expect(passTakesPenalty(v)).toBe(true);
-    expect(passLabel(v)).toBe("Take penalty (−5)");
-    const btn = screen.getByText("Take penalty (−5)") as HTMLButtonElement;
+    expect(submitLabel(v, false)).toBe("Pass (−5)");
+    const btn = screen.getByText("Pass (−5)") as HTMLButtonElement;
+    expect(btn.classList.contains("is-danger")).toBe(true);
     fireEvent.click(btn);
     fireEvent.click(btn);
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "PASS" }]);
     expect(screen.queryByText("Pass and take −5?")).toBeNull();
-    expect(screen.queryByText("Tap again to pass")).toBeNull();
-    expect(btn.disabled).toBe(true);
+    expect((screen.getByText("Sent…") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("the pass label is the penalty text exactly when passing would cost −5", () => {
@@ -179,17 +184,16 @@ describe("Game screen", () => {
       ],
     });
     expect(passTakesPenalty(marked)).toBe(false);
-    expect(passLabel(marked)).toBe("Pass on colour");
-    // Step 1 skip never costs on its own.
+    expect(submitLabel(marked, false)).toBe("Pass");
+    // Active, nothing staged, both actions open: Pass (−5) (D-L4).
     const step1 = makeGameView({ legal1: ["RED"] });
-    expect(passTakesPenalty(step1)).toBe(false);
-    expect(passLabel(step1)).toBe("Pass on white");
+    expect(passTakesPenalty(step1)).toBe(true);
+    expect(submitLabel(step1, false)).toBe("Pass (−5)");
+    // Something staged: Submit.
+    expect(submitLabel(step1, true)).toBe("Submit");
     // Passive player: plain Pass.
     const passive = makeGameView({ active: 1, legal1: ["RED"] });
-    expect(passLabel(passive)).toBe("Pass on white");
-    // Staged step-1 mark: step 2 pass is free.
-    const staged = { color: "RED" as const, number: 8 };
-    expect(passTakesPenalty(step1, staged)).toBe(false);
+    expect(submitLabel(passive, false)).toBe("Pass");
     // Nothing marked and nothing staged at step 2 (ACTION_1 early): penalty.
     const early = makeGameView({
       decision: true,
@@ -203,7 +207,7 @@ describe("Game screen", () => {
   it("step texts: active step 1, active step 2, passive", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
-    expect(status()).toBe("Step 1 of 2 · Mark the white total 8 in any row, or skip.");
+    expect(status()).toBe("Pick the white total 8 and / or a white + colour box, then Submit.");
     cleanup();
     _resetStoreForTests();
     show(makeGameView({ phase: "ACTION_2", version: 6 }));
@@ -216,16 +220,15 @@ describe("Game screen", () => {
     expect(status()).toBe("Mark the white total 8 in any row, or pass (no penalty).");
   });
 
-  it("early Action 2: step 1 then step 2 staged, one Confirm sends one turn command", () => {
+  it("white then colour staged, one Submit sends one turn command", () => {
     // White 3 + 5 = 8, red 2: red 8 is the white sum; red 5 (3+2) is left of it.
     // Green 6: 3+6 = 9, 5+6 = 11. Stage Red 8 (step 1), then Green 11 (step 2).
     show(makeGameView({ legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    expect(status()).toContain("Step 2 of 2");
     fireEvent.click(screen.getByLabelText("Green 11, can mark"));
     expect(sent).toHaveLength(0);
-    fireEvent.click(screen.getByText("Confirm both marks"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(sent).toEqual([
       {
         type: "turn",
@@ -236,11 +239,11 @@ describe("Game screen", () => {
     ]);
   });
 
-  it("early Action 2: a staged step 1 then Pass sends step 1 mark + step 2 pass together", () => {
+  it("a staged white box alone: Submit sends step 1 mark + step 2 pass together", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    fireEvent.click(screen.getByText("Pass on colour"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(sent).toEqual([
       {
         type: "turn",
@@ -251,20 +254,19 @@ describe("Game screen", () => {
     ]);
   });
 
-  it("step 1 alone: tapping the staged box twice sends action1, and Skip sends action1 PASS once", () => {
-    show(makeGameView({ legal1: ["RED"] }));
+  it("passive player: Submit sends action1 MARK, Pass sends action1 PASS once", () => {
+    show(makeGameView({ active: 1, legal1: ["RED"] }));
     mount();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
-    fireEvent.click(screen.getByLabelText("Red 8, can mark, step 1"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(sent).toEqual([{ type: "action1", turn: 9, kind: "MARK", color: "RED" }]);
     cleanup();
     sent.length = 0;
     _resetStoreForTests();
-    show(makeGameView({ legal1: ["RED"], version: 8 }));
+    show(makeGameView({ active: 1, legal1: ["RED"], version: 8 }));
     mount();
-    const skip = screen.getByText("Pass on white");
-    fireEvent.click(skip);
-    fireEvent.click(skip);
+    fireEvent.click(screen.getByText("Pass"));
+    fireEvent.click(screen.getByText("Sent…"));
     expect(sent).toEqual([{ type: "action1", turn: 9, kind: "PASS" }]);
   });
 
@@ -278,7 +280,7 @@ describe("Game screen", () => {
     mount();
     expect(status()).toContain("Step 2 of 2");
     fireEvent.click(screen.getByLabelText("Green 11, can mark"));
-    fireEvent.click(screen.getByLabelText("Green 11, can mark, step 2"));
+    fireEvent.click(screen.getByText("Submit"));
     expect(sent).toEqual([{ type: "action2", turn: 9, kind: "MARK", whiteDie: 1, color: "GREEN" }]);
   });
 
@@ -313,8 +315,12 @@ describe("Game screen", () => {
       const { container } = mount();
       const tray = container.querySelector(".tray") as Element;
       const roll = screen.getByRole("button", { name: /roll/i });
-      expect(tray.nextElementSibling?.contains(roll)).toBe(true);
-      expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(false);
+      if (w >= 1280) {
+        expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(true);
+      } else {
+        expect(tray.nextElementSibling?.contains(roll)).toBe(true);
+        expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(false);
+      }
       cleanup();
       _resetStoreForTests();
     }
@@ -331,13 +337,13 @@ describe("Game screen", () => {
     act(() => {
       vi.advanceTimersByTime(3500);
     });
-    expect(document.querySelectorAll(".g-box.is-legal")).toHaveLength(1);
+    expect(document.querySelectorAll(".g-box.is-cw")).toHaveLength(1);
   });
 
   it("a resync view shows legal boxes at once", () => {
     show(makeGameView({ legal1: ["RED"] }));
     mount();
-    expect(document.querySelectorAll(".g-box.is-legal")).toHaveLength(1);
+    expect(document.querySelectorAll(".g-box.is-cw")).toHaveLength(1);
   });
 
   it("a locked row is closed and its die removed", () => {
@@ -388,7 +394,7 @@ describe("Game screen", () => {
     expect(chip?.querySelector(".g-chip-pen")?.getAttribute("data-penalties")).toBe("2");
   });
 
-  it("GAME_OVER with a tie", () => {
+  it("GAME_OVER with a tie", async () => {
     show(
       makeGameView({
         phase: "GAME_OVER",
@@ -406,13 +412,14 @@ describe("Game screen", () => {
       }),
     );
     mount();
+    await screen.findByRole("dialog", { name: "Results" }); // the results are a lazy chunk
     expect(document.querySelector(".g-winner")?.textContent).toContain("Tie: ");
     expect(screen.getByText("Two rows locked")).toBeTruthy();
     expect(document.querySelectorAll("tr[data-winner]")).toHaveLength(2);
     // Every player's full read-only card is revealed.
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
-    expect(screen.getByText("Rematch")).toBeTruthy();
-    expect(screen.getByText("Back to home")).toBeTruthy();
+    expect(screen.getAllByText("Rematch").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Back to home").length).toBeGreaterThan(0);
   });
 });
 

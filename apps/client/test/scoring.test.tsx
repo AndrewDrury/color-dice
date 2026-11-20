@@ -248,3 +248,16 @@ describe("lock progress pips", () => {
     expect(c.querySelector(".g-lockbox.is-available")).toBeTruthy();
   });
 });
+
+describe("totals carry no colour letters (T-NEW-20)", () => {
+  it("footer equation: numbers only, colour name stays accessible", () => {
+    const { container } = render(sheet(0));
+    const eq = container.querySelector(".g-eq") as HTMLElement;
+    const texts = [...eq.querySelectorAll(".g-score")].flatMap((n) =>
+      [...n.childNodes].map((c) => c.textContent?.trim() ?? ""),
+    );
+    for (const letter of ["R", "Y", "G", "B"]) expect(texts).not.toContain(letter);
+    expect(eq.querySelector("abbr")).toBeNull();
+    expect(eq.textContent).toContain("red score");
+  });
+});

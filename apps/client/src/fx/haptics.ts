@@ -22,7 +22,9 @@ export const THROTTLE_MS = 40;
 let last = Number.NEGATIVE_INFINITY;
 let switchLabel: HTMLLabelElement | null = null;
 
-function nav(): (Navigator & { userActivation?: { isActive: boolean } }) | null {
+function nav():
+  | (Navigator & { userActivation?: { isActive: boolean; hasBeenActive?: boolean } })
+  | null {
   return typeof navigator === "undefined" ? null : navigator;
 }
 
@@ -74,6 +76,8 @@ export function haptic(name: HapticName): void {
   if (now - last < THROTTLE_MS) return;
   try {
     if (canVibrate()) {
+      // Chrome logs an intervention error for vibrate() before any tap or key press on the page.
+      if (nav()?.userActivation?.hasBeenActive === false) return;
       last = now;
       nav()?.vibrate(PATTERNS[name]);
       return;

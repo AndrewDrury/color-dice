@@ -1,5 +1,13 @@
 import { createGame, expect, joinGame, mark, pass, queueDice, startGame, test } from "./fixtures";
-import { closeAll, expectGameOver, newPlayer, roll, rollFaces, waitForRoller } from "./helpers";
+import {
+  closeAll,
+  expectGameOver,
+  newPlayer,
+  roll,
+  rollFaces,
+  uid,
+  waitForRoller,
+} from "./helpers";
 
 type Move = [color: string, n: number] | null;
 
@@ -35,7 +43,7 @@ test("five players: a double lock in one Action 1 ends the game with 3 locked ro
   const ps = await Promise.all(names.map((n) => newPlayer(browser, n)));
   try {
     const code = await createGame(ps[0]!, {
-      roomName: `Five ${Date.now() % 10000}`,
+      roomName: `Five ${uid()}`,
       password: "pw-five",
       max: 5,
     });
@@ -51,12 +59,13 @@ test("five players: a double lock in one Action 1 ends the game with 3 locked ro
       expect(await waitForRoller(ps)).toBe(active);
       await roll(active.page);
       const moves = MOVES[turn]!;
-      for (let i = 0; i < 5; i++) {
-        const m = moves[i];
-        if (m) await mark(ps[i]!.page, m[0], m[1]);
-        else await pass(ps[i]!.page);
-      }
-      if (turn < SUMS.length) await pass(active.page); // Action 2
+      // Action 1 is simultaneous: the five players decide at the same time, on their own pages.
+      await Promise.all(
+        ps.map((p, i) => {
+          const m = moves[i];
+          return m ? mark(p.page, m[0], m[1]) : pass(p.page);
+        }),
+      );
     }
 
     for (const p of ps) {

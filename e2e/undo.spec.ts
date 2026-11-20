@@ -1,11 +1,12 @@
-import { createGame, expect, joinGame, newPlayer, queueDice, roll, test } from "./fixtures";
+import { createGame, expect, joinGame, queueDice, roll, test } from "./fixtures";
+import { newPlayer, uid } from "./helpers";
 
-test("undo removes a staged mark and stays in the current turn", async ({ browser }) => {
+test("undo removes a staged mark and stays in the current turn @smoke", async ({ browser }) => {
   const host = await newPlayer(browser, "UndoHost");
   const guest = await newPlayer(browser, "UndoGuest");
   try {
     const code = await createGame(host, {
-      roomName: "Undo turn",
+      roomName: `Undo ${uid()}`,
       password: "undo-pass",
       max: 2,
       listed: false,
@@ -14,9 +15,9 @@ test("undo removes a staged mark and stays in the current turn", async ({ browse
     await joinGame(guest, code, "undo-pass");
     await roll(host.page);
     await host.page.getByRole("button", { name: /Red 8, can mark/ }).click();
-    await expect(host.page.getByRole("button", { name: "Undo" })).toBeVisible();
-    await host.page.getByRole("button", { name: "Undo" }).click();
-    await expect(host.page.getByRole("button", { name: "Undo" })).toBeHidden();
+    await expect(host.page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+    await host.page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(host.page.getByRole("button", { name: "Undo", exact: true })).toBeHidden();
   } finally {
     await host.context.close();
     await guest.context.close();

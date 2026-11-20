@@ -1,0 +1,332 @@
+/*
+ * Themes (T-NEW-16, D-L6/D-L7). <html data-theme="<id>" data-scheme="light|dark"> is set by
+ * App.applyPrefs. data-scheme picks the light or dark base in tokens.css; each theme below then
+ * overrides surfaces, text and accent only (row, dice and profile colours never change) and may
+ * add a tiled SVG pattern. Values are mirrored in contrast.ts and checked by contrast.test.ts.
+ * `.th-<id>` gives a ThemePicker swatch the same variables so it previews the theme.
+ */
+
+/* Swatches never inherit the page's pattern (rule must come before the .th-* blocks). */
+.tp-swatch {
+  --bg-pattern: none;
+}
+
+/* Low-contrast pattern on a fixed layer behind everything; surfaces stay opaque on top. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg-pattern, none);
+}
+
+:root[data-theme="hearts"],
+.th-hearts {
+  --table: #f8e1e8;
+  --paper: #fff8fa;
+  --ink: #2a1a22;
+  --ink-muted: #6a5260;
+  --accent: #c0245e;
+  --on-accent: #ffffff;
+  --danger: #b3342a;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M10 16c-5-3.5-4.6-8-2-8 1 0 1.7.7 2 1.6.3-.9 1-1.6 2-1.6 2.6 0 3 4.5-2 8zm20 20c-5-3.5-4.6-8-2-8 1 0 1.7.7 2 1.6.3-.9 1-1.6 2-1.6 2.6 0 3 4.5-2 8z' fill='none' stroke='%23c0245e' stroke-opacity='.2' stroke-width='1.2' stroke-linejoin='round'/></svg>");
+}
+
+:root[data-theme="midnight"],
+.th-midnight {
+  --table: #0b0b0e;
+  --paper: #18181d;
+  --ink: #f2eee4;
+  --ink-muted: #a8a294;
+  --accent: #d9b65e;
+  --on-accent: #17130a;
+  --danger: #ff7a70;
+  --on-danger: #0b0b0e;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23d9b65e'><path d='M12 0 24 12 12 24 0 12z' fill='none' stroke='%23d9b65e' stroke-opacity='.13' stroke-width='.8'/><circle cx='12' cy='12' r='1.1' fill-opacity='.2'/><circle cx='0' cy='0' r='1.1' fill-opacity='.2'/><circle cx='24' cy='24' r='1.1' fill-opacity='.2'/><circle cx='24' cy='0' r='1.1' fill-opacity='.2'/><circle cx='0' cy='24' r='1.1' fill-opacity='.2'/></svg>");
+}
+
+:root[data-theme="ocean"],
+.th-ocean {
+  --table: #0a2236;
+  --paper: #11314b;
+  --ink: #eaf4fb;
+  --ink-muted: #a3bdd0;
+  --accent: #5cc8e8;
+  --on-accent: #06202f;
+  --danger: #ff8a80;
+  --on-danger: #0a2236;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='20'><path d='M0 10q10-7 20 0t20 0' fill='none' stroke='%235cc8e8' stroke-opacity='.14' stroke-width='1.2'/></svg>");
+}
+
+:root[data-theme="forest"],
+.th-forest {
+  --table: #0f2219;
+  --paper: #183326;
+  --ink: #eef5ef;
+  --ink-muted: #a5bbac;
+  --accent: #7fd18b;
+  --on-accent: #0f2219;
+  --danger: #ff8a80;
+  --on-danger: #0f2219;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><g fill='none' stroke='%237fd18b' stroke-opacity='.16' stroke-width='1.1' stroke-linecap='round'><path d='M11 27 23 11'/><path d='M15 22q-6-1-7-7 6 0 7 7zm4-5q0-6 6-7 0 6-6 7z'/></g></svg>");
+}
+
+:root[data-theme="lavender"],
+.th-lavender {
+  --table: #ece5f7;
+  --paper: #fcfaff;
+  --ink: #241e33;
+  --ink-muted: #605870;
+  --accent: #6a43c9;
+  --on-accent: #ffffff;
+  --danger: #b3342a;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' fill='%236a43c9' fill-opacity='.13'><path d='M10 4q1 5 5 6-4 1-5 6-1-5-5-6 4-1 5-6zm16 17q.7 3 3 3.5-2.3.5-3 3.5-.7-3-3-3.5 2.3-.5 3-3.5z'/></svg>");
+}
+
+:root[data-theme="sunset"],
+.th-sunset {
+  --table: #ffe7d5;
+  --paper: #fff9f3;
+  --ink: #321d17;
+  --ink-muted: #6d4f43;
+  --accent: #8f3319;
+  --on-accent: #ffffff;
+  --danger: #96261e;
+  --on-danger: #ffffff;
+  --bg-pattern:
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'><g stroke='%23ffd16a' stroke-opacity='.12' stroke-width='1'><path d='M110 110 200 40'/><path d='M110 110 214 78'/><path d='M110 110 220 110'/><path d='M110 110 214 142'/><path d='M110 110 200 180'/><path d='M110 110 168 204'/><path d='M110 110 110 220'/><path d='M110 110 52 204'/><path d='M110 110 20 180'/><path d='M110 110 6 142'/><path d='M110 110 0 110'/><path d='M110 110 6 78'/><path d='M110 110 20 40'/><path d='M110 110 52 16'/><path d='M110 110 110 0'/><path d='M110 110 168 16'/></g><g fill='none' stroke='%23392763' stroke-opacity='.28' stroke-width='2' stroke-linecap='round'><path d='M42 60q7-5 14 0'/><path d='M138 48q7-5 14 0'/></g></svg>"),
+    linear-gradient(180deg, #2b1a4b 0%, #7d276f 40%, #d66a3e 68%, #f8bd5d 100%);
+}
+
+:root[data-theme="sakura"],
+.th-sakura {
+  --table: #f6e6ef;
+  --paper: #fff8fc;
+  --ink: #2d1c28;
+  --ink-muted: #6e5967;
+  --accent: #b0296d;
+  --on-accent: #ffffff;
+  --danger: #ad2e2e;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='%23b0296d' fill-opacity='.16'><circle cx='10' cy='12' r='2.2'/><circle cx='14' cy='10' r='2.2'/><circle cx='16' cy='14' r='2.2'/><circle cx='12' cy='16' r='2.2'/><circle cx='31' cy='30' r='2.4'/><circle cx='35' cy='28' r='2.4'/><circle cx='37' cy='32' r='2.4'/><circle cx='33' cy='34' r='2.4'/></g></svg>");
+}
+
+:root[data-theme="candy"],
+.th-candy {
+  --table: #f8ecff;
+  --paper: #fffaff;
+  --ink: #2b2335;
+  --ink-muted: #665d73;
+  --accent: #7a38c2;
+  --on-accent: #ffffff;
+  --danger: #b3342a;
+  --on-danger: #ffffff;
+  --bg-pattern: repeating-linear-gradient(
+    135deg,
+    rgb(122 56 194 / 11%) 0 12px,
+    rgb(255 255 255 / 0%) 12px 24px
+  );
+}
+
+:root[data-theme="synthwave"],
+.th-synthwave {
+  --table: #160f26;
+  --paper: #221736;
+  --ink: #f3ecff;
+  --ink-muted: #b2a5c8;
+  --accent: #ff4ecb;
+  --on-accent: #21061b;
+  --danger: #ff7f96;
+  --on-danger: #2a1020;
+  --bg-pattern:
+    linear-gradient(rgb(255 78 203 / 18%) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(90deg, rgb(111 76 255 / 18%) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(180deg, #1a1030, #100b24);
+}
+
+:root[data-theme="aurora"],
+.th-aurora {
+  --table: #071a1f;
+  --paper: #0f2a31;
+  --ink: #e9f8f9;
+  --ink-muted: #9ec3c7;
+  --accent: #39d6a5;
+  --on-accent: #042218;
+  --danger: #ff8a80;
+  --on-danger: #07201b;
+  --bg-pattern:
+    radial-gradient(90px 50px at 20% 20%, rgb(57 214 165 / 24%), transparent),
+    radial-gradient(110px 60px at 80% 35%, rgb(79 181 255 / 20%), transparent),
+    linear-gradient(180deg, #041117, #08212a);
+}
+
+:root[data-theme="desert"],
+.th-desert {
+  --table: #f2dfc8;
+  --paper: #fff7ed;
+  --ink: #342315;
+  --ink-muted: #725943;
+  --accent: #9f5a22;
+  --on-accent: #ffffff;
+  --danger: #a7332a;
+  --on-danger: #ffffff;
+  --bg-pattern:
+    radial-gradient(120px 28px at 25% 84%, rgb(159 90 34 / 18%), transparent),
+    radial-gradient(130px 30px at 70% 92%, rgb(140 79 34 / 14%), transparent),
+    linear-gradient(180deg, #f4dcc1, #e6c7a3);
+}
+
+:root[data-theme="coffee"],
+.th-coffee {
+  --table: #1b140f;
+  --paper: #2a1f17;
+  --ink: #f7eee7;
+  --ink-muted: #c0aa97;
+  --accent: #c8843f;
+  --on-accent: #2a1706;
+  --danger: #ff9884;
+  --on-danger: #2a120b;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><g fill='none' stroke='%23c8843f' stroke-opacity='.18' stroke-width='1.2'><ellipse cx='10' cy='10' rx='4.5' ry='3.4'/><ellipse cx='26' cy='24' rx='4.5' ry='3.4'/></g></svg>");
+}
+
+:root[data-theme="mint"],
+.th-mint {
+  --table: #ddf2e9;
+  --paper: #f7fffb;
+  --ink: #173127;
+  --ink-muted: #4f6d61;
+  --accent: #247b5f;
+  --on-accent: #ffffff;
+  --danger: #aa2f2f;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><g fill='none' stroke='%23247b5f' stroke-opacity='.17' stroke-width='1.1' stroke-linecap='round'><path d='M8 24q6-1 7-7-6 0-7 7zm4-3 8-8'/><path d='M22 13q6-1 7-7-6 0-7 7zm4-3-2 2'/></g></svg>");
+}
+
+:root[data-theme="space"],
+.th-space {
+  --table: #070b16;
+  --paper: #12182a;
+  --ink: #edf1ff;
+  --ink-muted: #9ca8c7;
+  --accent: #79a4ff;
+  --on-accent: #0b1738;
+  --danger: #ff8d8d;
+  --on-danger: #1a0e1b;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><g fill='%2379a4ff' fill-opacity='.26'><circle cx='8' cy='10' r='1.2'/><circle cx='20' cy='28' r='1.1'/><circle cx='36' cy='16' r='1.3'/><circle cx='30' cy='36' r='1'/><circle cx='14' cy='40' r='1.1'/></g><circle cx='31' cy='8' r='3.2' fill='none' stroke='%2379a4ff' stroke-opacity='.18' stroke-width='1.1'/></svg>");
+}
+
+:root[data-theme="autumn"],
+.th-autumn {
+  --table: #f4e2d4;
+  --paper: #fff8f1;
+  --ink: #352317;
+  --ink-muted: #71594b;
+  --accent: #a24a20;
+  --on-accent: #ffffff;
+  --danger: #94271e;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><g fill='%23a24a20' fill-opacity='.15'><path d='M10 10c5 2 7 6 4 10-4-1-8-4-9-8 1-1 3-2 5-2zm20 14c4 2 6 5 3 9-4-1-7-3-8-7 1-1 2-2 5-2z'/></g></svg>");
+}
+
+:root[data-theme="ice"],
+.th-ice {
+  --table: #e7f3fb;
+  --paper: #f8fdff;
+  --ink: #1a2e3d;
+  --ink-muted: #526a7a;
+  --accent: #1f6c9f;
+  --on-accent: #ffffff;
+  --danger: #b3342a;
+  --on-danger: #ffffff;
+  --bg-pattern: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' stroke='%231f6c9f' stroke-opacity='.16' fill='none' stroke-width='1'><path d='M18 6v24M6 18h24M10 10l16 16M26 10 10 26'/></svg>");
+}
+
+:root[data-theme="graphite"],
+.th-graphite {
+  --table: #111317;
+  --paper: #1b1f26;
+  --ink: #eef1f5;
+  --ink-muted: #a2a8b3;
+  --accent: #8da2c6;
+  --on-accent: #0f1725;
+  --danger: #ff8a80;
+  --on-danger: #1b1111;
+  --bg-pattern:
+    linear-gradient(rgb(141 162 198 / 11%) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgb(141 162 198 / 11%) 1px, transparent 1px) 0 0 / 24px 24px;
+}
+
+/* Classic swatches (the page itself uses tokens.css as is). */
+.th-classic-light {
+  --table: #efe9df;
+  --accent: #5b5bf0;
+}
+.th-classic-dark {
+  --table: #0e131c;
+  --accent: #8c8cff;
+}
+.tp-swatch.th-classic {
+  --accent: #5b5bf0;
+  background: linear-gradient(135deg, #efe9df 50%, #0e131c 50%);
+}
+
+/* ---------- ThemePicker (lazy component; styles here so Settings and profile share them) ---------- */
+.tp {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tap), 1fr));
+  max-width: calc((var(--tap) * 6) + (var(--s2) * 5));
+  gap: var(--s2);
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.tp-swatch {
+  position: relative;
+  display: block;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  cursor: pointer;
+  background:
+    var(--bg-pattern) center / 28px,
+    var(--table);
+  box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.5);
+}
+/* Accent hint: a small dot in the theme's accent colour. */
+.tp-swatch::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tp-swatch:has(input:checked) {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.tp-swatch:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.tp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.tp-legend {
+  grid-column: 1 / -1;
+  font-weight: var(--fw-bold);
+  padding: 0;
+  margin-bottom: var(--s2);
+}

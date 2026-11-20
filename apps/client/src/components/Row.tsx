@@ -21,6 +21,8 @@ export interface RowProps {
   lockedColors: readonly Color[];
   /** Numbers of this row that are legal right now (empty until the dice landed). */
   legal: readonly number[];
+  /** The legal numbers that are colour (white + colour die) moves, not the white sum. */
+  colour?: readonly number[];
   /** Staged numbers in the order they would be marked (step 1, then step 2). */
   stagedNumbers: readonly number[];
   /** Step (1/2) of each staged number, same order; empty for non-active players. */
@@ -31,6 +33,7 @@ export interface RowProps {
   shake: boolean;
   glint: boolean;
   onPick: (color: Color, number: number) => void;
+  onHover?: (color: Color, number: number | null) => void;
 }
 
 /** Points a mark on `n` would add to this row (the lock box counts when it locks). */
@@ -116,6 +119,7 @@ function RowImpl(p: RowProps) {
             number={n}
             status={boxStatus(engineRow, i, p.lockedColors)}
             legal={p.legal.includes(n)}
+            colour={p.colour?.includes(n)}
             staged={p.stagedNumbers.includes(n)}
             step={p.stagedSteps?.[p.stagedNumbers.indexOf(n)]}
             ghost={p.ghostNumbers.includes(n)}
@@ -123,6 +127,7 @@ function RowImpl(p: RowProps) {
             disabled={p.disabled}
             shake={p.shake && p.stagedNumbers.includes(n)}
             onPick={() => p.onPick(p.color, n)}
+            onHover={(on) => p.onHover?.(p.color, on ? n : null)}
           />
         );
       })}
@@ -166,6 +171,7 @@ const rowEqual = (a: RowProps, b: RowProps) =>
   a.row.lockCrossed === b.row.lockCrossed &&
   a.lockedColors.join() === b.lockedColors.join() &&
   same(a.legal, b.legal) &&
+  same(a.colour ?? [], b.colour ?? []) &&
   same(a.flash, b.flash) &&
   a.stagedNumbers.join() === b.stagedNumbers.join() &&
   a.stagedSteps?.join() === b.stagedSteps?.join() &&
@@ -173,7 +179,8 @@ const rowEqual = (a: RowProps, b: RowProps) =>
   a.disabled === b.disabled &&
   a.shake === b.shake &&
   a.glint === b.glint &&
-  a.onPick === b.onPick;
+  a.onPick === b.onPick &&
+  a.onHover === b.onHover;
 
 /** Re-renders only when a prop that changes the row changed (preact/compat's memo is not worth its bytes). */
 export class Row extends Component<RowProps> {
