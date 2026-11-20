@@ -864,6 +864,7 @@
   }
   .g-game {
     gap: 4px;
+    padding-top: 4px;
   }
   .g-actionbar {
     padding-block: 2px;
