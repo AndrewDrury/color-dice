@@ -3,14 +3,15 @@ import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Avatar } from "../components/Avatar";
 import { Button } from "../components/Button";
-import { Celebration, celebrationKey, claimCelebration } from "../components/Celebration";
 import { ChatControls } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
+import { ResultsReveal } from "../components/ResultsReveal";
 import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
 import { Sheet } from "../components/Sheet";
 import { reducedMotion } from "../fx/motion";
 import { hasCard, seatInfo, tieInfo } from "../game/model";
 import { endReasonText } from "../game/status";
+import { celebrationKey, claimCelebration } from "../game/useReveal";
 import { type GameResult, recordGame } from "../history";
 import { t, useT } from "../i18n";
 import "../styles/opponents.css";
@@ -90,6 +91,16 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   const ranks = new Map(
     rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
   );
+  const actions = (
+    <>
+      {view.you.host ? (
+        <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
+          {t("over.rematch")}
+        </Button>
+      ) : null}
+      <Button onClick={onHome}>{t("over.home")}</Button>
+    </>
+  );
   return (
     <div class="g-backdrop g-over">
       <section
@@ -154,16 +165,13 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
         <div class="chat-over">
           <ChatControls send={send} />
         </div>
-        <div class="g-over-actions">
-          {view.you.host ? (
-            <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
-              {t("over.rematch")}
-            </Button>
-          ) : null}
-          <Button onClick={onHome}>{t("over.home")}</Button>
+        <div class="g-over-actions" hidden={celebrating}>
+          {actions}
         </div>
       </section>
-      {celebrating ? <Celebration view={view} onDone={() => setCelebrating(false)} /> : null}
+      {celebrating ? (
+        <ResultsReveal view={view} onDone={() => setCelebrating(false)} actions={actions} />
+      ) : null}
     </div>
   );
 }

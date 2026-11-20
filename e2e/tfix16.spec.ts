@@ -51,10 +51,14 @@ for (const size of SIZES) {
         const cel = (p: Page) => p.getByTestId("celebration");
         await expect(cel(a.page)).toHaveCount(1);
         const t0 = Date.now();
-        // Alma: one Skip tap. Boris: do nothing, it must clear by itself.
-        await a.page.getByRole("button", { name: "Skip" }).click();
+        // Alma: Skip (when motion plays) then the cards button. Boris: do nothing, the reveal completes by itself.
+        const skip = a.page.getByTestId("rv-skip");
+        if (await skip.isVisible()) await skip.click();
+        await a.page.getByRole("button", { name: "Show full score cards" }).click();
         await expect(cel(a.page)).toHaveCount(0, { timeout: 2000 });
-        await expect(cel(b.page)).toHaveCount(0, { timeout: 60_000 });
+        await expect(b.page.getByRole("button", { name: "Show full score cards" })).toBeVisible({
+          timeout: 60_000,
+        });
         console.log(
           `CEL ${size.w}x${size.h} ${motion}: skip ok; auto-dismiss after ${Date.now() - t0} ms`,
         );

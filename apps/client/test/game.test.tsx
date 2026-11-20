@@ -390,7 +390,7 @@ describe("Game screen", () => {
     expect(chip?.querySelector(".g-chip-pen")?.getAttribute("data-penalties")).toBe("2");
   });
 
-  it("GAME_OVER with a tie", () => {
+  it("GAME_OVER with a tie", async () => {
     show(
       makeGameView({
         phase: "GAME_OVER",
@@ -408,13 +408,14 @@ describe("Game screen", () => {
       }),
     );
     mount();
+    await screen.findByRole("dialog", { name: "Results" }); // the results are a lazy chunk
     expect(document.querySelector(".g-winner")?.textContent).toContain("Tie: ");
     expect(screen.getByText("Two rows locked")).toBeTruthy();
     expect(document.querySelectorAll("tr[data-winner]")).toHaveLength(2);
     // Every player's full read-only card is revealed.
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
-    expect(screen.getByText("Rematch")).toBeTruthy();
-    expect(screen.getByText("Back to home")).toBeTruthy();
+    expect(screen.getAllByText("Rematch").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Back to home").length).toBeGreaterThan(0);
   });
 });
 

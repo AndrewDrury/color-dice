@@ -35,7 +35,7 @@ const defaultEnv = (): UpdateEnv => ({
   reload: (url) => globalThis.location.replace(url),
   now: () => Date.now(),
   busy: isBusy,
-  celebrating: () => document.querySelector(".cel") !== null,
+  celebrating: () => document.querySelector(".rv") !== null,
 });
 
 /** Staged marks (Box `is-staged`) or a focused text field/textarea. Read-only DOM probe. */

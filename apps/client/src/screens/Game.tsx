@@ -46,7 +46,6 @@ import "../styles/flow.css";
 import "../styles/game.css";
 import "../styles/scoring.css";
 import { GameHint } from "./GameHint";
-import { GameOver } from "./GameOver";
 
 /** Fallback if the tray never reports landing (so legal boxes can't stay dark). */
 const LAND_FALLBACK_MS = 4000;
@@ -249,6 +248,7 @@ function Board({
     import("../components/lateUi").then(setLate);
   }, []);
   const SummaryCard = late?.TurnSummary;
+  const GameOverView = late?.GameOver; // lazy: the results + reveal only run at game over
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
   const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
@@ -431,8 +431,8 @@ function Board({
           }}
         />
       ) : null}
-      {gameOver ? (
-        <GameOver
+      {gameOver && GameOverView ? (
+        <GameOverView
           view={view}
           rematchBusy={rematchBusy}
           send={conn.send}

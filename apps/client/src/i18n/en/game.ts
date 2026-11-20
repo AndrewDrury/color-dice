@@ -182,11 +182,10 @@ export const game = {
   "celebrate.label": "Winner reveal",
   "celebrate.title": "And the winner is…",
   "celebrate.scores": "And the scores are…",
-  "celebrate.gif": "Winner celebration",
+  "celebrate.showCards": "Show full score cards",
   "celebrate.skip": "Skip",
   "celebrate.youWin": "You win!",
   "celebrate.points": "{n} points",
-  "celebrate.cat": "A cat laughing so hard it cries. Tap to hear it again.",
   "over.equationAria":
     "{name}: red {r}, yellow {y}, green {g}, blue {b}, penalties {p}, total {total}",
 } as const;

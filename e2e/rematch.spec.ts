@@ -2,9 +2,11 @@ import type { Browser, Page } from "@playwright/test";
 import { createGame, expect, joinGame, type Player, queueDice, startGame, test } from "./fixtures";
 import { closeAll, expectGameOver, newPlayer, roll, uid, waitForRoller } from "./helpers";
 
-/** The winner reveal covers the results until it ends; tap Skip like a player would. */
+/** The score reveal covers the results until it is closed: Skip (if still running), then "Show full score cards". */
 async function skipCelebration(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Skip" }).click();
+  const skip = page.getByTestId("rv-skip");
+  if (await skip.isVisible()) await skip.click();
+  await page.getByRole("button", { name: "Show full score cards" }).click();
   await expect(page.getByTestId("celebration")).toHaveCount(0);
 }
 

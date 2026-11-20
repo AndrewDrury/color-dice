@@ -185,11 +185,10 @@ export const game: Record<keyof typeof en, string> = {
   "celebrate.label": "Anuncio del ganador",
   "celebrate.title": "Y el ganador es…",
   "celebrate.scores": "Y las puntuaciones son…",
-  "celebrate.gif": "Celebración del ganador",
+  "celebrate.showCards": "Ver las hojas de puntuación completas",
   "celebrate.skip": "Saltar",
   "celebrate.youWin": "¡Ganaste!",
   "celebrate.points": "{n} puntos",
-  "celebrate.cat": "Un gato que se ríe hasta llorar. Toca para oírlo otra vez.",
   "over.equationAria":
     "{name}: rojo {r}, amarillo {y}, verde {g}, azul {b}, penalizaciones {p}, total {total}",
 };
