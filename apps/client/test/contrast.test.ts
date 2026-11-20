@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio, PAIRS, type Theme, TOKENS } from "../src/styles/contrast";
+import { THEMES } from "../src/prefs";
+import {
+  contrastRatio,
+  PAIRS,
+  THEME_BASE,
+  THEME_OVERRIDES,
+  type Theme,
+  TOKENS,
+  themeTokens,
+} from "../src/styles/contrast";
+import themesCss from "../src/styles/themes.css?raw";
 import css from "../src/styles/tokens.css?raw";
 
 const themes: Theme[] = ["light", "dark"];
@@ -35,8 +45,8 @@ describe("contrast", () => {
 
   it("contrast.ts matches tokens.css", () => {
     const light = block(":root");
-    const dark = block(':root[data-theme="dark"]');
-    const media = block(':root:not([data-theme="light"])');
+    const dark = block(':root[data-scheme="dark"]');
+    const media = block(":root:not([data-scheme])");
     for (const [name, value] of Object.entries(TOKENS.light)) {
       expect(declared(light, name), name).toBe(value.toUpperCase());
     }
@@ -45,5 +55,39 @@ describe("contrast", () => {
       expect(declared(dark, name) ?? declared(light, name), name).toBe(expected);
       expect(declared(media, name) ?? declared(light, name), name).toBe(expected);
     }
+  });
+
+  it("covers every theme id", () => {
+    expect(Object.keys(THEME_BASE).sort()).toEqual([...THEMES].sort());
+  });
+
+  for (const id of THEMES) {
+    const base = THEME_BASE[id] as Theme;
+    for (const { fg, bg, large } of PAIRS[base]) {
+      const min = large ? 3 : 4.5;
+      it(`theme ${id}: ${fg} on ${bg} >= ${min}`, () => {
+        const tok = themeTokens(id);
+        expect(contrastRatio(tok[fg] as string, tok[bg] as string)).toBeGreaterThanOrEqual(min);
+      });
+    }
+  }
+
+  it("themes.css matches the theme overrides in contrast.ts", () => {
+    for (const [id, tokens] of Object.entries(THEME_OVERRIDES)) {
+      const start = themesCss.indexOf(`:root[data-theme="${id}"]`);
+      expect(start, id).toBeGreaterThanOrEqual(0);
+      const text = themesCss.slice(start, themesCss.indexOf("--bg-pattern", start));
+      for (const [name, value] of Object.entries(tokens)) {
+        expect(declared(text, name), `${id} ${name}`).toBe(value.toUpperCase());
+      }
+    }
+  });
+
+  it("only classic has no pattern and nothing sets a row colour", () => {
+    for (const id of THEMES) {
+      if (id.startsWith("classic")) continue;
+      expect(themesCss).toContain(`:root[data-theme="${id}"]`);
+    }
+    expect(themesCss).not.toMatch(/--(row|die)-/);
   });
 });

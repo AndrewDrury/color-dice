@@ -9,8 +9,8 @@ export const settings = {
   "settings.system": "System",
   "settings.reduced": "Reduced",
   "settings.full": "Full",
-  "settings.light": "Light",
-  "settings.dark": "Dark",
+  "settings.themes":
+    "Classic (auto),Classic light,Classic dark,Hearts,Midnight,Ocean,Forest,Lavender,Sunset",
   "settings.auto": "Auto",
   "settings.help": "How to play",
   "settings.keys": "Keyboard shortcuts",

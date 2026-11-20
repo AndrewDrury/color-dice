@@ -55,4 +55,5 @@ export const waiting: Record<keyof typeof en, string> = {
   "profile.colors": "Corail,Ambre,Citron vert,Sarcelle,Ciel,Indigo,Violet,Rose,Ardoise,Marron",
   "profile.chooseColor": "Choisir la couleur",
   "profile.chooseAvatar": "Choisir l'avatar",
+  "profile.chooseTheme": "Choisir le thème",
 };

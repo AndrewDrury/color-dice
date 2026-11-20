@@ -135,6 +135,10 @@ export const PAIRS: Record<Theme, ContrastPair[]> = {
 
 function rowPairs(): ContrastPair[] {
   return [
+    // Focus ring and selected-swatch outline (graphics: 3:1) on page and card surfaces.
+    { fg: "--accent", bg: "--table", large: true },
+    { fg: "--accent", bg: "--paper", large: true },
+    { fg: "--ink", bg: "--table", large: true },
     // Footer total badge (K3.4): paper text on an ink pill.
     { fg: "--paper", bg: "--ink" },
     // White dice pips (graphics: 3:1).
@@ -168,4 +172,89 @@ export function contrastRatio(a: string, b: string): number {
   const la = luminance(a);
   const lb = luminance(b);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/**
+ * T-NEW-16 themes (D-L6/D-L7): each is a light or dark base plus surface/text/accent overrides.
+ * Mirrored in themes.css (checked by contrast.test.ts). Row, dice and profile colours never
+ * change. classic, classic-light and classic-dark are the plain bases (no overrides, no pattern).
+ */
+export const THEME_BASE: Record<string, Theme> = {
+  classic: "light",
+  "classic-light": "light",
+  "classic-dark": "dark",
+  hearts: "light",
+  midnight: "dark",
+  ocean: "dark",
+  forest: "dark",
+  lavender: "light",
+  sunset: "light",
+};
+
+export const THEME_OVERRIDES: Record<string, Record<string, string>> = {
+  hearts: {
+    "--table": "#F8E1E8",
+    "--paper": "#FFF8FA",
+    "--ink": "#2A1A22",
+    "--ink-muted": "#6A5260",
+    "--accent": "#C0245E",
+    "--on-accent": "#FFFFFF",
+    "--danger": "#B3342A",
+    "--on-danger": "#FFFFFF",
+  },
+  midnight: {
+    "--table": "#0B0B0E",
+    "--paper": "#18181D",
+    "--ink": "#F2EEE4",
+    "--ink-muted": "#A8A294",
+    "--accent": "#D9B65E",
+    "--on-accent": "#17130A",
+    "--danger": "#FF7A70",
+    "--on-danger": "#0B0B0E",
+  },
+  ocean: {
+    "--table": "#0A2236",
+    "--paper": "#11314B",
+    "--ink": "#EAF4FB",
+    "--ink-muted": "#A3BDD0",
+    "--accent": "#5CC8E8",
+    "--on-accent": "#06202F",
+    "--danger": "#FF8A80",
+    "--on-danger": "#0A2236",
+  },
+  forest: {
+    "--table": "#0F2219",
+    "--paper": "#183326",
+    "--ink": "#EEF5EF",
+    "--ink-muted": "#A5BBAC",
+    "--accent": "#7FD18B",
+    "--on-accent": "#0F2219",
+    "--danger": "#FF8A80",
+    "--on-danger": "#0F2219",
+  },
+  lavender: {
+    "--table": "#ECE5F7",
+    "--paper": "#FCFAFF",
+    "--ink": "#241E33",
+    "--ink-muted": "#605870",
+    "--accent": "#6A43C9",
+    "--on-accent": "#FFFFFF",
+    "--danger": "#B3342A",
+    "--on-danger": "#FFFFFF",
+  },
+  sunset: {
+    "--table": "#FBE3CF",
+    "--paper": "#FFF9F3",
+    "--ink": "#2E1E14",
+    "--ink-muted": "#6B5343",
+    "--accent": "#B0441A",
+    "--on-accent": "#FFFFFF",
+    "--danger": "#A3261C",
+    "--on-danger": "#FFFFFF",
+  },
+};
+
+/** Resolved opaque tokens for a theme id. */
+export function themeTokens(id: string): Record<string, string> {
+  return { ...TOKENS[THEME_BASE[id] ?? "light"], ...THEME_OVERRIDES[id] };
 }

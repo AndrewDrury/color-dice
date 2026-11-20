@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Confetti } from "../src/components/Confetti";
-import { Settings } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import { handleKey, type KeyActions } from "../src/fx/keyboard";
 import { trackTabAttention } from "../src/fx/tabAttention";
 import { holdWakeLock } from "../src/fx/wakeLock";
@@ -26,12 +26,12 @@ describe("Settings", () => {
     expect(getPrefs().sound).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "Reduced" }));
     expect(getPrefs().motion).toBe("reduced");
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
-    expect(getPrefs().theme).toBe("dark");
+    fireEvent.click(screen.getByRole("radio", { name: "Midnight" }));
+    expect(getPrefs().theme).toBe("midnight");
     expect(JSON.parse(localStorage.getItem("colorDice:prefs") ?? "{}")).toMatchObject({
       sound: false,
       motion: "reduced",
-      theme: "dark",
+      theme: "midnight",
     });
   });
 

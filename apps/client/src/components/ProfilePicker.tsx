@@ -10,6 +10,7 @@ import { t, useT } from "../i18n";
 import { Avatar } from "./Avatar";
 import "../styles/profile.css";
 import { catCaption, REACTION_MOOD_ORDER } from "./CatReaction";
+import { ThemePicker } from "./ThemePicker";
 
 const CATS: readonly ProfileCat[] = [DEFAULT_PROFILE_CAT, ...REACTION_MOOD_ORDER];
 const catName = (c: ProfileCat) => catCaption(c as Reaction).replace("-", " ");
@@ -56,6 +57,7 @@ export function ProfilePicker({
           </label>
         ))}
       </fieldset>
+      <ThemePicker legend={t("profile.chooseTheme")} />
     </div>
   );
 }

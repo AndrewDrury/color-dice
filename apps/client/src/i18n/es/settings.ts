@@ -11,8 +11,8 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.system": "Sistema",
   "settings.reduced": "Reducidas",
   "settings.full": "Completas",
-  "settings.light": "Claro",
-  "settings.dark": "Oscuro",
+  "settings.themes":
+    "Clásico (auto),Clásico claro,Clásico oscuro,Corazones,Medianoche,Océano,Bosque,Lavanda,Atardecer",
   "settings.auto": "Auto",
   "settings.help": "Cómo se juega",
   "settings.keys": "Atajos de teclado",

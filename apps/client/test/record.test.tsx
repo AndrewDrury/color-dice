@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SeatList } from "../src/components/SeatList";
-import { Settings } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import {
   _resetHistoryForTests,
   exportTransferCode,

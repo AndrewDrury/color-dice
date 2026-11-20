@@ -2,7 +2,7 @@ import { CODE_ALPHABET, PASSWORD_MAX, PLAYER_NAME_MAX } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../src/api";
-import { Settings } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import { _resetPrefsForTests } from "../src/prefs";
 import {
   _resetRememberedForTests,

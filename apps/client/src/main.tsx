@@ -1,12 +1,14 @@
 import { render } from "preact";
 import "./styles/tokens.css";
+import "./styles/themes.css";
 import "./styles/app.css";
-import { App } from "./App";
+import { App, startPrefs } from "./App";
 import { initI18n } from "./i18n";
 import { mountLabIfRequested } from "./lab/route";
 import { startRouter } from "./router";
 import { startUpdates } from "./update";
 
+startPrefs(); // theme before anything paints
 startRouter();
 
 const root = document.getElementById("app");

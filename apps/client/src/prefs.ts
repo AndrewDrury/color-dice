@@ -1,7 +1,19 @@
 /** Device preferences (H12). Stored in localStorage with an in-memory fallback, like session.ts. */
 
 export type MotionPref = "system" | "reduced" | "full";
-export type ThemePref = "system" | "light" | "dark";
+/** D-L6/D-L7 theme ids; "classic" follows the system light/dark setting. */
+export const THEMES = [
+  "classic",
+  "classic-light",
+  "classic-dark",
+  "hearts",
+  "midnight",
+  "ocean",
+  "forest",
+  "lavender",
+  "sunset",
+] as const;
+export type ThemePref = (typeof THEMES)[number];
 export type LanguagePref = "auto" | "en" | "fr" | "es";
 
 export interface Prefs {
@@ -29,7 +41,7 @@ export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   haptics: true,
   showChat: true,
   motion: "system",
-  theme: "system",
+  theme: "classic",
   language: "auto",
   lastName: "",
   seenHints: [],
@@ -50,7 +62,6 @@ function storage(): Storage | null {
 }
 
 const MOTIONS: readonly MotionPref[] = ["system", "reduced", "full"];
-const THEMES: readonly ThemePref[] = ["system", "light", "dark"];
 const LANGUAGES: readonly LanguagePref[] = ["auto", "en", "fr", "es"];
 
 /** Storage content is not trusted: keep only well-formed fields, defaults for the rest. */
@@ -62,7 +73,9 @@ function sanitize(data: unknown): Prefs {
   if (typeof d.haptics === "boolean") out.haptics = d.haptics;
   if (typeof d.showChat === "boolean") out.showChat = d.showChat;
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
-  if (THEMES.includes(d.theme as ThemePref)) out.theme = d.theme as ThemePref;
+  // Old values: system -> classic, light/dark -> classic-light/-dark; anything unknown -> classic.
+  const th = d.theme === "light" || d.theme === "dark" ? `classic-${d.theme}` : d.theme;
+  if (THEMES.includes(th as ThemePref)) out.theme = th as ThemePref;
   if (LANGUAGES.includes(d.language as LanguagePref)) out.language = d.language as LanguagePref;
   if (typeof d.hintsOff === "boolean") out.hintsOff = d.hintsOff;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);

@@ -1,4 +1,3 @@
-import { useEffect } from "preact/hooks";
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { Toast } from "./components/Toast";
 import { UpdateToast } from "./components/UpdateToast";
@@ -15,23 +14,34 @@ import { WaitingRoom } from "./screens/WaitingRoom";
 import { useAppState } from "./store";
 import "./styles/polish.css";
 
-/** Mirror the theme and motion prefs onto <html> (tokens.css and polish.css key off them). */
+/**
+ * Mirror the theme and motion prefs onto <html> (tokens.css, themes.css and polish.css key off
+ * them): data-theme = theme id, data-scheme = its light/dark base. Classic (auto) has no
+ * data-scheme, so CSS prefers-color-scheme decides and follows the system live.
+ */
 export function applyPrefs(root: HTMLElement = document.documentElement): void {
   const { theme, motion } = getPrefs();
-  if (theme === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", theme);
-  if (motion === "reduced") root.setAttribute("data-motion", "reduced");
-  else root.removeAttribute("data-motion");
+  root.dataset.theme = theme;
+  if (theme === "classic") delete root.dataset.scheme;
+  else root.dataset.scheme = /dark|night|ocean|forest/.test(theme) ? "dark" : "light";
+  if (motion === "reduced") root.dataset.motion = motion;
+  else delete root.dataset.motion;
+  const bar = getComputedStyle(root).getPropertyValue("--table").trim();
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m, i) => {
+    m.setAttribute("content", theme === "classic" ? (["#EFE9DF", "#0E131C"][i] ?? bar) : bar);
+  });
+}
+
+/** Boot (main.tsx, before the first render so nothing flashes): apply now and on every change. */
+export function startPrefs(): void {
+  onPrefs(() => applyPrefs());
+  applyPrefs();
 }
 
 export function App() {
   useLocale(); // re-render the whole tree when the language changes
   const route = useRoute();
   const { status } = useAppState();
-  useEffect(() => {
-    applyPrefs();
-    return onPrefs(() => applyPrefs());
-  }, []);
 
   let screen = null;
   switch (route.screen) {

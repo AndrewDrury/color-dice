@@ -1,7 +1,8 @@
 /*
  * Design tokens (H2). Colour values are mirrored in contrast.ts and checked by a test:
- * change both together. Light is the default; dark comes from prefers-color-scheme,
- * and [data-theme="light"|"dark"] on <html> overrides it.
+ * change both together. Light is the default; the dark base applies for data-scheme="dark" on
+ * <html> (set by App.applyPrefs from the theme, T-NEW-16) and, for Classic (auto), from
+ * prefers-color-scheme. Per-theme surface/accent overrides live in themes.css.
  */
 
 :root {
@@ -118,7 +119,7 @@
   --t-slow: 400ms;
 }
 
-:root[data-theme="dark"] {
+:root[data-scheme="dark"] {
   color-scheme: dark;
   --table: #0e131c;
   --paper: #1a2130;
@@ -141,9 +142,9 @@
   --e2: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 6px 18px rgb(0 0 0 / 0.5);
 }
 
-/* Same values as [data-theme="dark"]; keep the two blocks in sync. */
+/* Same values as [data-scheme="dark"]; keep the two blocks in sync. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-scheme]) {
     color-scheme: dark;
     --table: #0e131c;
     --paper: #1a2130;

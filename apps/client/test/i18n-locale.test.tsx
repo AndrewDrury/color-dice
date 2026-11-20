@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, describe, expect, it } from "vitest";
-import { Settings } from "../src/components/Settings";
+import { Settings } from "../src/components/SettingsPanel";
 import {
   applyLanguage,
   colorLetter,
