@@ -11,13 +11,16 @@ import { CrownIcon, LockIcon } from "./icons";
 const NEAR_PX = 24;
 
 /** Recent moves, oldest first; the title stays put and only the entries scroll. */
-export function MoveLog({ view }: { view: ViewMessage }) {
+export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: boolean }) {
   useT();
   const lines = logLines(view).reverse();
   const box = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const lastTop = useRef(0);
-  const shown = useTypewriter(lines.map((l) => ({ id: l.id, text: l.typed })));
+  const shown = useTypewriter(
+    lines.map((l) => ({ id: l.id, text: l.typed })),
+    paused,
+  );
   const [more, setMore] = useState({ above: false, below: false });
 
   const measure = () => {

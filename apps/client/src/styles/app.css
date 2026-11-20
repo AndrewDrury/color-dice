@@ -132,7 +132,7 @@ summary,
   --btn-danger-fg: var(--on-danger);
   --btn-danger-border: var(--danger);
   --btn-disabled-bg: color-mix(in srgb, var(--ink) 10%, var(--paper));
-  --btn-disabled-fg: var(--ink-muted);
+  --btn-disabled-fg: color-mix(in srgb, var(--ink) 78%, var(--paper));
   --btn-disabled-border: color-mix(in srgb, var(--ink) 60%, var(--paper));
   --turn-mine-bg: var(--accent);
   --turn-mine-fg: var(--on-accent);

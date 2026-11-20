@@ -315,8 +315,12 @@ describe("Game screen", () => {
       const { container } = mount();
       const tray = container.querySelector(".tray") as Element;
       const roll = screen.getByRole("button", { name: /roll/i });
-      expect(tray.nextElementSibling?.contains(roll)).toBe(true);
-      expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(false);
+      if (w >= 1280) {
+        expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(true);
+      } else {
+        expect(tray.nextElementSibling?.contains(roll)).toBe(true);
+        expect(container.querySelector(".g-actionbar")?.contains(roll)).toBe(false);
+      }
       cleanup();
       _resetStoreForTests();
     }

@@ -8,6 +8,7 @@ import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
 import { GameMenu } from "../components/GameMenu";
+import IdleNudge from "../components/IdleNudge";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
@@ -268,7 +269,6 @@ function Board({
     view.you.canRoll ||
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
   // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
-  const Nudge = late?.IdleNudge;
   useWakeLock(!gameOver);
   useTabAttention(myMove);
   useGameKeys({
@@ -295,6 +295,12 @@ function Board({
   });
 
   const hint = gameOver ? null : <GameHint view={view} />;
+  // T-FIX-12: on desktop Roll lives in the sticky action bar (always in view); elsewhere under the dice.
+  const rollButton = view.you.canRoll ? (
+    <RollButton controls={rollControls} class="btn btn-primary g-primary" disabled={rolling}>
+      {t("action.roll")}
+    </RollButton>
+  ) : null;
   const actionBar = (
     <>
       {hint}
@@ -309,6 +315,7 @@ function Board({
         noMove={noMove}
         onSubmit={st.submit}
         onUndo={st.undo}
+        roll={viewport === "desktop" ? rollButton : null}
       />
     </>
   );
@@ -377,16 +384,8 @@ function Board({
               controls={rollControls}
               onBusyChange={setRolling}
             />
-            {view.you.canRoll ? (
-              <div class="g-rollslot">
-                <RollButton
-                  controls={rollControls}
-                  class="btn btn-primary g-primary"
-                  disabled={rolling}
-                >
-                  {t("action.roll")}
-                </RollButton>
-              </div>
+            {rollButton && viewport !== "desktop" ? (
+              <div class="g-rollslot">{rollButton}</div>
             ) : null}
           </div>
           {viewport === "desktop" ? actionBar : null}
@@ -395,7 +394,7 @@ function Board({
           <aside class="g-right">
             <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
             <div class="g-logslot">
-              <MoveLog view={view} />
+              <MoveLog view={view} paused={summaryShown} />
               {summaryShown && SummaryCard ? (
                 <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="log" />
               ) : null}
@@ -410,16 +409,12 @@ function Board({
         <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
       ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
-      {Nudge ? (
-        <Nudge
-          view={view}
-          staged={anyStaged}
-          noMove={noMove}
-          blocked={
-            !!(rolling || st.sent || showRollOff || panel || leaving || rematching) || !landed
-          }
-        />
-      ) : null}
+      <IdleNudge
+        view={view}
+        staged={anyStaged}
+        noMove={noMove}
+        blocked={!!(st.sent || showRollOff || panel || leaving || rematching)}
+      />
       {showRollOff && rollOff ? (
         <RollOff
           view={view}

@@ -434,6 +434,23 @@
 .g-glyph.is-thinking {
   animation: g-blink 1.2s ease-in-out infinite;
 }
+/* T-FIX-12: the automatic-pause banner is a clear pill (theme tokens, AA pair from the turn banner). */
+.g-paused {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  max-width: 100%;
+  padding: 6px var(--s3);
+  border-radius: var(--r-pill);
+  border: 2px solid var(--btn-border);
+  background: var(--turn-other-bg);
+  color: var(--turn-other-fg);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+}
+.g-paused .icon {
+  flex: none;
+}
 /* ---------- Action bar, status, log, toast ---------- */
 .g-actionbar {
   display: flex;
@@ -700,9 +717,6 @@
   }
   .g-box {
     height: 48px;
-  }
-  .g-actionbar {
-    position: static;
   }
 }
 @media (max-height: 699.98px) {
@@ -1035,18 +1049,13 @@
   gap: var(--s2);
   padding: var(--s3);
   border-radius: var(--r-card);
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  background: var(--paper);
   color: var(--ink);
   box-shadow: var(--e2, 0 8px 24px rgb(0 0 0 / 0.3));
   font-size: 15px;
   overflow: hidden auto;
   pointer-events: none;
   animation: ts-in 220ms var(--ease-out) both;
-}
-@supports (backdrop-filter: blur(4px)) {
-  .ts-card {
-    backdrop-filter: blur(6px);
-  }
 }
 .ts-card.is-log {
   position: absolute;

@@ -23,7 +23,7 @@ export function lockMessage(view: ViewMessage, e: RowLocked): string {
   const names = [...(mine.length > 0 ? [t("lock.you")] : []), ...others];
   const color = colorName(e.color);
   if (others.length === 0 && mine.length > 0) return t("lock.byYou", { color });
-  return t("lock.by", { names: joinNames(names), color });
+  return t(names.length > 1 ? "lock.byMany" : "lock.by", { names: joinNames(names), color });
 }
 
 /** The roll-off that decided who starts, while nobody has rolled yet (or null). */

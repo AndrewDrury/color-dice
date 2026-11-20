@@ -26,6 +26,8 @@ export interface ActionBarProps {
   noMove: boolean;
   onSubmit: () => void;
   onUndo: () => void;
+  /** Desktop: the Roll button, shown as the primary action while it is your roll. */
+  roll?: preact.ComponentChildren;
 }
 
 export function ActionBar(p: ActionBarProps) {
@@ -35,7 +37,7 @@ export function ActionBar(p: ActionBarProps) {
   // D-L11: Undo exists only while there is something to undo (a staged box or an undoable decision).
   const canUndo = staged || (view.you.canUndo && !p.sent);
 
-  let primary: preact.JSX.Element | null = null;
+  let primary: preact.ComponentChildren = null;
   if (p.noMove) {
     const active = view.game?.turn?.activeSeat ?? -1;
     primary = (
@@ -44,7 +46,7 @@ export function ActionBar(p: ActionBarProps) {
       </button>
     );
   } else if (view.you.canRoll) {
-    primary = null;
+    primary = p.roll ?? null;
   } else if (currentStep(view) !== null && !p.sent) {
     primary = (
       <button

@@ -41,7 +41,7 @@ export const game: Record<keyof typeof en, string> = {
   "hint.whiteSum": "Toca una casilla brillante, o pasa.",
   "hint.yourTurn": "Combina 1 dado blanco + 1 de color.",
   "hint.leftRight": "De izquierda a derecha; lo saltado se pierde.",
-  "hint.lock": "5 marcas en una fila abren el candado.",
+  "hint.lock": "5 marcas en la fila abren el candado.",
 
   "action.roll": "Tirar",
   "action.sent": "Enviado…",
@@ -154,6 +154,7 @@ export const game: Record<keyof typeof en, string> = {
   "lock.you": "Tú",
   "lock.byYou": "¡Bloqueaste la fila {color}!",
   "lock.by": "¡{names} bloqueó la fila {color}!",
+  "lock.byMany": "¡{names} bloquearon la fila {color}!",
   "rolloff.title": "¿Quién empieza?",
   "rolloff.skip": "Toca para saltar",
   "rolloff.roll": "Tirar",

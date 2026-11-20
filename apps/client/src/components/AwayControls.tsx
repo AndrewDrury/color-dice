@@ -1,5 +1,6 @@
 import type { ViewMessage } from "@cd/protocol";
 import { t, useT } from "../i18n";
+import { PauseIcon } from "./icons";
 
 /**
  * T-NEW-3: the automatic pause. There is no manual "mark away" any more: when a player's
@@ -17,13 +18,14 @@ export function AwayControls(props: { view: ViewMessage }) {
   if (paused.length === 0 && leftOnes.length === 0) return null;
   return (
     <section
-      class="row"
+      class="row g-away"
       aria-label={t("away.title")}
       style={{ flexWrap: "wrap", gap: "var(--s2)" }}
     >
       {paused.length > 0 ? (
-        <span class="muted" role="status" data-testid="paused-banner">
-          {t("away.paused", { names: paused.join(", ") })}
+        <span class="g-paused" role="status" data-testid="paused-banner">
+          <PauseIcon size={18} />
+          <span>{t("away.paused", { names: paused.join(", ") })}</span>
         </span>
       ) : null}
       {leftOnes.map((s) => (

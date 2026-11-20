@@ -396,3 +396,57 @@
     padding-block: 1.5px;
   }
 }
+
+/* ---------- T-FIX-12: results equation never wraps; stacked rows on narrow dialogs ---------- */
+.g-res-eq {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: center;
+  /* Room for the hanging "penalties" caption. */
+  padding-bottom: 12px;
+}
+.g-results [data-record] {
+  white-space: nowrap;
+}
+@media (max-width: 479.98px) {
+  .g-results,
+  .g-results tbody {
+    display: block;
+  }
+  .g-results thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .g-results tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding-block: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  }
+  .g-results th[scope="row"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .g-results [data-record] {
+    grid-column: 2;
+    grid-row: 1;
+    padding-inline: 4px 0;
+  }
+  .g-results .g-eq-cell {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-block: 0;
+  }
+  .g-res-eq {
+    font-size: 13px;
+    gap: 0.2em;
+  }
+  .g-res-eq .g-score {
+    padding-inline: 0.4em;
+  }
+}

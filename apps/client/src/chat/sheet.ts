@@ -7,6 +7,7 @@
 import type { RefObject } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 
+// i18n-ok: CSS selector, not user-facing copy.
 const FOCUSABLE = "input, button, a[href], select, textarea, [tabindex]:not([tabindex='-1'])";
 
 export function useChatSheet(o: {
@@ -24,6 +25,7 @@ export function useChatSheet(o: {
     const opener = document.activeElement as HTMLElement | null;
     o.area.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
+      // i18n-ok: keyboard key token.
       if (e.key === "Escape") {
         if (o.pickerOpen.current) return;
         e.preventDefault();
@@ -31,7 +33,7 @@ export function useChatSheet(o: {
         return;
       }
       const root = o.sheet.current;
-      if (e.key !== "Tab" || !root) return;
+      if (e.key !== "Tab" || !root) return; // i18n-ok: keyboard key token.
       const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
         (el) => !(el as HTMLButtonElement).disabled,
       );

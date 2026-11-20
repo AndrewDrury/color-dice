@@ -152,6 +152,7 @@ export const game = {
   "lock.you": "You",
   "lock.byYou": "You locked the {color} row!",
   "lock.by": "{names} locked the {color} row!",
+  "lock.byMany": "{names} locked the {color} row!",
   "rolloff.title": "Who goes first?",
   "rolloff.skip": "Tap to skip",
   "rolloff.roll": "Roll",

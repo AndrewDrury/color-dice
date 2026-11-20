@@ -4,9 +4,11 @@ import { reducedMotion } from "../fx/motion";
 /**
  * Typewriter queue for lines that arrive while mounted. Returns how many chars of each
  * line are visible (`undefined` = all). Lines present at mount, and reduced motion, are instant.
+ * While `paused` the queue waits (T-FIX-12: nothing types behind the turn summary) and resumes after.
  */
 export function useTypewriter(
   lines: { id: number; text: string }[],
+  paused = false,
 ): (id: number) => number | undefined {
   const known = useRef<Set<number> | null>(null);
   const queue = useRef<{ id: number; len: number }[]>([]);
@@ -25,7 +27,7 @@ export function useTypewriter(
         added = true;
       }
     }
-    if (!added) return;
+    if ((!added && queue.current.length === 0) || paused) return;
     let raf = 0;
     let last = performance.now();
     const step = (now: number) => {
@@ -43,7 +45,7 @@ export function useTypewriter(
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [lines.length, lines[lines.length - 1]?.id]);
+  }, [lines.length, lines[lines.length - 1]?.id, paused]);
 
   return (id) => {
     const q = queue.current;

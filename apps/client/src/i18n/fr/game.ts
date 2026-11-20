@@ -42,7 +42,7 @@ export const game: Record<keyof typeof en, string> = {
   "hint.whiteSum": "Touche une case lumineuse, ou passe.",
   "hint.yourTurn": "Combine 1 blanc + 1 dé de couleur.",
   "hint.leftRight": "Coche de gauche à droite ; sauts perdus.",
-  "hint.lock": "5 croix d'affilée : verrou débloqué.",
+  "hint.lock": "5 croix dans la ligne : verrou débloqué.",
 
   "action.roll": "Lancer",
   "action.sent": "Envoyé…",
@@ -155,6 +155,7 @@ export const game: Record<keyof typeof en, string> = {
   "lock.you": "Toi",
   "lock.byYou": "Tu as verrouillé la ligne {color} !",
   "lock.by": "{names} a verrouillé la ligne {color} !",
+  "lock.byMany": "{names} ont verrouillé la ligne {color} !",
   "rolloff.title": "Qui commence ?",
   "rolloff.skip": "Touche pour passer",
   "rolloff.roll": "Lancer",

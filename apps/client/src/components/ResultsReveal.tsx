@@ -18,6 +18,7 @@ import {
   runCanvas,
 } from "../fx/celebrate";
 import { haptic } from "../fx/haptics";
+import { useModalTrap } from "../fx/modal";
 import { useReducedMotion } from "../fx/motion";
 import { jingleFor, play, playDrumRoll, playJingle, type SoundHandle } from "../fx/sound";
 import { COLORS, cssColor, seatInfo, tieInfo } from "../game/model";
@@ -142,6 +143,10 @@ export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsReve
   };
   const rootRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  // Tab stays inside, the page behind is inert, and focus lands on Rematch (or Back home) on close.
+  useModalTrap(rootRef, () =>
+    document.querySelector<HTMLElement>(".g-over-actions .btn, .g-over-actions button"),
+  );
   useEffect(() => {
     const off = onPrefs(() => {
       if (!getPrefs().sound) stopSounds();

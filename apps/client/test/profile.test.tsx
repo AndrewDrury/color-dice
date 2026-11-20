@@ -80,7 +80,7 @@ describe("CreateGame profile picker", () => {
     expect((teal as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole("radio", { name: "Violet" }));
     expect((screen.getByRole("radio", { name: "Violet" }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "dance cat" }));
+    fireEvent.click(screen.getByRole("radio", { name: "cat dance" }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Create game" }));
       await Promise.resolve();

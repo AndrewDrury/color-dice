@@ -83,6 +83,12 @@ export const WarningIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const PauseIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 5v14M15 5v14" />
+  </Svg>
+);
+
 export const ShareIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 15V3.5M7.5 8L12 3.5 16.5 8" />
