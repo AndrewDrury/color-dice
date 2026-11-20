@@ -74,7 +74,7 @@ export const CLOSE = {
 } as const;
 export type CloseCode = (typeof CLOSE)[keyof typeof CLOSE];
 
-export const CHAT_TEXT_MAX = 200;
+export const CHAT_TEXT_MAX = 500;
 /** Raw (pre-cleaning) cap on chat text. */
 export const CHAT_RAW_MAX = 1000;
 export const CHAT_HISTORY_MAX = 30;

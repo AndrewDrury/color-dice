@@ -46,7 +46,7 @@ describe("chat privacy", () => {
       const sender = a as NonNullable<typeof a>;
       const rcv = b as NonNullable<typeof b>;
       sender.send({ type: "chat", text: "SECRET-CHAT-MARKER" });
-      sender.send({ type: "chat", text: "x".repeat(500) });
+      sender.send({ type: "chat", text: "x".repeat(501) });
       await rcv.until(() => rcv.frames.find((f) => f.type === "chat"));
       await sender.until(() => sender.frames.find((f) => f.type === "error"));
       const logged = spies.flatMap((s) => s.mock.calls).map((c) => JSON.stringify(c));

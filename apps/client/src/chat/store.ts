@@ -1,5 +1,5 @@
 /** Chat state (I3): log, unread, draft, transient toasts and reaction floats. Reset on leaving a room. */
-import type { ChatEntry, ServerMessage } from "@cd/protocol";
+import type { ChatEntry, Profile, ServerMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 import { catCaption } from "../components/CatReaction";
 import { play } from "../fx/sound";
@@ -73,6 +73,11 @@ export function useChat(): ChatState {
 /** Display name for a seat, or a neutral fallback (renames and kicks resolve through the view). */
 export function seatName(seatId: string): string {
   return getState().view?.seats.find((s) => s.seatId === seatId)?.name ?? t("chat.someone");
+}
+
+/** Profile (colour + cat) of a seat, or undefined when the seat is gone. */
+export function seatProfile(seatId: string): Profile | undefined {
+  return getState().view?.seats.find((s) => s.seatId === seatId)?.profile;
 }
 
 function announce(text: string): void {

@@ -12,7 +12,7 @@ import {
 
 describe("chat protocol", () => {
   it("exposes the constants", () => {
-    expect(CHAT_TEXT_MAX).toBe(200);
+    expect(CHAT_TEXT_MAX).toBe(500);
     expect(CHAT_HISTORY_MAX).toBe(30);
     expect(CHAT_RATE).toEqual({
       text: { limit: 5, windowMs: 10_000 },

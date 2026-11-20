@@ -109,8 +109,8 @@ export type Action1Msg = z.infer<typeof Action1MsgSchema>;
 export type Action2Msg = z.infer<typeof Action2MsgSchema>;
 export type TurnMsg = z.infer<typeof TurnMsgSchema>;
 
-/** Upper bound on a raw client frame; anything larger is rejected before JSON.parse. */
-export const MAX_CLIENT_MESSAGE_CHARS = 1024;
+/** Upper bound on a raw client frame (a CHAT_RAW_MAX chat with JSON escapes fits); anything larger is rejected before JSON.parse. */
+export const MAX_CLIENT_MESSAGE_CHARS = 2048;
 
 /**
  * Parse one raw WebSocket frame. Returns `null` for anything that is not a valid

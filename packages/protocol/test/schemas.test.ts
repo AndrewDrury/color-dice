@@ -192,7 +192,7 @@ describe("client messages", () => {
     expect(parseClientMessage('{"type":"undo","turn":3}')).toEqual({ type: "undo", turn: 3 });
     expect(parseClientMessage("{not json")).toBeNull();
     expect(parseClientMessage(new ArrayBuffer(4))).toBeNull();
-    expect(parseClientMessage(`{"type":"ping","x":"${"a".repeat(2000)}"}`)).toBeNull();
+    expect(parseClientMessage(`{"type":"ping","x":"${"a".repeat(3000)}"}`)).toBeNull();
     expect(parseClientMessage('{"type":"__proto__"}')).toBeNull();
   });
 });

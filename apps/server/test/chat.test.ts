@@ -151,7 +151,7 @@ describe("chat", () => {
   it("rejects empty, control-only and over-long text; echoes HTML verbatim", async () => {
     const r = await setup(2);
     const [a, b] = r.clients as [Client, Client];
-    for (const text of ["", "   \n\t ", "\u0000\u0007", "x".repeat(201)])
+    for (const text of ["", "   \n\t ", "\u0000\u0007", "x".repeat(501)])
       a.send({ type: "chat", text });
     await a.count("error", 4);
     expect(a.of("error").every((e) => e.code === "E_INVALID_COMMAND" && e.command === "chat")).toBe(
@@ -160,6 +160,18 @@ describe("chat", () => {
     expect(b.of("chat")).toHaveLength(0);
     a.send({ type: "chat", text: "<img src=x onerror=alert(1)>" });
     expect((await b.count("chat", 1))[0]?.text).toBe("<img src=x onerror=alert(1)>");
+  });
+
+  it("delivers a 500-code-point message (even all emoji, 1000 UTF-16 units) and keeps it in history", async () => {
+    const r = await setup(2);
+    const [a, b] = r.clients as [Client, Client];
+    const long = "😀".repeat(500);
+    a.send({ type: "chat", text: long });
+    expect((await b.count("chat", 1))[0]?.text).toBe(long);
+    const plain = "y".repeat(500);
+    a.send({ type: "chat", text: plain });
+    expect((await b.count("chat", 2))[1]?.text).toBe(plain);
+    expect(a.closed).toBeNull();
   });
 
   it("rate limits the 6th text to the sender only", async () => {

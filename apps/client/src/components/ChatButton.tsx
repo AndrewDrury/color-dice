@@ -1,18 +1,26 @@
 /** Chat button with unread badge, plus the shared controls / layer mounted by each screen. */
 import type { ClientMessage } from "@cd/protocol";
-import { useEffect, useRef } from "preact/hooks";
+import type { ComponentType } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
 import "../styles/chat.css";
 import { closePanel, getChat, openPanel, useChat } from "../chat/store";
 import { useExitAnimation } from "../fx/motion";
 import { t, useT } from "../i18n";
 import { getState } from "../store";
-import { ChatPanel } from "./ChatPanel";
 import { ChatToasts } from "./ChatToasts";
 import { ReactionButton } from "./ReactionButton";
 import { ReactionFloat } from "./ReactionFloat";
 import { usePrefs } from "./Settings";
 
 type Send = (m: ClientMessage) => boolean;
+type PanelProps = { send: Send; closing?: boolean };
+
+/** The panel is a lazy chunk (kept out of the initial bundle); warmed on idle / hover so Chat opens instantly. */
+let panelChunk: Promise<ComponentType<PanelProps>> | undefined;
+function loadPanel(): Promise<ComponentType<PanelProps>> {
+  panelChunk ??= import("./ChatPanel").then((m) => m.ChatPanel);
+  return panelChunk;
+}
 
 export function ChatButton() {
   useT();
@@ -26,6 +34,9 @@ export function ChatButton() {
       aria-label={n > 0 ? t("chat.openUnread", { n }) : t("chat.open")}
       aria-haspopup="dialog"
       aria-expanded={panelOpen ? "true" : "false"}
+      onPointerEnter={() => void loadPanel()}
+      onPointerDown={() => void loadPanel()}
+      onFocus={() => void loadPanel()}
       onClick={() => (getChat().panelOpen ? closePanel() : openPanel())}
     >
       <svg
@@ -76,6 +87,17 @@ export function ChatLayer({
 }) {
   const { panelOpen, floats } = useChat();
   const panel = useExitAnimation(panelOpen);
+  const [Panel, setPanel] = useState<ComponentType<PanelProps> | null>(null);
+  useEffect(() => {
+    let live = true;
+    const go = () => void loadPanel().then((c) => live && setPanel(() => c));
+    if (panelOpen) go();
+    const idle = setTimeout(go, 1500);
+    return () => {
+      live = false;
+      clearTimeout(idle);
+    };
+  }, [panelOpen]);
   const openedOnMyMove = useRef(false);
   const was = useRef(false);
   if (panelOpen && !was.current) openedOnMyMove.current = myMove;
@@ -92,7 +114,7 @@ export function ChatLayer({
           <ReactionFloat key={f.id} entry={f} mine={f.seatId === mySeat} />
         ))}
       </div>
-      {panel.mounted ? <ChatPanel send={send} closing={panel.closing} /> : null}
+      {panel.mounted && Panel ? <Panel send={send} closing={panel.closing} /> : null}
     </>
   );
 }
