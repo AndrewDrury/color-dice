@@ -64,9 +64,9 @@ export const game: Record<keyof typeof en, string> = {
   "turn.pick": "Elige una casilla o pulsa «{pass}»",
 
   "summary.aria": "Resumen del turno",
-  "summary.title": "Resumen del turno {n}",
+  "summary.turn": "Turno {n}",
   "summary.mark": "{color} {n} ✓",
-  "summary.none": "Sin marca",
+  "summary.none": "Pasó",
   "summary.penalty": "Penalización −5",
   "summary.lock": "Fila {color} bloqueada",
 

@@ -7,7 +7,7 @@ import type { FullViewPlayer } from "@cd/protocol";
 import { Fragment } from "preact";
 import { COLORS, cssColor } from "../game/model";
 import { useTween } from "../game/useTween";
-import { colorLetter, colorLower, colorName, t, useT } from "../i18n";
+import { colorLower, t, useT } from "../i18n";
 import { LockIcon } from "./icons";
 import { Row, stagedGain } from "./Row";
 import { ScoreFloat } from "./ScoreFloat";
@@ -52,12 +52,7 @@ function RowScore(p: {
   const v = useTween(p.value);
   return (
     <span class={`g-score c-${cssColor(p.color)}`}>
-      <abbr
-        title={colorName(p.color)}
-        aria-label={t("sheet.scoreAbbr", { color: colorLower(p.color) })}
-      >
-        {colorLetter(p.color)}
-      </abbr>{" "}
+      <span class="sr-only">{t("sheet.scoreAbbr", { color: colorLower(p.color) })}</span>
       <span class="num" data-value={p.value}>
         {v}
       </span>

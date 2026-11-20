@@ -65,9 +65,9 @@ export const game: Record<keyof typeof en, string> = {
   "turn.pick": "Choisis une case ou appuie sur « {pass} »",
 
   "summary.aria": "Résumé du tour",
-  "summary.title": "Résumé du tour {n}",
+  "summary.turn": "Tour {n}",
   "summary.mark": "{color} {n} ✓",
-  "summary.none": "Aucune marque",
+  "summary.none": "Passé",
   "summary.penalty": "Pénalité −5",
   "summary.lock": "Rangée {color} verrouillée",
 

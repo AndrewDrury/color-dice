@@ -22,7 +22,6 @@ import { ScoreGuide } from "../components/ScoreGuide";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { Sheet } from "../components/Sheet";
 import { TurnBanner } from "../components/TurnBanner";
-import { TurnSummary } from "../components/TurnSummary";
 import { feedback } from "../fx/feedback";
 import { useGameKeys } from "../fx/keyboard";
 import { useTabAttention } from "../fx/tabAttention";
@@ -243,6 +242,14 @@ function Board({
     const next = summarizeTurn(view, cur.fresh);
     if (next) setSummary(next);
   }, [view.version]);
+  // Lazy: the summary UI is loaded on the first summary (keeps the initial bundle small).
+  const [SummaryCard, setSummaryCard] = useState<
+    typeof import("../components/TurnSummary").TurnSummary | null
+  >(null);
+  useEffect(() => {
+    if (summary && !SummaryCard)
+      import("../components/TurnSummary").then((m) => setSummaryCard(() => m.TurnSummary));
+  }, [summary]);
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
   const rollOffId = rollOff ? rollOffKey(view.code, rollOff.rounds) : null;
@@ -256,6 +263,7 @@ function Board({
   const rollControls = useRef<RollControls | null>(null);
   const [rolling, setRolling] = useState(false);
   const gameOver = g.phase === "GAME_OVER";
+  const summaryShown = summary !== null && !gameOver;
 
   const myMove =
     view.you.canRoll ||
@@ -385,15 +393,20 @@ function Board({
         {viewport !== "phone" ? (
           <aside class="g-right">
             <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
-            <MoveLog view={view} />
+            <div class="g-logslot">
+              <MoveLog view={view} />
+              {summaryShown && SummaryCard ? (
+                <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="log" />
+              ) : null}
+            </div>
           </aside>
         ) : null}
       </main>
       {viewport !== "desktop" ? actionBar : null}
       <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
       {toast ? <div class="g-toast">{toast}</div> : null}
-      {summary && !gameOver ? (
-        <TurnSummary summary={summary} onClose={() => setSummary(null)} />
+      {summaryShown && SummaryCard && viewport === "phone" ? (
+        <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
       ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
       {showRollOff && rollOff ? (

@@ -82,3 +82,19 @@
 .g-winner[data-tie] .g-name {
   max-width: 14ch;
 }
+
+/* Phone: the chips share the row (no horizontal scroll), so nothing clips; the row keeps its content height. */
+.g-opp.is-phone {
+  overflow: visible;
+  flex-shrink: 0;
+}
+.g-opp.is-phone .g-chip > .av {
+  margin: 1px;
+}
+.g-opp.is-phone .g-chip-pen {
+  font-size: 11px;
+  line-height: 1.1;
+}
+.g-opp.is-phone .g-chip-pen[data-penalties="0"] {
+  display: none;
+}

@@ -138,13 +138,6 @@
   gap: var(--s1);
   font-weight: var(--fw-bold);
 }
-.st-pair {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s3) var(--s4);
-}
 .st-col .st-seg {
   flex-wrap: wrap;
 }

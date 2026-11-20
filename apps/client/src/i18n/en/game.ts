@@ -63,9 +63,9 @@ export const game = {
   "turn.pick": "Pick a box or press “{pass}”",
 
   "summary.aria": "Turn summary",
-  "summary.title": "Turn {n} summary",
+  "summary.turn": "Turn {n}",
   "summary.mark": "{color} {n} ✓",
-  "summary.none": "No mark",
+  "summary.none": "Passed",
   "summary.penalty": "Penalty −5",
   "summary.lock": "{color} row locked",
 

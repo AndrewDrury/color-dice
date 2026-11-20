@@ -3,7 +3,7 @@ import type { ViewMessage, ViewPlayer } from "@cd/protocol";
 import { Fragment } from "preact";
 import { COLORS, cssColor, recordLabel, recordText, seatInfo, tieInfo } from "../game/model";
 import { useTween } from "../game/useTween";
-import { colorLetter, t, useT } from "../i18n";
+import { t, useT } from "../i18n";
 import { Avatar } from "./Avatar";
 import { CrownIcon, TieIcon } from "./icons";
 
@@ -40,7 +40,7 @@ function Count({
 }
 
 /**
- * `R + Y + G + B − penalties = total` (K5.6), each term in its row colour with the same classes and
+ * Row scores − penalties = total (K5.6, no colour letters), each term in its row colour with the same classes and
  * tokens as the in-game footer equation. Only the total carries `.num[data-value]`.
  */
 export function ResultEquation({
@@ -73,7 +73,7 @@ export function ResultEquation({
         <Fragment key={c}>
           {i > 0 ? <span class="g-op">+</span> : null}
           <span class={`g-score c-${cssColor(c)}`} data-term={c}>
-            <abbr>{colorLetter(c)}</abbr> <Count value={rows?.[c] ?? 0} cls="eqn" ms={ms} />
+            <Count value={rows?.[c] ?? 0} cls="eqn" ms={ms} />
           </span>
         </Fragment>
       ))}
