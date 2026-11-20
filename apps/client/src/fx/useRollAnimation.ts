@@ -90,6 +90,12 @@ function tabHidden(): boolean {
 
 export function useRollAnimation(input: RollAnimInput, opts: RollAnimOptions = {}): RollAnimation {
   const key = rollKey(input.code, input.turnNumber, input.roll !== null);
+  // After a roll was shown, a turn with no roll yet is a roll still to come: forget an earlier
+  // game's `code:turn` (a rematch restarts at turn 1) so the new roll animates and lands.
+  const sawRoll = useRef(false);
+  if (key !== null) sawRoll.current = true;
+  else if (sawRoll.current && input.turnNumber !== null)
+    played.delete(`${input.code}:${input.turnNumber}`);
   const dieCount = input.roll
     ? input.roll.white.length + Object.keys(input.roll.colored).length
     : 6;

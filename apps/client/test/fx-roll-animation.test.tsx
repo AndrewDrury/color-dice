@@ -44,6 +44,18 @@ describe("useRollAnimation", () => {
     expect(onLanded).not.toHaveBeenCalled();
   });
 
+  it("a rematch repeats code:turn but its roll still animates and lands", async () => {
+    const { rerender, onLanded } = setup({ code: "K7QF2", turnNumber: 1, roll: null });
+    rerender({ code: "K7QF2", turnNumber: 1, roll: ROLL });
+    await step(ROLL_TIMING.minTumble + 6 * GAMEPLAY_TIMING.landGap + ROLL_TIMING.settle);
+    expect(onLanded).toHaveBeenCalledTimes(1);
+    // Rematch: same turn number again, rolled from scratch.
+    rerender({ code: "K7QF2", turnNumber: 1, roll: null });
+    rerender({ code: "K7QF2", turnNumber: 1, roll: ROLL });
+    await step(ROLL_TIMING.minTumble + 6 * GAMEPLAY_TIMING.landGap + ROLL_TIMING.settle);
+    expect(onLanded).toHaveBeenCalledTimes(2);
+  });
+
   it("starts idle with no roll", () => {
     const { result } = setup({ code: "K7QF2", turnNumber: 1, roll: null });
     expect(result.current.phase).toBe("idle");
