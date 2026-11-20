@@ -28,7 +28,9 @@ function rollOffTitle(v: ViewMessage): string {
   const max = Math.max(...ro.faces.map((f) => f ?? 0));
   const winners = ro.faces.flatMap((f, i) => (f === max ? [i] : []));
   if (winners.length !== 1) return title(t("title.rollFirst"));
-  const winner = v.seats[winners[0]]?.name ?? t("player.fallback", { n: winners[0] + 1 });
+  const seat = winners[0];
+  if (seat === undefined) return title(t("title.rollFirst"));
+  const winner = v.seats[seat]?.name ?? t("player.fallback", { n: seat + 1 });
   return title(t("title.rollWinner", { name: cap(winner) }));
 }
 
