@@ -8,7 +8,6 @@ import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
 import { GameMenu } from "../components/GameMenu";
-import IdleNudge from "../components/IdleNudge";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
@@ -245,6 +244,7 @@ export function Board({
   useEffect(() => {
     import("../components/lateUi").then(setLate);
   }, []);
+  const IdleNudgeView = late?.IdleNudge;
   const SummaryCard = late?.TurnSummary;
   const GameOverView = late?.GameOver; // lazy: the results + reveal only run at game over
   const [rollOffDone, setRollOffDone] = useState(false);
@@ -411,12 +411,14 @@ export function Board({
         <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
       ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
-      <IdleNudge
-        view={view}
-        staged={anyStaged}
-        noMove={noMove}
-        blocked={!!(st.sent || showRollOff || panel || leaving || rematching)}
-      />
+      {IdleNudgeView ? (
+        <IdleNudgeView
+          view={view}
+          staged={anyStaged}
+          noMove={noMove}
+          blocked={!!(st.sent || showRollOff || panel || leaving || rematching)}
+        />
+      ) : null}
       {showRollOff && rollOff ? (
         <RollOff
           view={view}

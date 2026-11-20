@@ -345,3 +345,19 @@ summary,
   padding-block: var(--s2);
   background: var(--paper);
 }
+
+.deploy-version {
+  position: fixed;
+  right: max(var(--s2), env(safe-area-inset-right));
+  bottom: max(var(--s2), env(safe-area-inset-bottom));
+  z-index: 1000;
+  pointer-events: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 72%, transparent);
+  color: var(--paper);
+  padding: 2px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}

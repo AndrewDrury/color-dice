@@ -6,10 +6,8 @@ import { UpdateToast } from "./components/UpdateToast";
 import { useLocale } from "./i18n";
 import { getPrefs, onPrefs, THEME_SCHEME } from "./prefs";
 import { useRoute } from "./router";
-import { CreateGame } from "./screens/CreateGame";
 import { Game } from "./screens/Game";
 import { Home } from "./screens/Home";
-import { InviteJoin } from "./screens/InviteJoin";
 import { Placeholder } from "./screens/Placeholder";
 import { Reclaim } from "./screens/Reclaim";
 import { WaitingRoom } from "./screens/WaitingRoom";
@@ -47,13 +45,24 @@ export function App() {
   const route = useRoute();
   const { status, view } = useAppState();
   const [DemoScreen, setDemoScreen] = useState<ComponentType | null>(null);
+  const [CreateScreen, setCreateScreen] = useState<ComponentType | null>(null);
+  const [InviteScreen, setInviteScreen] = useState<ComponentType<{ code: string }> | null>(null);
   useDocumentTitle(route, route.code !== null && view?.code === route.code ? view : null);
   useEffect(() => {
-    if (route.screen !== "demo") return;
     let alive = true;
-    void import("./demo").then((m) => {
-      if (alive) setDemoScreen(() => m.DemoScreen);
-    });
+    if (route.screen === "demo") {
+      void import("./demo").then((m) => {
+        if (alive) setDemoScreen(() => m.DemoScreen);
+      });
+    } else if (route.screen === "create") {
+      void import("./screens/CreateGame").then((m) => {
+        if (alive) setCreateScreen(() => m.CreateGame);
+      });
+    } else if (route.screen === "invite") {
+      void import("./screens/InviteJoin").then((m) => {
+        if (alive) setInviteScreen(() => m.InviteJoin);
+      });
+    }
     return () => {
       alive = false;
     };
@@ -70,10 +79,11 @@ export function App() {
       screen = <Home route={route} />;
       break;
     case "create":
-      screen = <CreateGame />;
+      screen = CreateScreen ? <CreateScreen /> : null;
       break;
     case "invite":
-      screen = route.code ? <InviteJoin key={route.code} code={route.code} /> : null;
+      screen =
+        route.code && InviteScreen ? <InviteScreen key={route.code} code={route.code} /> : null;
       break;
     case "reclaim":
       screen = <Reclaim key={route.code ?? ""} code={route.code} />;
