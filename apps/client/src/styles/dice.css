@@ -266,18 +266,6 @@
   pointer-events: none;
 }
 
-/* While a combination is shown, the dice not in it step back. */
-.tray__dice.has-highlight .die:not(.is-highlight):not(.is-removed) .die__fx {
-  opacity: 0.55;
-  transition: opacity var(--t-fast) var(--ease-out);
-}
-
-.die.is-removed .die__fx {
-  transform: scale(0.6);
-  opacity: 0.3;
-  filter: saturate(0.4);
-}
-
 .die__lock {
   position: absolute;
   inset: 0;
@@ -294,6 +282,18 @@
   :root:not([data-theme="light"]) .die__shadow {
     background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
   }
+}
+
+.die.is-removed .die__fx {
+  transform: scale(0.6);
+  opacity: 0.3;
+  filter: saturate(0.4);
+}
+
+/* While a combination is shown, the dice not in it step back. */
+.tray__dice.has-highlight .die:not(.is-highlight):not(.is-removed) .die__fx {
+  opacity: 0.55;
+  transition: opacity var(--t-fast) var(--ease-out);
 }
 
 /* ---------- Sizes ---------- */

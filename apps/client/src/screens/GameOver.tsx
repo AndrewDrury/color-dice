@@ -62,6 +62,7 @@ function useFlipReorder(view: ViewMessage) {
 /** Appends this finished game to the device history once (dedupe by room code + game number). */
 function useDeviceHistory(view: ViewMessage, result: GameResult) {
   useEffect(() => {
+    if (view.code === "DEMO") return;
     if (view.game?.phase !== "GAME_OVER" || view.you.seat === null) return;
     const mine = view.seats.find((s) => s.seatId === view.you.seatId);
     if (!mine) return;
@@ -85,7 +86,9 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
   const tableRef = useFlipReorder(view);
   useDeviceHistory(view, !iWon ? "L" : tie ? "T" : "W");
-  const [celebrating, setCelebrating] = useState(() => claimCelebration(celebrationKey(view)));
+  const [celebrating, setCelebrating] = useState(() =>
+    view.code === "DEMO" ? false : claimCelebration(celebrationKey(view)),
+  );
   const ranked = rankPlayers(view);
   const ranks = new Map(
     rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),

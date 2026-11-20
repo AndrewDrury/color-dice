@@ -69,7 +69,7 @@ export function Game({ code }: { code: string }) {
   const [failSignal, setFailSignal] = useState(0);
   const [leaving, setLeaving] = useState(false);
   useBackGuard(() => setLeaving(true));
-  const { view: storeView, status, toast, epoch, offlineSince } = useAppState();
+  const { view: storeView, status, toast, epoch } = useAppState();
   const view = storeView?.code === code ? storeView : null;
   const conn = useGameSocket(code, (e: ErrorMessage) => {
     showToast(errorText(e.code, e.reason), "error");
@@ -104,7 +104,6 @@ export function Game({ code }: { code: string }) {
   return (
     <Board
       key={epoch}
-      offlineSince={offlineSince}
       view={view}
       status={status}
       toast={toast?.kind === "error" ? toast.text : null}
@@ -119,7 +118,6 @@ export function Game({ code }: { code: string }) {
 }
 
 interface BoardProps {
-  offlineSince: Record<string, number>;
   view: ViewMessage;
   status: string;
   toast: string | null;
@@ -132,7 +130,6 @@ interface BoardProps {
 }
 
 export function Board({
-  offlineSince,
   view,
   status,
   toast,

@@ -800,10 +800,6 @@
   .g-foot {
     min-height: 24px;
   }
-  .g-sheet {
-    gap: 3px;
-    padding-block: var(--s2);
-  }
   .g-log {
     max-height: 80px;
   }

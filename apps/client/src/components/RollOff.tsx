@@ -121,7 +121,7 @@ export interface RollOffLiveProps {
 const liveName = (view: ViewMessage, seat: number) =>
   view.seats[seat]?.name ?? t("player.fallback", { n: seat + 1 });
 
-function liveCaption(view: ViewMessage, faces: readonly number[]): string {
+function liveCaption(faces: readonly number[]): string {
   const sixes = faces.flatMap((f, seat) => (f === 6 ? [seat] : []));
   return sixes.length === 0 ? t("rolloff.none") : t("rolloff.many", { n: sixes.length });
 }
@@ -167,7 +167,7 @@ export function RollOffLive({ view, send }: RollOffLiveProps) {
                 </div>
               ))}
             </div>
-            <p class="ro-caption">{liveCaption(view, faces)}</p>
+            <p class="ro-caption">{liveCaption(faces)}</p>
           </div>
         ))}
         <div class="ro-round" data-testid="rolloff-current">

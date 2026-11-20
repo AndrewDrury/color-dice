@@ -1,6 +1,30 @@
 import { useEffect, useState } from "preact/hooks";
 
-export type DemoScenario = "roll" | "turn" | "game-over";
+export type DemoScenario =
+  | "waiting"
+  | "rolloff-initial"
+  | "rolloff-tie"
+  | "rolloff-winner"
+  | "rolloff-lets-go"
+  | "roll"
+  | "initial-roll"
+  | "await-roll"
+  | "turn"
+  | "action-1"
+  | "action-2"
+  | "turn-summary"
+  | "locked-first"
+  | "locked-second"
+  | "lock-first"
+  | "lock-second"
+  | "penalty"
+  | "winner"
+  | "tie"
+  | "all-tied"
+  | "dramatic-reveal"
+  | "winner-celebration"
+  | "full-score"
+  | "game-over";
 
 export interface DemoState {
   active: boolean;

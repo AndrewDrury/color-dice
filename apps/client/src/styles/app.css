@@ -108,12 +108,44 @@ output {
 
 .demo-scenarios {
   position: relative;
-  z-index: 10;
+  z-index: 1000;
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--paper);
+}
+
+.demo-scenario-nav,
+.demo-scenario-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s1);
-  justify-content: center;
-  padding: var(--s2);
+}
+
+.demo-scenario-nav {
+  justify-content: flex-end;
+}
+
+.demo-scenario-group {
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: var(--s1) 0 0;
+}
+
+.demo-scenario-group legend {
+  padding: 0 var(--s1);
+  color: var(--ink-muted);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+}
+
+@media (max-width: 359px) {
+  .demo-scenarios {
+    padding-inline: var(--s1);
+  }
 }
 
 /* ---------- Controls ---------- */
