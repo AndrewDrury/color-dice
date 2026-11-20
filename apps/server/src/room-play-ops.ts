@@ -27,7 +27,7 @@ import { hashToken, tokenHashEquals } from "./crypto";
 import type { Env } from "./env";
 import { pausedSeatIds } from "./pause";
 import { RoomChat } from "./room-chat-ops";
-import { playerId } from "./room-lobby-ops";
+import { playerId, takenColors } from "./room-lobby-ops";
 import { RollOffOps } from "./room-rolloff-ops";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 import { loadDice } from "./test-hooks";
@@ -405,11 +405,14 @@ export class RoomPlay {
   }
 
   /** Host only, at GAME_OVER: a new game with the same seats and seat indexes. */
-  /** Lobby only (T-NEW-13). Duplicate colours are allowed and kept (the client numbers them). */
+  /** Lobby only (T-NEW-13). Colours are unique per room (T-NEW-32); legacy duplicates are kept. */
   private async setProfile(ws: WebSocket, seatId: string, profile: Profile): Promise<void> {
     const l = await this.load(ws, seatId);
     if (!l) return;
     if (l.meta.status !== "lobby") return sendError(ws, "E_WRONG_PHASE", "profile");
+    const taken = takenColors(l.seats, seatId);
+    if (taken.includes(profile.color))
+      return sendError(ws, "E_COLOUR_TAKEN", "profile", taken.join(","));
     l.me.profile = profile;
     await this.d.commit(l.meta, l.seats);
   }

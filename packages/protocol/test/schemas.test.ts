@@ -236,3 +236,13 @@ describe("constants", () => {
     }>();
   });
 });
+
+describe("T-NEW-32 unique colours", () => {
+  it("has E_COLOUR_TAKEN and a colours-only room info schema", async () => {
+    const p = await import("../src");
+    expect(p.isErrorCode("E_COLOUR_TAKEN")).toBe(true);
+    expect(p.TakenColorsResSchema.safeParse({ taken: ["teal"] }).success).toBe(true);
+    expect(p.TakenColorsResSchema.safeParse({ taken: ["red"] }).success).toBe(false);
+    expect(p.TakenColorsResSchema.safeParse({ taken: [], names: ["Ann"] }).success).toBe(false);
+  });
+});

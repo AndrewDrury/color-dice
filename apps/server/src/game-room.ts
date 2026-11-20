@@ -8,6 +8,7 @@ import {
   type MaxPlayers,
   type MeRes,
   type Profile,
+  type TakenColorsRes,
   TokenSchema,
 } from "@cd/protocol";
 import {
@@ -25,9 +26,11 @@ import { type Credential, checkCredentials, newSeat } from "./room-access";
 import {
   abandonedAt,
   BAD_CREDENTIALS,
+  colourTaken,
   expiresAt,
   fail,
   findByName,
+  firstFreeProfile,
   hasAuthedSocket,
   isOnline,
   LOBBY_NAME,
@@ -41,6 +44,7 @@ import {
   publicEntry,
   removeSeat,
   seatIdOf,
+  takenColors,
 } from "./room-lobby-ops";
 import { endSocket, RoomPlay } from "./room-play-ops";
 import { isRoomFull, startLobbyGame } from "./room-start";
@@ -189,7 +193,16 @@ export class GameRoom extends DurableObject<Env> {
       if (findByName(seats, name)) return fail(409, "E_NAME_TAKEN");
       const token = newToken();
       const order = Math.max(0, ...seats.map((s) => s.joinOrder)) + 1;
-      const seat = await newSeat(name, order, false, token, this.now(), profile);
+      const taken = takenColors(seats);
+      if (profile && taken.includes(profile.color)) return colourTaken(taken);
+      const seat = await newSeat(
+        name,
+        order,
+        false,
+        token,
+        this.now(),
+        profile ?? firstFreeProfile(taken, order),
+      );
       const all = [...seats, seat];
       // T-UX-17: the seat that fills the room starts the game, same path as the host's Start.
       const started = isRoomFull(meta, all)
@@ -215,10 +228,24 @@ export class GameRoom extends DurableObject<Env> {
       const token = newToken();
       seat.tokenHash = await hashToken(token);
       seat.lastSeenAt = this.now();
-      if (profile && meta.status === "lobby") seat.profile = profile;
+      if (profile && meta.status === "lobby") {
+        const taken = takenColors(seats, seat.seatId);
+        if (taken.includes(profile.color)) return colourTaken(taken);
+        seat.profile = profile;
+      }
       this.closeSeat(seat.seatId, CLOSE.SESSION_ENDED, "sessionEnded");
       await this.commit(meta, seats);
       return ok({ code: meta.code, token, seatId: seat.seatId });
+    });
+  }
+
+  /** Public (T-NEW-32): colours held in the lobby, for the join dialogs. No names. */
+  takenColors(): Promise<OpResult<TakenColorsRes>> {
+    return this.serial(async () => {
+      const meta = await this.store.getMeta();
+      if (!meta) return fail(404, "E_NOT_FOUND");
+      const seats = meta.status === "lobby" ? await this.store.getSeats() : [];
+      return ok({ taken: takenColors(seats) });
     });
   }
 

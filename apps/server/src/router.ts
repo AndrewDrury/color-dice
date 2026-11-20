@@ -37,7 +37,8 @@ export type Route =
         | "kick"
         | "update"
         | "invite"
-        | "inviteReset";
+        | "inviteReset"
+        | "colors";
     };
 
 /** Upper-cases and validates a game code; returns null if invalid. */
@@ -63,6 +64,7 @@ const GAME_ACTIONS: Record<
   leave: { method: "POST", action: "leave" },
   kick: { method: "POST", action: "kick" },
   invite: { method: "GET", action: "invite" },
+  colors: { method: "GET", action: "colors" },
   "invite/reset": { method: "POST", action: "inviteReset" },
 };
 
@@ -149,6 +151,7 @@ export async function gameApiHandler(
       ? respond(await stub.join(body.value.name, cred, body.value.profile), 201)
       : respond(await stub.reclaim(body.value.name, cred, body.value.profile), 200);
   }
+  if (route.action === "colors") return respond(await stub.takenColors(), 200);
   const token = bearer(req);
   if (!token) return error("E_NOT_AUTHED", 401);
   switch (route.action) {
