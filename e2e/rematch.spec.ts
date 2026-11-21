@@ -70,13 +70,14 @@ async function startRematch(t: Table): Promise<void> {
   }
   await queueDice(code, [6, 1]);
   await a.page.getByRole("button", { name: "Rematch" }).click();
-  await a.page
-    .getByRole("dialog", { name: "Start a rematch?" })
-    .getByRole("button", { name: "Rematch" })
-    .click();
+  const popup = b.page.getByRole("dialog", { name: "Rematch" });
+  await expect(popup).toContainText("Alma wants a rematch");
+  await expect(popup.locator(".rematch-avatar img")).toBeVisible();
+  await expect(b.page.locator(".rematch-highlight")).toBeVisible();
+  await b.page.getByRole("button", { name: "Accept Rematch" }).click();
 }
 
-test("rematch: game over shows the same record on both screens, the winning guest gets no Rematch button", async ({
+test("rematch: game over shows the same record and a Rematch button on both screens", async ({
   browser,
 }) => {
   const t = await twoPlayers(browser);
@@ -91,7 +92,6 @@ test("rematch: game over shows the same record on both screens, the winning gues
       await expectRecord(p.page, "Alma", "0–0–1");
       await expectRecord(p.page, "Boris", "1–0–0");
     }
-    await expect(b.page.getByRole("button", { name: "Rematch" })).toHaveCount(0);
   } finally {
     await closeAll([a, b]);
   }

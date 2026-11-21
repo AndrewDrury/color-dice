@@ -361,7 +361,25 @@ describe("away and rematch", () => {
       );
     });
     const before = (c0.view() as ViewMessage).seats.map((s) => s.seatId);
-    c0.send({ type: "rematch" });
+    c0.send({ type: "rematchRequest" });
+    const offer = await c0.until(() =>
+      [...c0.frames].reverse().find((f) => f.type === "rematchOffer" && f.offer !== null),
+    );
+    expect((offer.offer as { accepted: string[] }).accepted).toEqual([c0.view()?.you.seatId]);
+    const declinedAt = c0.frames.length;
+    c1.send({ type: "rematchDecline" });
+    const cleared = await c0.until(() =>
+      c0.frames
+        .slice(declinedAt)
+        .find((f) => f.type === "rematchOffer" && f.offer === null && f.reason === "declined"),
+    );
+    expect(cleared).toBeTruthy();
+    const reofferedAt = c0.frames.length;
+    c0.send({ type: "rematchRequest" });
+    await c0.until(() =>
+      c0.frames.slice(reofferedAt).find((f) => f.type === "rematchOffer" && f.offer !== null),
+    );
+    c1.send({ type: "rematchRequest" });
     const v = await c0.until(() => {
       const x = c0.view();
       return x?.game?.phase === "AWAIT_ROLL" ? x : undefined;

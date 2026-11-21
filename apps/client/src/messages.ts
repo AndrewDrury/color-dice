@@ -3,6 +3,7 @@ import {
   type LobbyMessage,
   PUBLIC_LIST_MAX,
   PublicGameSchema,
+  RematchOfferMessageSchema,
   type ServerMessage,
   type ViewMessage,
   ViewMessageSchema,
@@ -44,6 +45,10 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
     }
     case "error": {
       const r = ErrorMessageSchema.safeParse(obj);
+      return r.success ? r.data : null;
+    }
+    case "rematchOffer": {
+      const r = RematchOfferMessageSchema.safeParse(obj);
       return r.success ? r.data : null;
     }
     case "kicked":

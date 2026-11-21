@@ -64,7 +64,8 @@ describe("finished-room TTL", () => {
     const finishedAt = (await metaOf(code))?.finishedAt as number;
     expect(finishedAt).toBeGreaterThan(0);
     const c0 = conns[0] as Conn;
-    c0.send({ type: "rematch" });
+    c0.send({ type: "rematchRequest" });
+    for (const c of conns.slice(1) as Conn[]) c.send({ type: "rematchAccept" });
     await c0.until(() => c0.view().game?.phase === "AWAIT_ROLL");
     const after = await metaOf(code);
     expect(after?.status).toBe("playing");

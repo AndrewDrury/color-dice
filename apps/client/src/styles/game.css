@@ -83,6 +83,47 @@
 }
 
 /* ---------- Sheet ---------- */
+.rematch-popup-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s3);
+  background: rgb(0 0 0 / 28%);
+}
+.rematch-popup {
+  width: min(420px, calc(100vw - 32px));
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  padding: var(--s4);
+  text-align: center;
+  outline: none;
+}
+.rematch-popup h2 {
+  margin: var(--s2) 0;
+}
+.rematch-avatar {
+  margin-inline: auto;
+}
+.rematch-popup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.rematch-highlight {
+  border-radius: var(--r-pill);
+  animation: rematch-pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 5px rgb(var(--accent-rgb) / 28%);
+}
+@keyframes rematch-pulse {
+  50% {
+    box-shadow: 0 0 0 9px rgb(var(--accent-rgb) / 10%);
+  }
+}
 .g-sheet {
   container: sheet / inline-size;
   display: flex;

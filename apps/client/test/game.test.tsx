@@ -7,7 +7,7 @@ import { passTakesPenalty, submitLabel } from "../src/game/staging";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
 import { _resetMemoryForTests, saveSession } from "../src/session";
-import { _resetStoreForTests, applyView } from "../src/store";
+import { _resetStoreForTests, applyRematch, applyView } from "../src/store";
 import { TOKEN } from "./fixtures";
 import { CODE, makeGameView, mark, player, seatIdOf } from "./fixtures/views";
 
@@ -420,6 +420,32 @@ describe("Game screen", () => {
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
     expect(screen.getAllByText("Rematch").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Back to home").length).toBeGreaterThan(0);
+  });
+
+  it("shows the rematch requester avatar and lets an opponent accept", async () => {
+    const view = makeGameView({ phase: "GAME_OVER" });
+    show(view);
+    const requester = view.seats.find((s) => s.seatId === seatIdOf(1));
+    if (!requester) throw new Error("fixture requester missing");
+    const profile = { color: "teal" as const, cat: "cat-gif" as const };
+    act(() => {
+      applyRematch({
+        fromSeatId: requester.seatId,
+        fromName: requester.name,
+        fromProfile: profile,
+        accepted: [requester.seatId],
+        expiresAt: Date.now() + 60_000,
+      });
+    });
+    const { container } = mount();
+    const dialog = await screen.findByRole("dialog", { name: "Rematch" });
+    expect(dialog.textContent).toContain(`${requester.name} wants a rematch`);
+    expect(dialog.querySelector(".rematch-avatar img")).toBeTruthy();
+    expect(container.querySelector(".rematch-highlight")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Accept Rematch" }));
+    expect(sent).toContainEqual({ type: "rematchAccept" });
+    act(() => applyRematch(null));
+    expect(container.querySelector(".rematch-highlight")).toBeNull();
   });
 });
 

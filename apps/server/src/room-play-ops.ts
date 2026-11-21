@@ -7,7 +7,6 @@ import {
   type Action1Decision,
   type Action2Decision,
   type Command,
-  createGame,
   type DiceSource,
   dispatch,
   fromJSON,
@@ -31,6 +30,7 @@ import type { Env } from "./env";
 import { pausedSeatIds } from "./pause";
 import { RoomChat } from "./room-chat-ops";
 import { playerId, takenColors } from "./room-lobby-ops";
+import { RoomRematch } from "./room-rematch-ops";
 import { RollOffOps } from "./room-rolloff-ops";
 import type { RoomMeta, RoomStore, SeatRecord } from "./room-store";
 import { loadDice } from "./test-hooks";
@@ -247,6 +247,7 @@ function cpuAction2(state: GameState, seatIndex: number): Action2Decision {
 export class RoomPlay {
   private readonly chat: RoomChat;
   private readonly rollOff: RollOffOps;
+  private readonly rematchOps: RoomRematch;
 
   constructor(private readonly d: PlayDeps) {
     this.rollOff = new RollOffOps({
@@ -261,6 +262,15 @@ export class RoomPlay {
       () => d.sockets(),
       () => d.now(),
     );
+    this.rematchOps = new RoomRematch({
+      env: () => d.env(),
+      storage: d.storage,
+      store: d.store,
+      sockets: () => d.sockets(),
+      now: () => d.now(),
+      commit: (m, s, st) => d.commit(m, s, st),
+      broadcast: (m, s) => d.broadcast(m, s),
+    });
   }
 
   /** New socket: unauthenticated until a valid `auth`. */
@@ -335,6 +345,12 @@ export class RoomPlay {
         return this.command(ws, att.seatId, msg);
       case "rematch":
         return this.rematch(ws, att.seatId);
+      case "rematchRequest":
+        return this.rematchRequest(ws, att.seatId);
+      case "rematchAccept":
+        return this.rematchAccept(ws, att.seatId);
+      case "rematchDecline":
+        return this.rematchDecline(ws, att.seatId);
       case "profile":
         return this.setProfile(ws, att.seatId, msg.profile);
       case "chat":
@@ -379,6 +395,7 @@ export class RoomPlay {
     if (state && state.phase !== "GAME_OVER" && seats.some((s) => s.left)) {
       await this.resave(meta, seats);
     } else await this.d.broadcast(meta, seats); // this socket gets its view, everyone presence
+    await this.rematchOps.broadcastOffer(meta, seats);
     send(ws, { type: "chatHistory", messages: await this.chat.history() });
   }
 
@@ -530,17 +547,28 @@ export class RoomPlay {
     const l = await this.load(ws, seatId);
     if (!l) return;
     if (!l.me.host) return sendError(ws, "E_NOT_HOST", "rematch");
-    const state = await this.loadState();
-    if (state?.phase !== "GAME_OVER") return sendError(ws, "E_WRONG_PHASE", "rematch");
-    const ordered = l.seats
-      .filter((s): s is SeatRecord & { seatIndex: number } => s.seatIndex !== null)
-      .sort((a, b) => a.seatIndex - b.seatIndex);
-    const dice = await loadDice(this.d.env(), this.d.storage);
-    const res = createGame(
-      ordered.map((s) => ({ id: playerId(s.seatIndex), displayName: s.name })),
-      { dice: dice.dice },
-    );
-    if (!res.ok) return sendError(ws, res.error.code, "rematch");
-    await this.save(l.meta, l.seats, res.state, dice);
+    const err = await this.rematchOps.request(ws, seatId, l.meta, l.seats);
+    if (err) sendError(ws, err, "rematch");
+  }
+
+  private async rematchRequest(ws: WebSocket, seatId: string): Promise<void> {
+    const l = await this.load(ws, seatId);
+    if (!l) return;
+    const err = await this.rematchOps.request(ws, seatId, l.meta, l.seats);
+    if (err) sendError(ws, err, "rematchRequest");
+  }
+
+  private async rematchAccept(ws: WebSocket, seatId: string): Promise<void> {
+    const l = await this.load(ws, seatId);
+    if (!l) return;
+    const err = await this.rematchOps.accept(ws, seatId, l.meta, l.seats);
+    if (err) sendError(ws, err, "rematchAccept");
+  }
+
+  private async rematchDecline(ws: WebSocket, seatId: string): Promise<void> {
+    const l = await this.load(ws, seatId);
+    if (!l) return;
+    const err = await this.rematchOps.decline(ws, seatId, l.meta, l.seats);
+    if (err) sendError(ws, err, "rematchDecline");
   }
 }

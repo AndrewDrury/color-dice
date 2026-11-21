@@ -1,11 +1,10 @@
 /** The game screen (D1 item 5, H3): top bar, opponents, dice tray, your sheet, action bar, log. */
-import type { ErrorMessage, ViewMessage } from "@cd/protocol";
+import type { ErrorMessage, RematchOffer, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { openPanel } from "../chat/store";
 import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
 import { GameMenu } from "../components/GameMenu";
 import { LockPopup } from "../components/LockPopup";
@@ -67,7 +66,7 @@ export function Game({ code }: { code: string }) {
   const [failSignal, setFailSignal] = useState(0);
   const [leaving, setLeaving] = useState(false);
   useBackGuard(() => setLeaving(true));
-  const { view: storeView, status, toast, epoch } = useAppState();
+  const { view: storeView, status, toast, epoch, rematch } = useAppState();
   const view = storeView?.code === code ? storeView : null;
   const conn = useGameSocket(code, (e: ErrorMessage) => {
     showToast(errorText(e.code, e.reason), "error");
@@ -113,6 +112,7 @@ export function Game({ code }: { code: string }) {
       leaving={leaving}
       setLeaving={setLeaving}
       liveRollOff={sawLive.current}
+      rematch={rematch}
     />
   );
 }
@@ -127,6 +127,7 @@ interface BoardProps {
   leaving: boolean;
   setLeaving: (v: boolean) => void;
   liveRollOff: boolean;
+  rematch?: RematchOffer | null;
 }
 
 export function Board({
@@ -139,12 +140,21 @@ export function Board({
   leaving,
   setLeaving,
   liveRollOff,
+  rematch = null,
 }: BoardProps) {
   const game = view.game;
   const viewport = useViewport();
   const [rematching, setRematching] = useState(false);
   const [rematchBusy, setRematchBusy] = useState(false);
+  const previousRematch = useRef(rematch);
   const [panel, setPanel] = useState<Panel>(null);
+  useEffect(() => {
+    if (previousRematch.current && !rematch) {
+      setRematching(false);
+      setRematchBusy(false);
+    }
+    previousRematch.current = rematch;
+  }, [rematch]);
 
   // ---- diff against the previous view (once per applied version) ----
   const prev = useRef<ViewMessage | null>(null);
@@ -435,7 +445,13 @@ export function Board({
           view={view}
           rematchBusy={rematchBusy}
           send={conn.send}
-          onRematch={() => setRematching(true)}
+          rematch={rematch}
+          rematchHighlight={rematch !== null && rematch.fromSeatId !== view.you.seatId}
+          onRematch={() => {
+            const sent = conn.send({ type: "rematchRequest" });
+            setRematching(sent);
+            setRematchBusy(sent);
+          }}
           onHome={() => {
             clearView();
             navigate("home");
@@ -449,18 +465,6 @@ export function Board({
         name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
       />
       {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
-      {rematching ? (
-        <ConfirmDialog
-          title={t("game.rematchTitle")}
-          body={t("game.rematchBody")}
-          confirmLabel={t("game.rematch")}
-          onCancel={() => setRematching(false)}
-          onConfirm={() => {
-            setRematching(false);
-            setRematchBusy(conn.send({ type: "rematch" }));
-          }}
-        />
-      ) : null}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 /** Results card (H7) over the dimmed board: winners, reason, ranked table, Rematch / Back home. */
-import type { ClientMessage, ViewMessage } from "@cd/protocol";
+import type { ClientMessage, RematchOffer, ViewMessage } from "@cd/protocol";
 import type { ComponentType } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { AvatarHover } from "../components/AvatarHover";
 import { Button } from "../components/Button";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
+import { RematchPopup } from "../components/RematchPopup";
 import type { ResultsRevealProps } from "../components/ResultsReveal";
 import { rankNumbers, rankPlayers, ScoreTable } from "../components/ScoreTable";
 import { Sheet } from "../components/Sheet";
@@ -24,7 +25,9 @@ export interface GameOverProps {
   view: ViewMessage;
   rematchBusy: boolean;
   send: (m: ClientMessage) => boolean;
+  rematch?: RematchOffer | null;
   onRematch: () => void;
+  rematchHighlight?: boolean;
   onHome: () => void;
 }
 
@@ -65,7 +68,15 @@ function useDeviceHistory(view: ViewMessage, result: GameResult) {
   }, []);
 }
 
-export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOverProps) {
+export function GameOver({
+  view,
+  rematchBusy,
+  send,
+  rematch = null,
+  onRematch,
+  rematchHighlight = false,
+  onHome,
+}: GameOverProps) {
   useT();
   const g = view.game;
   const { winnerSeats, tie, allTied } = tieInfo(view);
@@ -94,12 +105,17 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
   const ranks = new Map(
     rankNumbers(ranked).map((r, i) => [(ranked[i] as { seat: number }).seat, r]),
   );
+  const eligible = view.seats.some(
+    (s) => s.seatId === view.you.seatId && s.left !== true && s.kind === "human",
+  );
   const actions = (
     <>
-      {view.you.host ? (
-        <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
-          {t("over.rematch")}
-        </Button>
+      {eligible ? (
+        <div class={rematchHighlight ? "rematch-highlight" : undefined}>
+          <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
+            {t("over.rematch")}
+          </Button>
+        </div>
       ) : null}
       <Button onClick={onHome}>{t("over.home")}</Button>
     </>
@@ -189,6 +205,7 @@ export function GameOver({ view, rematchBusy, send, onRematch, onHome }: GameOve
           }
         />
       ) : null}
+      {rematch ? <RematchPopup view={view} offer={rematch} send={send} /> : null}
     </div>
   );
 }

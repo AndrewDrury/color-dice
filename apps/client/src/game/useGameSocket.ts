@@ -6,7 +6,7 @@ import { t } from "../i18n";
 import { forgetRoom, toastSessionEnded } from "../roomEnd";
 import { navigate } from "../router";
 import { getSession } from "../session";
-import { applyView, clearView, getState, setStatus, showToast } from "../store";
+import { applyRematch, applyView, clearView, getState, setStatus, showToast } from "../store";
 import { checkForUpdateNow } from "../update";
 import { type EndReason, GameSocket } from "../ws";
 
@@ -51,6 +51,7 @@ export function useGameSocket(code: string, onError: (e: ErrorMessage) => void):
     socket.current = s;
     const offMsg = s.onMessage((msg) => {
       if (msg.type === "view") applyView(msg);
+      else if (msg.type === "rematchOffer") applyRematch(msg.offer);
       else if (routeChat(msg) || routeChatError(msg)) return;
       else if (msg.type === "error") {
         // Unknown/invalid command can mean this tab is running an older build.

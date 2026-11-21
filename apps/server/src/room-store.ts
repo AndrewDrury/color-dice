@@ -61,6 +61,17 @@ export interface ChatState {
   messages: ChatEntry[];
 }
 
+export interface RematchOfferState {
+  fromSeatId: string;
+  fromName: string;
+  fromProfile: Profile;
+  accepted: string[];
+  sentAt: number;
+  expiresAt: number;
+}
+
+export const REMATCH_KEY = "rematch";
+
 /**
  * Storage key `"rollOff"`: the opening roll-off while it runs (T-NEW-2). `current[seatIndex]`
  * is that seat's face this round (null = not yet rolled, 0 = out of this round, A-2); it is never sent to clients until
@@ -101,6 +112,15 @@ export class RoomStore {
   /** Chat never touches `meta.version` or `lastActivityAt`. */
   putChat(chat: ChatState): Promise<void> {
     return this.storage.put("chat", chat);
+  }
+
+  getRematch(): Promise<RematchOfferState | undefined> {
+    return this.storage.get<RematchOfferState>(REMATCH_KEY);
+  }
+
+  async putRematch(offer: RematchOfferState | null): Promise<void> {
+    if (offer === null) await this.storage.delete(REMATCH_KEY);
+    else await this.storage.put(REMATCH_KEY, offer);
   }
 
   /** Writes `meta` without counting it as activity (e.g. failed-join counters). */

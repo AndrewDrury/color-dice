@@ -1,4 +1,4 @@
-import type { ViewMessage } from "@cd/protocol";
+import type { RematchOffer, ViewMessage } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
 import type { SocketStatus } from "./ws";
 
@@ -16,11 +16,19 @@ export interface AppState {
   epoch: number;
   /** When (epoch ms, client clock) we first saw each seat offline. */
   offlineSince: Record<string, number>;
+  rematch: RematchOffer | null;
 }
 
 type Listener = (state: AppState) => void;
 
-const initial: AppState = { view: null, status: "ended", toast: null, epoch: 0, offlineSince: {} };
+const initial: AppState = {
+  view: null,
+  status: "ended",
+  toast: null,
+  epoch: 0,
+  offlineSince: {},
+  rematch: null,
+};
 
 let state: AppState = initial;
 let toastSeq = 0;
@@ -46,6 +54,12 @@ export function subscribe(cb: Listener): () => void {
  */
 export function applyView(v: ViewMessage): boolean {
   const cur = state.view;
+  const gameChanged =
+    cur !== null &&
+    (cur.code !== v.code ||
+      cur.game?.turn?.number !== v.game?.turn?.number ||
+      cur.game?.phase !== v.game?.phase);
+  if (gameChanged) set({ rematch: null });
   if (cur && v.version < cur.version) return false;
   // Presence-only changes (socket auth/close) keep the same version: accept an equal-version
   // view for the same game only when its seat data differs. Game.tsx diffs per version, so no
@@ -80,7 +94,11 @@ function seatsDiffer(a: ViewMessage["seats"], b: ViewMessage["seats"]): boolean 
 
 /** Forget the current view (leaving a game, switching to another code). */
 export function clearView(): void {
-  set({ view: null, offlineSince: {} });
+  set({ view: null, offlineSince: {}, rematch: null });
+}
+
+export function applyRematch(offer: RematchOffer | null): void {
+  set({ rematch: offer });
 }
 
 export function setStatus(status: SocketStatus): void {

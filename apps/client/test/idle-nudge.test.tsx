@@ -61,7 +61,7 @@ describe("idle nudge (T-NEW-22)", () => {
   });
 
   async function mount(v: Parameters<typeof makeGameView>[0]) {
-    await import("../src/components/IdleNudge"); // warm the lazy chunk
+    await import("../src/components/lateUi"); // warm the actual lazy boundary
     show(makeGameView(v));
     render(<Game code={CODE} />);
     await tick(50); // the lazy chunk resolves

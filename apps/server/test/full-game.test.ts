@@ -138,7 +138,8 @@ describe("full games over sockets", () => {
     // Rematch: null again for every seat.
     const c0 = conns[0] as Conn;
     const mark = c0.frames.length;
-    c0.send({ type: "rematch" });
+    c0.send({ type: "rematchRequest" });
+    for (const c of conns.slice(1) as Conn[]) c.send({ type: "rematchAccept" });
     await c0.until(() => c0.view().game?.phase === "AWAIT_ROLL");
     const after = await settled(conns);
     const fresh = c0.frames.slice(mark).filter((f) => f.type === "view");
@@ -177,9 +178,8 @@ describe("full games over sockets", () => {
     // Rematch: same seats, version keeps increasing, turn 1 starts.
     const before = c0.view();
     await queueDice(room.code, [6, ...Array(7 * 6).fill(1)]);
-    c1.send({ type: "rematch" });
-    expect((await c1.next("error")).code).toBe("E_NOT_HOST");
-    c0.send({ type: "rematch" });
+    c1.send({ type: "rematchRequest" });
+    c0.send({ type: "rematchAccept" });
     await c0.until(() => c0.view().game?.phase === "AWAIT_ROLL");
     const after = (await settled(conns))[0] as ViewMessage;
     expect(after.version).toBeGreaterThan(before.version);
