@@ -14,6 +14,7 @@ export interface RematchDeps {
   now: () => number;
   commit: (meta: RoomMeta, seats: SeatRecord[], state?: string) => Promise<void>;
   broadcast: (meta: RoomMeta, seats: SeatRecord[]) => Promise<void>;
+  rearm: () => Promise<void>;
 }
 
 function seatIdOf(ws: WebSocket): string | null {
@@ -46,6 +47,15 @@ export class RoomRematch {
     );
   }
 
+  async clearExpired(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
+    const offer = await this.d.store.getRematch();
+    if (!offer || offer.expiresAt > this.d.now()) return;
+    this.requests.delete(offer.fromSeatId);
+    await this.d.store.putRematch(null);
+    await this.d.rearm();
+    await this.broadcastOffer(meta, seats, "expired");
+  }
+
   private display(offer: Awaited<ReturnType<RoomStore["getRematch"]>>) {
     if (!offer) return null;
     return {
@@ -68,6 +78,7 @@ export class RoomRematch {
     if (offer && offer.expiresAt <= now) {
       this.requests.delete(offer.fromSeatId);
       await this.d.store.putRematch(null);
+      await this.d.rearm();
       offer = undefined;
       reason = "expired";
     }
@@ -123,6 +134,7 @@ export class RoomRematch {
       sentAt: now,
       expiresAt: now + REMATCH_OFFER_TTL_MS,
     });
+    await this.d.rearm();
     await this.broadcastOffer(meta, seats);
     await this.maybeStart(meta, seats);
     return null;
@@ -164,6 +176,7 @@ export class RoomRematch {
     const me = seats.find((s) => s.seatId === seatId);
     if (!me || !this.eligible(seats).some((s) => s.seatId === seatId)) return null;
     await this.d.store.putRematch(null);
+    await this.d.rearm();
     const reason = offer.fromSeatId === seatId ? "cancelled" : "declined";
     this.requests.delete(offer.fromSeatId);
     await this.broadcastOffer(meta, seats, reason, me.name);
@@ -177,6 +190,7 @@ export class RoomRematch {
     if (eligible.some((s) => !offer.accepted.includes(s.seatId))) return;
     this.requests.delete(offer.fromSeatId);
     await this.d.store.putRematch(null);
+    await this.d.rearm();
     const ordered = [...seats]
       .filter((s) => s.seatIndex !== null && s.left !== true)
       .sort((a, b) => (a.seatIndex as number) - (b.seatIndex as number));

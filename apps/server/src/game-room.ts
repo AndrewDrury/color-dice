@@ -98,6 +98,7 @@ export class GameRoom extends DurableObject<Env> {
       now: () => this.now(),
       commit: (meta, seats, state) => this.commit(meta, seats, state),
       broadcast: (meta, seats) => this.broadcast(meta, seats),
+      rearm: () => this.rearm(),
     });
     if (hooksEnabled(env)) {
       void ctx.blockConcurrencyWhile(async () => {
@@ -416,8 +417,9 @@ export class GameRoom extends DurableObject<Env> {
         return;
       }
       const seats = await this.store.getSeats();
+      await this.play.expireRematch(meta, seats);
       if (this.now() >= this.deleteAt(meta, seats)) await this.destroy(meta.code);
-      else await this.store.setAlarm(this.alarmAt(meta, seats));
+      else await this.store.setAlarm(await this.alarmAt(meta, seats));
     });
   }
 
@@ -442,14 +444,16 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /** Earliest of the room expiry and the next unauthenticated-socket deadline. */
-  private alarmAt(meta: RoomMeta | undefined, seats: SeatRecord[]): number {
+  private async alarmAt(meta: RoomMeta | undefined, seats: SeatRecord[]): Promise<number> {
     const sweep = this.play.sweepUnauthed() ?? Number.POSITIVE_INFINITY;
-    return Math.min(meta ? this.deleteAt(meta, seats) : this.now() + 60_000, sweep);
+    const offer = await this.store.getRematch();
+    const rematch = offer?.expiresAt ?? Number.POSITIVE_INFINITY;
+    return Math.min(meta ? this.deleteAt(meta, seats) : this.now() + 60_000, sweep, rematch);
   }
 
   private async rearm(): Promise<void> {
     const meta = await this.store.getMeta();
-    await this.store.setAlarm(this.alarmAt(meta, meta ? await this.store.getSeats() : []));
+    await this.store.setAlarm(await this.alarmAt(meta, meta ? await this.store.getSeats() : []));
   }
 
   /** Presence update, then re-arm: the last socket closing starts the 30-min clock. */
@@ -499,7 +503,7 @@ export class GameRoom extends DurableObject<Env> {
   private async commit(meta: RoomMeta, seats?: SeatRecord[], state?: string): Promise<void> {
     await this.store.commit(meta, this.now(), seats, state);
     const all = seats ?? (await this.store.getSeats());
-    await this.store.setAlarm(this.alarmAt(meta, all));
+    await this.store.setAlarm(await this.alarmAt(meta, all));
     await this.syncLobby(meta, all);
     await this.broadcast(meta, all, state);
   }

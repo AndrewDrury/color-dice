@@ -184,6 +184,7 @@ export interface PlayDeps {
   commit(meta: RoomMeta, seats: SeatRecord[], state?: string): Promise<void>;
   /** Send views to every authenticated socket without persisting anything. */
   broadcast(meta: RoomMeta, seats: SeatRecord[]): Promise<void>;
+  rearm(): Promise<void>;
 }
 
 type Loaded = { meta: RoomMeta; seats: SeatRecord[]; me: SeatRecord };
@@ -270,7 +271,16 @@ export class RoomPlay {
       now: () => d.now(),
       commit: (m, s, st) => d.commit(m, s, st),
       broadcast: (m, s) => d.broadcast(m, s),
+      rearm: () => d.rearm(),
     });
+  }
+
+  /** Alarm hook: expire a pending rematch and broadcast the cleared offer. */
+  async expireRematch(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
+    const offer = await this.d.store.getRematch();
+    if (offer && offer.expiresAt <= this.d.now()) {
+      await this.rematchOps.clearExpired(meta, seats);
+    }
   }
 
   /** New socket: unauthenticated until a valid `auth`. */

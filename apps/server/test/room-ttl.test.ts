@@ -42,6 +42,46 @@ async function finishedRoom(): Promise<{ code: string; conns: Conn[] }> {
 }
 
 describe("finished-room TTL", () => {
+  it("a pending rematch offer expires automatically and broadcasts expired", async () => {
+    const { code, conns } = await finishedRoom();
+    const c0 = conns[0] as Conn;
+    const start = c0.frames.length;
+    c0.send({ type: "rematchRequest" });
+    await c0.until(() =>
+      c0.frames.slice(start).find((f) => f.type === "rematchOffer" && f.offer !== null),
+    );
+
+    const offer = await runInDurableObject(stub(code), (r: GameRoom) =>
+      (
+        r as unknown as {
+          store: { getRematch(): Promise<{ sentAt: number; expiresAt: number } | undefined> };
+        }
+      ).store.getRematch(),
+    );
+    expect(offer).toBeDefined();
+    expect(offer?.expiresAt).toBeGreaterThan(0);
+
+    const expiredAt = offer?.expiresAt as number;
+    await setNow(code, expiredAt);
+    expect(await runDurableObjectAlarm(stub(code))).toBe(true);
+    await c0.until(() =>
+      c0.frames
+        .slice(start)
+        .find((f) => f.type === "rematchOffer" && f.offer === null && f.reason === "expired"),
+    );
+    expect(
+      await runInDurableObject(stub(code), (r: GameRoom) =>
+        (
+          r as unknown as {
+            store: { getRematch(): Promise<unknown> };
+          }
+        ).store.getRematch(),
+      ),
+    ).toBeUndefined();
+    expect(expiredAt - (offer?.sentAt as number)).toBe(10 * 60_000);
+    for (const c of conns) c.close();
+  });
+
   it("a finished room is deleted by the alarm after 25 h, but not after 23 h", async () => {
     const { code, conns } = await finishedRoom();
     const meta = await metaOf(code);

@@ -193,7 +193,6 @@ describe("commands", () => {
   it("undoes a submitted Action 1 decision and publishes a new view", async () => {
     const r = await setup(2);
     const c0 = r.clients[0] as Client;
-    const c1 = r.clients[1] as Client;
     const t = turnOf(c0.view() as ViewMessage);
     c0.send({ type: "roll", turn: t });
     await c0.until(() => c0.view()?.game?.phase === "ACTION_1");
