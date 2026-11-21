@@ -5,6 +5,7 @@ import { ThemePicker } from "../src/components/ThemePicker";
 import {
   _resetPrefsForTests,
   getPrefs,
+  onPrefs,
   PREFS_KEY,
   setPrefs,
   THEME_SCHEME,
@@ -99,5 +100,17 @@ describe("theme allow-list", () => {
     _resetPrefsForTests();
     expect(getPrefs().theme).toBe("classic-light");
     expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}").theme).toBe("classic-light");
+  });
+
+  it("syncs and migrates a prefs storage event across tabs", () => {
+    const cb = vi.fn();
+    const off = onPrefs(cb);
+    const newValue = JSON.stringify({ theme: "light" });
+    window.dispatchEvent(new StorageEvent("storage", { key: PREFS_KEY, newValue }));
+
+    expect(getPrefs().theme).toBe("classic-light");
+    expect(cb).toHaveBeenCalledWith(expect.objectContaining({ theme: "classic-light" }));
+    expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}").theme).toBe("classic-light");
+    off();
   });
 });

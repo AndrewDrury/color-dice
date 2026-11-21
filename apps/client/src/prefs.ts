@@ -180,6 +180,31 @@ export function onPrefs(cb: Listener): () => void {
   };
 }
 
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event: StorageEvent) => {
+    if (event.key !== PREFS_KEY || event.newValue === null) return;
+    let data: unknown;
+    try {
+      data = JSON.parse(event.newValue);
+    } catch {
+      return;
+    }
+    if (typeof data !== "object" || data === null || Array.isArray(data)) return;
+
+    const next = sanitize(data);
+    memory = next;
+    const ls = storage();
+    if (ls) {
+      try {
+        ls.setItem(PREFS_KEY, JSON.stringify(next));
+      } catch {
+        // Quota exceeded or storage blocked: keep the in-memory copy.
+      }
+    }
+    for (const cb of listeners) cb(clone(next));
+  });
+}
+
 /** Test helper: drop the in-memory copy and listeners. */
 export function _resetPrefsForTests(): void {
   memory = null;
