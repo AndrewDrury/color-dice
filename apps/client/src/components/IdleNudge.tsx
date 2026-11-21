@@ -11,7 +11,7 @@ import { t } from "../i18n";
 import { turnCta } from "./TurnBanner";
 import "../styles/nudge.css";
 
-export const IDLE_NUDGE_MS = 8000;
+export const IDLE_NUDGE_MS = 10_000;
 
 export interface IdleNudgeProps {
   view: ViewMessage;
@@ -28,11 +28,19 @@ const EVENTS = ["pointerdown", "keydown", "touchstart", "click"] as const;
 export default function IdleNudge({ view, staged, noMove, blocked, resetKey }: IdleNudgeProps) {
   const [shown, setShown] = useState(false);
   const hint = turnCta(view, { staged, noMove });
+  const activeSeat = view.game?.turn?.activeSeat;
+  const viewerSeat = view.seats.find((seat) => seat.seatId === view.you.seatId);
+  const viewerIsActiveHuman =
+    view.you.seat !== null && activeSeat === view.you.seat && viewerSeat?.kind === "human";
   const waiting =
     !blocked &&
+    viewerIsActiveHuman &&
     view.game?.phase !== "GAME_OVER" &&
     (view.pausedSeatIds ?? []).length === 0 &&
     (view.you.canRoll || (hint !== null && view.you.seat !== null));
+  const stateKey = `${view.code}:${view.game?.turn?.number ?? ""}:${view.game?.phase ?? ""}:${
+    view.you.action1Decision?.kind ?? ""
+  }:${view.you.pendingAction2 ? "pending" : ""}:${resetKey ?? ""}`;
   useEffect(() => {
     setShown(false);
     if (!waiting) return;
@@ -65,7 +73,7 @@ export default function IdleNudge({ view, staged, noMove, blocked, resetKey }: I
       for (const e of EVENTS) document.removeEventListener(e, activity, { capture: true });
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [resetKey, waiting]);
+  }, [stateKey, waiting]);
   if (!shown || !waiting) return null;
   return (
     <div class="nudge" role="alert" data-testid="idle-nudge">

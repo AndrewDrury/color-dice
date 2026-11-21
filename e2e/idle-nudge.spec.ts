@@ -1,12 +1,12 @@
 import { createGame, expect, joinGame, playRollOff, startGame, test } from "./fixtures";
 import { closeAll, newPlayer, uid, waitForRoller } from "./helpers";
 
-// T-NEW-22: after 8 s without interaction on your move a loud card appears; a tap hides it.
+// T-NEW-22: after 10 s without interaction on your move a loud card appears; a tap hides it.
 // Uses page.clock, so there is no real waiting. Set SHOTS=1 to also save screenshots.
 declare const process: { env: Record<string, string | undefined> };
 const OUT = new URL("./screenshots/", import.meta.url).pathname;
 
-test("idle nudge shows after 8 s on your move and a tap dismisses it", async ({ browser }) => {
+test("idle nudge shows after 10 s on your move and a tap dismisses it", async ({ browser }) => {
   test.setTimeout(90_000);
   const a = await newPlayer(browser, "Nina");
   const b = await newPlayer(browser, "Nick");
@@ -21,9 +21,9 @@ test("idle nudge shows after 8 s on your move and a tap dismisses it", async ({ 
     await roller.page.reload();
     await expect(roller.page.getByTestId("turn-banner")).toHaveClass(/is-mine/);
     await expect(roller.page.getByTestId("idle-nudge")).toHaveCount(0);
-    await roller.page.clock.runFor(7_000);
+    await roller.page.clock.runFor(9_999);
     await expect(roller.page.getByTestId("idle-nudge")).toHaveCount(0);
-    await roller.page.clock.runFor(1_500);
+    await roller.page.clock.runFor(1);
     await expect(roller.page.getByTestId("idle-nudge")).toBeVisible();
     if (process.env.SHOTS) await roller.page.screenshot({ path: `${OUT}idle-nudge-360.png` });
     await roller.page.mouse.click(5, 5);

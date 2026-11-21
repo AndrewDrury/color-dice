@@ -1,7 +1,7 @@
 /** The game screen (D1 item 5, H3): top bar, opponents, dice tray, your sheet, action bar, log. */
 import type { ErrorMessage, RematchOffer, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { openPanel } from "../chat/store";
+import { openPanel, useChat } from "../chat/store";
 import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
@@ -145,6 +145,7 @@ export function Board({
   const viewport = useViewport();
   const [rematching, setRematching] = useState(false);
   const [rematchBusy, setRematchBusy] = useState(false);
+  const chat = useChat();
   const previousRematch = useRef(rematch);
   const [panel, setPanel] = useState<Panel>(null);
   useEffect(() => {
@@ -423,7 +424,24 @@ export function Board({
           view={view}
           staged={anyStaged}
           noMove={noMove}
-          blocked={!!(st.sent || showRollOff || panel || leaving || rematching)}
+          resetKey={`${st.s1?.color ?? ""}:${st.s1?.number ?? ""}:${st.s2?.color ?? ""}:${
+            st.s2?.number ?? ""
+          }`}
+          blocked={
+            !!(
+              st.sent ||
+              rolling ||
+              showRollOff ||
+              summaryShown ||
+              flow.queue.length ||
+              panel ||
+              chat.panelOpen ||
+              leaving ||
+              rematching ||
+              rematch ||
+              status !== "online"
+            )
+          }
         />
       ) : null}
       {showRollOff && rollOff ? (
