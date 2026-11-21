@@ -6,7 +6,7 @@ import { cssColor } from "../game/model";
 import { useTypewriter } from "../game/useTypewriter";
 import { t, useT } from "../i18n";
 import { AvatarHover } from "./AvatarHover";
-import { CrownIcon, LockIcon } from "./icons";
+import { LockIcon } from "./icons";
 
 const NEAR_PX = 24;
 
@@ -61,18 +61,10 @@ export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: 
                 return (
                   <li key={l.id} class={`lg k-${l.kind}`}>
                     <span class="sr-only">{l.text}</span>
-                    {l.kind === "lock" && l.color ? (
-                      <span class={`lg-lock c-${cssColor(l.color)}`} aria-hidden="true">
-                        <LockIcon size={16} />
-                      </span>
-                    ) : l.kind === "over" ? (
-                      <span class="lg-sym" aria-hidden="true">
-                        <CrownIcon size={18} />
-                      </span>
-                    ) : (
-                      <AvatarHover profile={l.profile} size={24} name={l.typed} />
-                    )}
-                    <span class="lg-name" aria-hidden="true" title={l.typed}>
+                    <span class="lg-turn num" aria-hidden="true">
+                      {t("summary.turn", { n: l.turn })}
+                    </span>
+                    <span class="lg-line" aria-hidden="true" title={l.typed}>
                       {n === undefined ? (
                         l.typed
                       ) : (
@@ -83,19 +75,47 @@ export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: 
                         </>
                       )}
                     </span>
-                    {l.kind === "mark" && l.color ? (
-                      <span class={`ts-box lg-box c-${cssColor(l.color)}`} aria-hidden="true">
-                        {l.number}
-                      </span>
-                    ) : l.kind === "pass" ? (
-                      <span class="lg-pass" aria-hidden="true">
-                        {t("summary.none")}
-                      </span>
-                    ) : l.kind === "penalty" ? (
-                      <span class="ts-penalty lg-pen" aria-hidden="true">
-                        −5
-                      </span>
-                    ) : null}
+                    <span class="lg-actors" aria-hidden="true">
+                      {l.actors.map((a, i) => (
+                        <span class="lg-actor" key={`${l.id}:${a.seat}`}>
+                          <AvatarHover profile={a.profile} size={20} name={a.name} />
+                          <span class="lg-name" title={a.name} aria-hidden="true">
+                            {a.name}
+                          </span>
+                          <span class="lg-actions">
+                            {a.marks.map((m) => (
+                              <span
+                                key={`${a.seat}:${m.color}:${m.number}`}
+                                class={`ts-box lg-box c-${cssColor(m.color)}`}
+                                aria-hidden="true"
+                              >
+                                {m.number}
+                              </span>
+                            ))}
+                            {a.passed ? (
+                              <span class="lg-pass" aria-hidden="true">
+                                {t("summary.none")}
+                              </span>
+                            ) : null}
+                            {a.penalty ? (
+                              <span class="ts-penalty lg-pen" aria-hidden="true">
+                                −5
+                              </span>
+                            ) : null}
+                            {a.locks.map((c) => (
+                              <span
+                                key={`${a.seat}:${c}`}
+                                class={`lg-lock c-${cssColor(c)}`}
+                                aria-hidden="true"
+                              >
+                                <LockIcon size={14} />
+                              </span>
+                            ))}
+                          </span>
+                          {i < l.actors.length - 1 ? <span class="lg-sep">·</span> : null}
+                        </span>
+                      ))}
+                    </span>
                   </li>
                 );
               })}

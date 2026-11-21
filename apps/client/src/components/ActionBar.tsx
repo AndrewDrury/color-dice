@@ -34,8 +34,9 @@ export function ActionBar(p: ActionBarProps) {
   useT();
   const { view } = p;
   const staged = p.s1 !== null || p.s2 !== null;
+  const hasUndoableDecision = view.you.action1Decision !== null || view.you.pendingAction2 !== null;
   // D-L11: Undo exists only while there is something to undo (a staged box or an undoable decision).
-  const canUndo = staged || (view.you.canUndo && !p.sent);
+  const canUndo = staged || (view.you.canUndo && !p.sent && hasUndoableDecision);
 
   let primary: preact.ComponentChildren = null;
   if (p.noMove) {

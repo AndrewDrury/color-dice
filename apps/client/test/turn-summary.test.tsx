@@ -193,7 +193,7 @@ describe("TurnSummary popup", () => {
       fireEvent.pointerEnter(anchor, { pointerType: "mouse" });
       expect(document.querySelector(".avh-tip")).not.toBeNull();
     }
-    expect(avatarCss).toMatch(/\.avh-tip\s*\{[^}]*z-index:\s*70/s);
+    expect(avatarCss).toMatch(/\.avh-tip\s*\{[^}]*z-index:\s*1200/s);
     expect(gameCss).toMatch(/\.ts-card\.is-log\s*\{[^}]*z-index:\s*5/s);
     expect(gameCss).toMatch(/\.ts-card\.is-sheet\s*\{[^}]*z-index:\s*35/s);
   });

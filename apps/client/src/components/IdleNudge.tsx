@@ -11,7 +11,7 @@ import { t } from "../i18n";
 import { turnCta } from "./TurnBanner";
 import "../styles/nudge.css";
 
-export const IDLE_NUDGE_MS = 10_000;
+export const IDLE_NUDGE_MS = 7_000;
 
 export interface IdleNudgeProps {
   view: ViewMessage;

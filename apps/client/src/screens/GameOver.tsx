@@ -89,6 +89,7 @@ export function GameOver({
   const [celebrating, setCelebrating] = useState(() =>
     view.code === "DEMO" ? false : claimCelebration(celebrationKey(view)),
   );
+  const [showFullCards, setShowFullCards] = useState(false);
   const [RevealState, setRevealState] = useState<{
     value: ComponentType<ResultsRevealProps> | null;
   }>(() => ({ value: LoadedReveal }));
@@ -110,6 +111,7 @@ export function GameOver({
   );
   const actions = (
     <>
+      <Button onClick={() => setShowFullCards(true)}>{t("celebrate.showCards")}</Button>
       {eligible ? (
         <div class={rematchHighlight ? "rematch-highlight" : undefined}>
           <Button variant="primary" busy={rematchBusy} onClick={onRematch}>
@@ -150,41 +152,6 @@ export function GameOver({
         <div>
           <ScoreTable view={view} />
         </div>
-        <section class="g-final-cards" aria-label={t("over.finalCards")}>
-          {ranked.filter(hasCard).map((p) => (
-            <article
-              key={p.seat}
-              class="g-final-card"
-              data-seat-id={seatInfo(view, p)?.seatId}
-              aria-label={t("sheet.rowCard", {
-                name: seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 }),
-              })}
-            >
-              <h3 class="g-final-head">
-                <span class="num">{ranks.get(p.seat)}.</span>{" "}
-                <AvatarHover
-                  profile={seatInfo(view, p)?.profile}
-                  size={28}
-                  name={seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
-                />{" "}
-                <span class="g-name">
-                  {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
-                </span>
-              </h3>
-              <Sheet
-                player={p}
-                lockedColors={g?.lockedColors ?? []}
-                legal={NO_LEGAL}
-                staged={[]}
-                ghost={[]}
-                disabled
-                readOnly
-                fx={NO_FX}
-                onPick={noop}
-              />
-            </article>
-          ))}
-        </section>
         <div class="chat-over">
           <ChatControls send={send} />
         </div>
@@ -195,7 +162,10 @@ export function GameOver({
       {celebrating && Reveal ? (
         <Reveal
           view={view}
-          onDone={() => setCelebrating(false)}
+          onDone={() => {
+            setCelebrating(false);
+            setShowFullCards(true);
+          }}
           actions={actions}
           chat={
             <>
@@ -204,6 +174,58 @@ export function GameOver({
             </>
           }
         />
+      ) : null}
+      {showFullCards ? (
+        <div class="g-final-cards-backdrop">
+          <button
+            type="button"
+            class="g-final-cards-dismiss"
+            aria-label={t("common.close")}
+            onClick={() => setShowFullCards(false)}
+          />
+          <section
+            class="g-final-cards-modal card"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("over.finalCards")}
+          >
+            <section class="g-final-cards" aria-label={t("over.finalCards")}>
+              {ranked.filter(hasCard).map((p) => (
+                <article
+                  key={p.seat}
+                  class="g-final-card"
+                  data-seat-id={seatInfo(view, p)?.seatId}
+                  aria-label={t("sheet.rowCard", {
+                    name: seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 }),
+                  })}
+                >
+                  <h3 class="g-final-head">
+                    <span class="num">{ranks.get(p.seat)}.</span>{" "}
+                    <AvatarHover
+                      profile={seatInfo(view, p)?.profile}
+                      size={28}
+                      name={seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                    />{" "}
+                    <span class="g-name">
+                      {seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 })}
+                    </span>
+                  </h3>
+                  <Sheet
+                    player={p}
+                    lockedColors={g?.lockedColors ?? []}
+                    legal={NO_LEGAL}
+                    staged={[]}
+                    ghost={[]}
+                    disabled
+                    readOnly
+                    fx={NO_FX}
+                    onPick={noop}
+                  />
+                </article>
+              ))}
+            </section>
+          </section>
+        </div>
       ) : null}
       {rematch ? <RematchPopup view={view} offer={rematch} send={send} /> : null}
     </div>

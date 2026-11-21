@@ -4,80 +4,138 @@ import type { Profile, ViewMessage } from "@cd/protocol";
 import { colorName, t } from "../i18n";
 import { seatName, seatOfPlayer, seatProfile } from "./model";
 
+export interface TurnActor {
+  seat: number;
+  name: string;
+  profile?: Profile;
+  marks: { color: Color; number: number }[];
+  passed: boolean;
+  penalty: boolean;
+  locks: Color[];
+}
+
 export interface LogLine {
   id: number;
   /** Full sentence: screen readers and e2e helpers read this. */
   text: string;
-  kind: "turn" | "mark" | "pass" | "penalty" | "lock" | "over";
-  /** The part the typewriter types: the name (or the whole short text for turn/lock/over). */
+  kind: "turn";
+  turn: number;
+  actors: TurnActor[];
+  /** Typewriter text. */
   typed: string;
-  profile?: Profile;
-  color?: Color;
-  number?: number;
-}
-
-type Line = Omit<LogLine, "id">;
-
-export function describeEvent(view: ViewMessage, e: GameEvent): Line[] {
-  /** A line about a player: avatar + name typed, `text` for screen readers. */
-  const by = (
-    id: string,
-    kind: Line["kind"],
-    key: "log.passed" | "log.marked" | "log.penalty",
-    extra: Partial<Line> = {},
-  ): Line => {
-    const seat = seatOfPlayer(id, view.game);
-    const name = seatName(view, seat);
-    const profile = seatProfile(view, seat);
-    const color = extra.color ? colorName(extra.color) : "";
-    return {
-      kind,
-      text: t(key, { name, color, n: extra.number ?? "" }),
-      typed: name,
-      ...(profile && { profile }),
-      ...extra,
-    };
-  };
-  const plain = (kind: Line["kind"], text: string, extra: Partial<Line> = {}): Line => ({
-    kind,
-    text,
-    typed: text,
-    ...extra,
-  });
-  switch (e.type) {
-    case "TURN_STARTED": {
-      const profile = seatProfile(view, e.activeSeat);
-      const text = t("log.turn", { n: e.turnNumber, name: seatName(view, e.activeSeat) });
-      return [plain("turn", text, profile && { profile })];
-    }
-    // The white-dice sum (DICE_ROLLED) is not logged: the dice tray shows it.
-    case "ACTION1_REVEALED":
-      return e.decisions
-        .filter((d) => d.decision.kind === "PASS")
-        .map((d) => by(d.playerId, "pass", "log.passed"));
-    case "MARKED":
-      return [by(e.playerId, "mark", "log.marked", { color: e.color, number: e.number })];
-    case "ACTION2_PASSED":
-      return [by(e.playerId, "pass", "log.passed")];
-    case "PENALTY":
-      return [by(e.playerId, "penalty", "log.penalty")];
-    case "ROW_LOCKED":
-      return [plain("lock", t("log.locked", { color: colorName(e.color) }), { color: e.color })];
-    case "GAME_ENDED":
-      return [plain("over", t("log.gameOver"))];
-    default:
-      return [];
-  }
 }
 
 /** Newest first. */
 export function logLines(view: ViewMessage): LogLine[] {
   const out: LogLine[] = [];
-  const events = view.game?.events ?? [];
-  events.forEach((e, i) => {
-    describeEvent(view, e).forEach((line, j) => {
-      out.push({ id: i * 10 + j, ...line });
+  const g = view.game;
+  if (!g) return out;
+  const starts = g.events
+    .map((e, i) => ({ e, i }))
+    .filter((x): x is { e: Extract<GameEvent, { type: "TURN_STARTED" }>; i: number } => {
+      return x.e.type === "TURN_STARTED";
     });
-  });
+  if (starts.length < 2) return out;
+  const actor = (playerId: string): TurnActor | null => {
+    const seat = seatOfPlayer(playerId, g);
+    if (seat < 0) return null;
+    return {
+      seat,
+      name: seatName(view, seat),
+      profile: seatProfile(view, seat),
+      marks: [],
+      passed: false,
+      penalty: false,
+      locks: [],
+    };
+  };
+  const lineText = (turn: number, actors: TurnActor[]): string => {
+    const actionSep = t("log.turnActionSep");
+    const actorSep = t("log.turnActorSep");
+    const describe = (a: TurnActor) => {
+      const parts = [
+        ...a.marks.map((m) => t("summary.mark", { color: colorName(m.color), n: m.number })),
+        ...(a.passed ? [t("summary.none")] : []),
+        ...(a.penalty ? [t("summary.penalty")] : []),
+        ...a.locks.map((c) => t("summary.lock", { color: colorName(c) })),
+      ];
+      return t("log.turnActor", { name: a.name, actions: parts.join(actionSep) });
+    };
+    return t("log.turnLine", { n: turn, entries: actors.map(describe).join(actorSep) });
+  };
+  for (let s = 0; s < starts.length - 1; s++) {
+    const start = starts[s] as { e: Extract<GameEvent, { type: "TURN_STARTED" }>; i: number };
+    const next = starts[s + 1] as { e: Extract<GameEvent, { type: "TURN_STARTED" }>; i: number };
+    const segment = g.events.slice(start.i + 1, next.i);
+    const bySeat = new Map<number, TurnActor>();
+    const ensure = (playerId: string) => {
+      const nextActor = actor(playerId);
+      if (!nextActor) return null;
+      const found = bySeat.get(nextActor.seat);
+      if (found) return found;
+      bySeat.set(nextActor.seat, nextActor);
+      return nextActor;
+    };
+    for (const e of segment) {
+      switch (e.type) {
+        case "ACTION1_REVEALED":
+          for (const d of e.decisions) {
+            if (d.decision.kind !== "PASS") continue;
+            const p = ensure(d.playerId);
+            if (p) p.passed = true;
+          }
+          break;
+        case "MARKED": {
+          const p = ensure(e.playerId);
+          if (p) p.marks.push({ color: e.color, number: e.number });
+          break;
+        }
+        case "UNDO": {
+          if (e.kind !== "MARK") break;
+          const p = ensure(e.playerId);
+          if (!p) break;
+          for (let i = p.marks.length - 1; i >= 0; i--) {
+            const m = p.marks[i] as { color: Color; number: number };
+            if (m.color === e.color) {
+              p.marks.splice(i, 1);
+              break;
+            }
+          }
+          break;
+        }
+        case "ACTION2_PASSED": {
+          const p = ensure(e.playerId);
+          if (p) p.passed = true;
+          break;
+        }
+        case "PENALTY": {
+          const p = ensure(e.playerId);
+          if (p) p.penalty = true;
+          break;
+        }
+        case "ROW_LOCKED":
+          for (const id of e.lockedBy) {
+            const p = ensure(id);
+            if (p && !p.locks.includes(e.color)) p.locks.push(e.color);
+          }
+          break;
+      }
+    }
+    const actors = [...bySeat.values()]
+      .sort((a, b) => a.seat - b.seat)
+      .sort(
+        (a, b) => Number(b.seat === start.e.activeSeat) - Number(a.seat === start.e.activeSeat),
+      );
+    if (actors.length === 0) continue;
+    const text = lineText(start.e.turnNumber, actors);
+    out.push({
+      id: start.i * 10,
+      kind: "turn",
+      turn: start.e.turnNumber,
+      actors,
+      text,
+      typed: text,
+    });
+  }
   return out.reverse();
 }

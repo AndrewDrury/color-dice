@@ -69,10 +69,10 @@ describe("idle nudge (T-NEW-22)", () => {
     await tick(50); // the lazy chunk resolves
   }
 
-  it("not before 10 s, shown once at 10 s with the call to action", async () => {
+  it("not before 7 s, shown once at 7 s with the call to action", async () => {
     await mount({ legal1: ["RED"] });
     expect(nudge()).toBeNull();
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
     await tick(1);
     expect(nudge()?.textContent).toContain("Your move!");
@@ -82,20 +82,20 @@ describe("idle nudge (T-NEW-22)", () => {
     expect(screen.getAllByTestId("idle-nudge")).toHaveLength(1);
   });
 
-  it("an action hides it and restarts a fresh 10 s interval", async () => {
+  it("an action hides it and restarts a fresh 7 s interval", async () => {
     await mount({ legal1: ["RED"] });
-    await tick(10_000);
+    await tick(7_000);
     expect(nudge()).not.toBeNull();
     fireEvent.click(screen.getByLabelText("Red 8, can mark"));
     expect(nudge()).toBeNull();
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
     await tick(2);
     expect(nudge()).not.toBeNull();
     fireEvent.keyDown(document.body, { key: "a" });
     await tick(5000);
     fireEvent.keyDown(document.body, { key: "a" });
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
   });
 
@@ -108,9 +108,9 @@ describe("idle nudge (T-NEW-22)", () => {
     show(next);
     expect(nudge()).toBeNull();
     await tick(50);
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
-    await tick(10_000);
+    await tick(7_000);
     expect(nudge()).not.toBeNull();
     show(makeGameView({ active: 1, legal1: ["RED"], decision: true, pass1: false }));
     expect(nudge()).toBeNull();
@@ -144,7 +144,7 @@ describe("idle nudge (T-NEW-22)", () => {
     expect(nudge()).toBeNull();
     vis.mockReturnValue("visible");
     document.dispatchEvent(new Event("visibilitychange"));
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
     await tick(1);
     expect(nudge()).not.toBeNull();
@@ -153,7 +153,7 @@ describe("idle nudge (T-NEW-22)", () => {
 
   it("works for the roll (canRoll)", async () => {
     await mount({ phase: "AWAIT_ROLL", canRoll: true });
-    await tick(10_000);
+    await tick(7_000);
     expect(nudge()?.textContent).toContain("Roll the dice");
   });
 
@@ -166,19 +166,19 @@ describe("idle nudge (T-NEW-22)", () => {
     expect(nudge()).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await tick(50);
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
-    await tick(10_000);
+    await tick(7_000);
     expect(nudge()).not.toBeNull();
   });
 
-  it("remounting requires a fresh 10-second interval", async () => {
+  it("remounting requires a fresh 7-second interval", async () => {
     const view = makeGameView({ legal1: ["RED"] });
     render(<IdleNudge view={view} staged={false} noMove={false} blocked={false} />);
-    await tick(8000);
+    await tick(5000);
     cleanup();
     render(<IdleNudge view={view} staged={false} noMove={false} blocked={false} />);
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
     await tick(1);
     expect(nudge()).not.toBeNull();
@@ -192,7 +192,7 @@ describe("idle nudge (T-NEW-22)", () => {
     expect(nudge()).toBeNull();
     act(() => setStatus("online"));
     await tick(50);
-    await tick(9999);
+    await tick(6999);
     expect(nudge()).toBeNull();
     await tick(1);
     expect(nudge()).not.toBeNull();

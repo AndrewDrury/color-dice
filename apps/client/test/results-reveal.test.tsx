@@ -257,10 +257,20 @@ describe("reveal completion, reduced motion, buttons", () => {
   it("'Show full score cards' closes the overlay onto every player's full card", () => {
     mount(overView([9, 2, 5], [0]));
     tick(revealSchedule(3).doneAt);
-    fireEvent.click(screen.getByRole("button", { name: "Show full score cards" }));
+    fireEvent.click(screen.getByTestId("rv-show-cards"));
     expect(overlay()).toBeNull();
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
     expect(document.querySelectorAll("tbody tr")).toHaveLength(3);
+  });
+
+  it("clicking outside the full score cards closes only the cards overlay", () => {
+    mount(overView([9, 2, 5], [0]));
+    tick(revealSchedule(3).doneAt);
+    fireEvent.click(screen.getByTestId("rv-show-cards"));
+    expect(document.querySelector(".g-final-cards-modal")).not.toBeNull();
+    fireEvent.click(document.querySelector(".g-final-cards-dismiss") as Element);
+    expect(document.querySelector(".g-final-cards-modal")).toBeNull();
+    expect(document.querySelector(".g-results-card")).not.toBeNull();
   });
 
   it("Rematch and Back home are in the overlay at every stage, never behind it", () => {

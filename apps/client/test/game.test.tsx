@@ -138,6 +138,12 @@ describe("Game screen", () => {
     expect(sent).toHaveLength(0);
   });
 
+  it("does not show Undo for a passive player with no undoable move", () => {
+    show(makeGameView({ active: 1, legal1: ["RED"], canUndo: true }));
+    mount();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  });
+
   it("ACTION_2: tap stages, Submit sends with turn and whiteDie, Esc cancels, tapping again unselects", () => {
     show(
       makeGameView({
@@ -456,7 +462,9 @@ describe("Game screen", () => {
     expect(document.querySelector(".g-winner")?.textContent).toContain("Tie: ");
     expect(screen.getByText("Two rows locked")).toBeTruthy();
     expect(document.querySelectorAll("tr[data-winner]")).toHaveLength(2);
-    // Every player's full read-only card is revealed.
+    expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "Show full score cards" })[0] as Element);
+    // Every player's full read-only card opens over the winner modal.
     expect(document.querySelectorAll(".g-final-card .g-sheet")).toHaveLength(3);
     expect(screen.getAllByText("Rematch").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Back to home").length).toBeGreaterThan(0);

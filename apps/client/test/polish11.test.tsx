@@ -53,11 +53,11 @@ describe("MoveLog", () => {
     const v = makeGameView();
     const g = v.game as NonNullable<ViewMessage["game"]>;
     const id = (g.players[0] as { seatId: string }).seatId;
-    const events = Array.from({ length: n }, (_, i) => ({
-      type: "ACTION2_PASSED",
-      playerId: id,
-      i,
-    }));
+    const events = Array.from({ length: n }, (_, i) => [
+      { type: "TURN_STARTED", turnNumber: i + 1, activeSeat: 0 },
+      { type: "ACTION2_PASSED", playerId: id, i },
+    ]).flat();
+    events.push({ type: "TURN_STARTED", turnNumber: n + 1, activeSeat: 1 });
     return { ...v, game: { ...g, events } } as unknown as ViewMessage;
   };
   const geometry = (el: HTMLElement, scrollTop: number) => {
@@ -86,35 +86,37 @@ describe("MoveLog", () => {
     expect(screen.queryByTestId("log-fade-top")).not.toBeNull();
     expect(screen.queryByTestId("log-fade-bottom")).not.toBeNull();
   });
-  it("renders avatar + name + graphic per move, keeps the sentence sr-only, omits the white-dice sum", () => {
+  it("renders one turn per line with all player actions, keeps prose sr-only", () => {
     const v = makeGameView();
     const g = v.game as NonNullable<ViewMessage["game"]>;
     const p0 = g.players[0] as { seatId: string };
     const p1 = g.players[1] as { seatId: string };
     const events = [
+      { type: "TURN_STARTED", turnNumber: 9, activeSeat: 0 },
       { type: "DICE_ROLLED", white: [3, 4], whiteSum: 7 },
       { type: "MARKED", playerId: p0.seatId, action: 1, color: "RED", number: 7, index: 5 },
       { type: "ACTION2_PASSED", playerId: p1.seatId },
       { type: "PENALTY", playerId: p1.seatId },
       { type: "ROW_LOCKED", color: "BLUE", lockedBy: [p0.seatId] },
+      { type: "TURN_STARTED", turnNumber: 10, activeSeat: 1 },
     ];
     const { container } = render(
       <MoveLog view={{ ...v, game: { ...g, events } } as unknown as ViewMessage} />,
     );
     const items = container.querySelectorAll(".g-log li");
-    expect(items).toHaveLength(4); // no "added white dice" line
+    expect(items).toHaveLength(1);
     const text = container.textContent ?? "";
-    expect(text).toMatch(/marked Red 7/);
-    expect(text).not.toMatch(/white/i);
-    const sr = (i: number) => items[i]?.querySelector(".sr-only")?.textContent ?? "";
-    expect(sr(0)).toMatch(/marked Red 7/); // oldest first
-    expect(sr(3)).toMatch(/Blue row locked/);
+    expect(text).toMatch(/Red 7/);
+    expect(text).toMatch(/Turn 9/);
+    const sr = items[0]?.querySelector(".sr-only")?.textContent ?? "";
+    expect(sr).toMatch(/Turn 9/);
+    expect(sr).toMatch(/Blue row locked/);
     expect(container.querySelector(".lg-box.c-red")?.textContent).toBe("7");
     expect(container.querySelector(".lg-pass")).not.toBeNull();
     expect(container.querySelector(".lg-pen")?.textContent).toBe("−5");
     expect(container.querySelector(".lg-lock.c-blue svg")).not.toBeNull();
     // Visible parts are aria-hidden; the prose is not in them.
-    for (const el of container.querySelectorAll(".lg-name, .lg-box")) {
+    for (const el of container.querySelectorAll(".lg-name, .lg-box, .lg-actors")) {
       expect(el.getAttribute("aria-hidden")).toBe("true");
     }
   });
