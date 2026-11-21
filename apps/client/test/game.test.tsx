@@ -262,6 +262,38 @@ describe("Game screen", () => {
     ]);
   });
 
+  it("keeps a staged colour-only move submittable across view updates", () => {
+    show(makeGameView({ legal1: ["RED"] }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Green 11, can mark"));
+    expect(screen.getByText("Submit")).toBeTruthy();
+    const next = makeGameView({ legal1: ["RED"], version: 6 });
+    const refreshed = {
+      ...next,
+      game: next.game
+        ? {
+            ...next.game,
+            players: next.game.players.map((p, i) =>
+              i === 1 ? { ...p, action1Submitted: true } : p,
+            ),
+          }
+        : next.game,
+    };
+    act(() => {
+      applyView(refreshed);
+    });
+    expect(screen.getByText("Submit")).toBeTruthy();
+    fireEvent.click(screen.getByText("Submit"));
+    expect(sent).toEqual([
+      {
+        type: "turn",
+        turn: 9,
+        action1: { kind: "PASS" },
+        action2: { kind: "MARK", whiteDie: 1, color: "GREEN" },
+      },
+    ]);
+  });
+
   it("passive player: Submit sends action1 MARK, Pass sends action1 PASS once", () => {
     show(makeGameView({ active: 1, legal1: ["RED"] }));
     mount();

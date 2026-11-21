@@ -55,7 +55,7 @@ export function useStaging(view: ViewMessage, send: (m: ClientMessage) => boolea
     const c = candidates(view, cur.s1, null);
     const ok1 =
       !cur.s1 || (currentStep(view) === 1 && c.white.has(boxKey(cur.s1.color, cur.s1.number)));
-    const ok2 = !cur.s2 || c.colour.has(boxKey(cur.s2.color, cur.s2.number));
+    const ok2 = !cur.s2 || submitMessage(view, cur.s1, cur.s2) !== null;
     if (!ok1) setStaged(NONE);
     else if (!ok2) {
       setStaged({ s1: cur.s1, s2: null });
