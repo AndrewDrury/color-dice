@@ -1,6 +1,7 @@
 import type { ViewMessage } from "@cd/protocol";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { RematchPopup } from "../src/components/RematchPopup";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { diffViews } from "../src/game/feedback";
 import { passTakesPenalty, submitLabel } from "../src/game/staging";
@@ -59,6 +60,13 @@ afterEach(() => {
 
 const mount = () => render(<Game code={CODE} />);
 const status = () => document.querySelector(".g-status-text")?.textContent;
+const nextFrame = () =>
+  act(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
 
 describe("Game screen", () => {
   it("AWAIT_ROLL: active sees Roll, passive sees who we wait for", () => {
@@ -446,6 +454,74 @@ describe("Game screen", () => {
     expect(sent).toContainEqual({ type: "rematchAccept" });
     act(() => applyRematch(null));
     expect(container.querySelector(".rematch-highlight")).toBeNull();
+  });
+
+  it("restores focus to the reveal footer action when it is visible", async () => {
+    const view = makeGameView({ phase: "GAME_OVER" });
+    const requester = view.seats.find((s) => s.seatId === seatIdOf(1));
+    if (!requester) throw new Error("fixture requester missing");
+    const offer = {
+      fromSeatId: requester.seatId,
+      fromName: requester.name,
+      fromProfile: { color: "teal" as const, cat: "cat-gif" as const },
+      accepted: [requester.seatId],
+      expiresAt: Date.now() + 60_000,
+    };
+    const { rerender } = render(
+      <div>
+        <div class="rv-actions">
+          <button type="button">Reveal footer rematch</button>
+        </div>
+        <div class="g-over-actions" hidden>
+          <button type="button">Results rematch</button>
+        </div>
+        <RematchPopup view={view} offer={offer} send={() => true} />
+      </div>,
+    );
+    const revealBtn = screen.getByRole("button", { name: "Reveal footer rematch" });
+    rerender(
+      <div>
+        <div class="rv-actions">
+          <button type="button">Reveal footer rematch</button>
+        </div>
+        <div class="g-over-actions" hidden>
+          <button type="button">Results rematch</button>
+        </div>
+      </div>,
+    );
+    await nextFrame();
+    expect(document.activeElement).toBe(revealBtn);
+  });
+
+  it("falls back to the full-card action when reveal footer actions are unavailable", async () => {
+    const view = makeGameView({ phase: "GAME_OVER" });
+    const requester = view.seats.find((s) => s.seatId === seatIdOf(1));
+    if (!requester) throw new Error("fixture requester missing");
+    const offer = {
+      fromSeatId: requester.seatId,
+      fromName: requester.name,
+      fromProfile: { color: "teal" as const, cat: "cat-gif" as const },
+      accepted: [requester.seatId],
+      expiresAt: Date.now() + 60_000,
+    };
+    const { rerender } = render(
+      <div>
+        <div class="g-over-actions">
+          <button type="button">Results rematch</button>
+        </div>
+        <RematchPopup view={view} offer={offer} send={() => true} />
+      </div>,
+    );
+    const resultBtn = screen.getByRole("button", { name: "Results rematch" });
+    rerender(
+      <div>
+        <div class="g-over-actions">
+          <button type="button">Results rematch</button>
+        </div>
+      </div>,
+    );
+    await nextFrame();
+    expect(document.activeElement).toBe(resultBtn);
   });
 });
 

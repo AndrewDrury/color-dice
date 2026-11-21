@@ -25,7 +25,10 @@ export function RematchPopup({
     dialogRef,
     () =>
       document.querySelector<HTMLElement>(".rematch-popup-actions button, .rematch-popup button") ??
-      document.querySelector<HTMLElement>(".g-over-actions .btn, .g-over-actions button"),
+      document.querySelector<HTMLElement>(".rv-actions .btn, .rv-actions button") ??
+      document.querySelector<HTMLElement>(
+        ".g-over-actions:not([hidden]) .btn, .g-over-actions:not([hidden]) button",
+      ),
   );
   useEffect(() => {
     dialogRef.current?.focus();
