@@ -8,33 +8,66 @@
 import type { Reaction, ViewMessage } from "@cd/protocol";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import {
-  type CelebrationKind,
-  CSS_COUNT,
-  frac,
-  isCanvasKind,
-  KINDS,
-  pickCelebration,
-  runCanvas,
-} from "../fx/celebrate";
+
+type CelebrationKind = import("../fx/celebrate").CelebrationKind;
+const KINDS = [
+  "confetti",
+  "lasers",
+  "hearts",
+  "fireworks",
+  "aurora",
+  "starfield",
+  "disco",
+] as const satisfies readonly CelebrationKind[];
+const CSS_COUNT: Partial<Record<CelebrationKind, number>> = {
+  lasers: 8,
+  hearts: 22,
+  aurora: 3,
+  disco: 6,
+};
+const CANVAS_KINDS: readonly CelebrationKind[] = ["confetti", "fireworks", "starfield"];
+const isCanvasKind = (kind: CelebrationKind) => CANVAS_KINDS.includes(kind);
+const frac = (i: number, k: number) =>
+  (((Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1) + 1) % 1;
+const pickCelebration = (rand: () => number = Math.random) =>
+  KINDS[Math.min(KINDS.length - 1, Math.floor(rand() * KINDS.length))] as CelebrationKind;
+
 import { haptic } from "../fx/haptics";
 import { useModalTrap } from "../fx/modal";
 import { useReducedMotion } from "../fx/motion";
 import { jingleFor, play, playDrumRoll, playJingle, type SoundHandle } from "../fx/sound";
 import { COLORS, cssColor, seatInfo, tieInfo } from "../game/model";
-import { celebrationKey, HUSH_MS, PLAYER_STAGGER_MS, useReveal } from "../game/useReveal";
-import { useTween } from "../game/useTween";
+import {
+  celebrationKey,
+  HUSH_MS,
+  nonlinearTweenValue,
+  PLAYER_STAGGER_MS,
+  seededShuffle,
+  TOTAL_MS,
+  useReveal,
+} from "../game/useReveal";
 import { t, useT } from "../i18n";
 import { getPrefs, onPrefs } from "../prefs";
 import { AvatarHover } from "./AvatarHover";
-import { CatReaction, REACTION_MOOD_ORDER } from "./CatReaction";
+import { CatReaction, seededReaction } from "./CatReaction";
 import { CrownIcon, TieIcon } from "./icons";
 import { rankNumbers, rankPlayers } from "./ScoreTable";
 import "../styles/celebration.css";
 
-function Total({ value, reduced }: { value: number; reduced: boolean }) {
-  const eased = useTween(value, 1400, 0);
-  const v = reduced ? value : eased;
+function Total({ value, reduced, seed }: { value: number; reduced: boolean; seed: number }) {
+  const [v, setV] = useState(reduced ? value : 0);
+  useEffect(() => {
+    if (reduced) return setV(value);
+    const start = performance.now();
+    let frame = 0;
+    const step = (now: number) => {
+      const elapsed = now - start;
+      setV(nonlinearTweenValue(value, elapsed, seed));
+      if (elapsed < TOTAL_MS) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [value, reduced, seed]);
   return (
     <span class="rv-total-num num" data-value={value}>
       {v}
@@ -54,7 +87,12 @@ function Backdrop({
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (still || !isCanvasKind(kind) || !cv.current) return;
-    return runCanvas(cv.current, kind, rand);
+    const canvas = cv.current;
+    let stop: (() => void) | undefined;
+    void import("../fx/celebrate").then(({ runCanvas }) => {
+      stop = runCanvas(canvas, kind, rand);
+    });
+    return () => stop?.();
   }, [kind, still]);
   if (still) return <div class="rv-fx rv-fx--still" data-celebration={kind} aria-hidden="true" />;
   const n = CSS_COUNT[kind] ?? 0;
@@ -112,15 +150,11 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
   const ranks = rankNumbers(ranked);
   const n = ranked.length;
   // Seat order while revealing, so the layout never hints at the winner or jumps when totals land.
-  const bySeat = [...ranked].sort((a, b) => a.seat - b.seat);
   const key = celebrationKey(view);
+  const bySeat = seededShuffle(ranked, key);
+  const [totalsComplete, setTotalsComplete] = useState(false);
   const [fx] = useState<CelebrationKind>(() => kind ?? queryKind() ?? pickCelebration(rand));
-  const [reaction] = useState<Reaction>(
-    () =>
-      REACTION_MOOD_ORDER[
-        Math.floor((rand ? rand() : Math.random()) * REACTION_MOOD_ORDER.length)
-      ] ?? "cat-dancing-gif-by-unscreen",
-  );
+  const [reaction] = useState<Reaction>(() => seededReaction(key));
   const sounds = useRef<SoundHandle[]>([]);
   const stopSounds = () => {
     for (const h of sounds.current) h.stop();
@@ -146,6 +180,11 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
       }
     },
   });
+  useEffect(() => {
+    if (reduced || r.totals < n) return;
+    const timer = setTimeout(() => setTotalsComplete(true), TOTAL_MS);
+    return () => clearTimeout(timer);
+  }, [r.totals, n, reduced]);
   const done = r.phase === "done";
   const rootRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -178,7 +217,7 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
     seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 });
   const winners = ranked.filter((p) => winnerSeats.includes(p.seat));
   const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
-  const allIn = r.totals >= n;
+  const allIn = r.phase === "done" || totalsComplete;
   const heading = allTied
     ? t("over.tieAll")
     : tie
@@ -188,7 +227,7 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
         : winners[0]
           ? name(winners[0])
           : "";
-  const title = allIn ? heading : r.phase === "drop" ? t("celebrate.scores") : t("celebrate.title");
+  const title = allIn ? heading : t("celebrate.scores");
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape and the Skip button cover the keyboard
     <div
@@ -205,7 +244,7 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
       {allIn || r.phase === "totals" ? <Backdrop kind={fx} rand={rand} still={reduced} /> : null}
       <div class="rv-stage">
         <div class="rv-cat rv-cat--top" aria-hidden="true" data-testid="celebration-cat">
-          <CatReaction id={reaction} size={88} />
+          <CatReaction id={reaction} size={180} caption={false} />
         </div>
         <h2
           class={`rv-title${allIn ? " is-win" : ""}${r.phase === "hush" ? " is-hush" : ""}`}
@@ -222,16 +261,14 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
             const order = n - 1 - i; // total order: last place first, winner last
             const stag = `${pos * PLAYER_STAGGER_MS}ms`;
             const showTotal = r.totals > order;
-            const win = winnerSeats.includes(p.seat);
+            const win = allIn && winnerSeats.includes(p.seat);
             const { rows, penalties, total } = p.score;
             const pen = Math.abs(penalties);
             const nm = name(p);
             return (
               <li
                 key={p.seat}
-                class={`rv-card${showTotal ? " has-total" : ""}${
-                  showTotal && win ? " is-winner" : ""
-                }`}
+                class={`rv-card${showTotal ? " has-total" : ""}${win ? " is-winner" : ""}`}
                 data-testid="rv-card"
                 data-seat={p.seat}
                 data-order={order}
@@ -247,7 +284,7 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
                 })}
               >
                 <span class="rv-who">
-                  <span class="num rv-rank">{showTotal ? `${ranks[i]}.` : ""}</span>
+                  <span class="num rv-rank">{allIn ? `${ranks[i]}.` : ""}</span>
                   <AvatarHover profile={seatInfo(view, p)?.profile} size={32} name={nm} />
                   <span class="rv-name g-name" title={nm}>
                     {nm}
@@ -284,7 +321,7 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
                 </span>
                 <span class="rv-total" aria-hidden="true">
                   {showTotal ? (
-                    <Total value={total} reduced={reduced} />
+                    <Total value={total} reduced={reduced} seed={key.length * 31 + p.seat} />
                   ) : (
                     <span class="rv-total-num rv-q">?</span>
                   )}

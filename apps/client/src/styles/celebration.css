@@ -2,7 +2,7 @@
 .rv {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 50; /* page content below 50; effects 0 inside root */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,6 +12,8 @@
     linear-gradient(#0d0b22, #05040f);
   color: #fff;
   overflow: hidden;
+  box-sizing: border-box;
+  height: 100dvh;
 }
 .rv.is-reduced {
   background: linear-gradient(135deg, #3a1c71, #8e2a6a 55%, #c2603a);
@@ -21,7 +23,7 @@
 .rv-fx {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 0; /* lowest celebration layer */
   overflow: hidden;
   pointer-events: none;
   animation: rv-fade 700ms ease-out both;
@@ -110,7 +112,7 @@
 /* ---- content ---- */
 .rv-stage {
   position: relative;
-  z-index: 1;
+  z-index: 51; /* cards/content above effects */
   flex: 1;
   min-height: 0;
   width: min(100%, 600px);
@@ -134,6 +136,17 @@
 }
 .rv-cat--bottom {
   margin-top: var(--s1);
+}
+.rv-cat .cat-gif {
+  width: 180px;
+  height: 180px;
+  max-width: 180px;
+  max-height: 180px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.rv-cat .cat-cap {
+  display: none;
 }
 .rv-cat .cat-cap {
   background: rgb(8 6 28 / 0.72);
@@ -304,7 +317,7 @@
 /* ---- footer: Skip / Show full cards, then Rematch + Back (always reachable) ---- */
 .rv-foot {
   position: relative;
-  z-index: 2;
+  z-index: 52; /* footer/chat above cards */
   width: min(100%, 600px);
   padding-inline: var(--s3);
   box-sizing: border-box;
@@ -380,6 +393,20 @@
   }
   .rv-cards {
     gap: 6px;
+  }
+  .rv-cat .cat-gif {
+    width: 140px;
+    height: 140px;
+    max-width: 140px;
+    max-height: 140px;
+  }
+}
+@media (max-width: 480px) {
+  .rv-cat .cat-gif {
+    width: 140px;
+    height: 140px;
+    max-width: 140px;
+    max-height: 140px;
   }
 }
 

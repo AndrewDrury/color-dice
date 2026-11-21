@@ -52,6 +52,20 @@ const tick = (ms: number) =>
   });
 
 describe("RollOffLive", () => {
+  it("each roll-off column contains the authoritative avatar above its die", () => {
+    render(<RollOffLive view={liveView([null, null], 1)} send={() => true} />);
+    for (const seat of seats()) {
+      const avatar = seat.querySelector(".ro-avatar");
+      const die = seat.querySelector(".ro-die");
+      expect(avatar).not.toBeNull();
+      expect(die).not.toBeNull();
+      expect(
+        (avatar as HTMLElement).compareDocumentPosition(die as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(seat.querySelector(".ro-avatar")).not.toBeNull();
+    }
+  });
   it("Roll button: amber style class, pulses when ready, sends the round, disabled after I roll", () => {
     const send = vi.fn(() => true);
     const { rerender } = render(

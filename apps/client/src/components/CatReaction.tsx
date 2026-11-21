@@ -29,6 +29,14 @@ const CATS: readonly (readonly [Reaction, string])[] = [
 
 export const REACTION_MOOD_ORDER: readonly Reaction[] = CATS.map((c) => c[0]);
 
+/** Seeded allow-list selection shared by every client for one celebration. */
+export function seededReaction(seed: string): Reaction {
+  const h = [...seed].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 0);
+  return (
+    REACTION_MOOD_ORDER[(h >>> 0) % REACTION_MOOD_ORDER.length] ?? "cat-dancing-gif-by-unscreen"
+  );
+}
+
 const catRow = (id: string) => CATS.find((c) => c[0] === id);
 
 /** Public URL of a file in /reactions, honouring the deploy base path (Pages serves under /color-dice/). */

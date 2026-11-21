@@ -8,6 +8,8 @@ import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
 import { _resetMemoryForTests, saveSession } from "../src/session";
 import { _resetStoreForTests, applyView } from "../src/store";
+import avatarCss from "../src/styles/avatar-hover.css?raw";
+import gameCss from "../src/styles/game.css?raw";
 import { TOKEN } from "./fixtures";
 import { CODE, makeGameView, seatIdOf } from "./fixtures/views";
 
@@ -182,6 +184,18 @@ describe("TurnSummary popup", () => {
     expect(screen.getByTitle((d.players[0] as { name: string }).name)).toBeTruthy();
     rerender(<TurnSummary summary={d} onClose={() => {}} placement="sheet" />);
     expect(screen.getByTestId("turn-summary").classList.contains("is-sheet")).toBe(true);
+  });
+
+  it("avatar hover popup sits above the moves/turn-summary card", () => {
+    render(<TurnSummary summary={data()} onClose={() => {}} />);
+    const anchor = document.querySelector(".ts-who .avh-anchor") as HTMLElement;
+    if (anchor) {
+      fireEvent.pointerEnter(anchor, { pointerType: "mouse" });
+      expect(document.querySelector(".avh-tip")).not.toBeNull();
+    }
+    expect(avatarCss).toMatch(/\.avh-tip\s*\{[^}]*z-index:\s*70/s);
+    expect(gameCss).toMatch(/\.ts-card\.is-log\s*\{[^}]*z-index:\s*5/s);
+    expect(gameCss).toMatch(/\.ts-card\.is-sheet\s*\{[^}]*z-index:\s*35/s);
   });
 
   it("reduced motion: static card, same content", () => {

@@ -17,8 +17,7 @@ export function useTween(target: number, ms = 400, initial?: number): number {
     let raf = 0;
     const step = (now: number) => {
       const k = Math.min(1, (now - t0) / ms);
-      const eased = 1 - (1 - k) ** 3;
-      setValue(Math.round(start + (target - start) * eased));
+      setValue(Math.round(start + (target - start) * (1 - (1 - k) ** 3)));
       if (k < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);

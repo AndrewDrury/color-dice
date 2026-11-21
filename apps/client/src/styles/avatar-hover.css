@@ -16,7 +16,7 @@
 
 .avh-tip {
   position: fixed;
-  z-index: 70;
+  z-index: 70; /* popup/dialog layer: above celebration 50/foot 52 and moves summary 35 */
   display: inline-flex;
   flex-direction: column;
   align-items: center;

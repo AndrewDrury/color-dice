@@ -1055,6 +1055,9 @@
   pointer-events: none;
   animation: ts-in 220ms var(--ease-out) both;
 }
+.ts-card .avh-anchor {
+  pointer-events: auto;
+}
 .ts-card.is-log {
   position: absolute;
   inset: 0 0 auto 0;

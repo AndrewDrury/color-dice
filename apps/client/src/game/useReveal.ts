@@ -18,6 +18,38 @@ export const PLAYER_STAGGER_MS = 100;
 export const HUSH_MS = 2800;
 export const TOTAL_GAP_MS = 600;
 export const SETTLE_MS = 1100;
+export const TOTAL_MS = 3000;
+
+/** Independent, bounded piecewise progress for a 3-second final total. */
+export function nonlinearTweenValue(
+  target: number,
+  elapsedMs: number,
+  seed: number,
+  ms = TOTAL_MS,
+): number {
+  const k = Math.max(0, Math.min(1, elapsedMs / ms));
+  if (k === 0) return 0;
+  if (k === 1) return Math.max(0, target);
+  let s = seed >>> 0 || 1;
+  const rand = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 2 ** 32;
+  };
+  const weights = [rand(), rand(), rand(), rand()];
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const values = [0];
+  let cursor = 0;
+  for (const w of weights) {
+    cursor += w;
+    values.push(cursor / sum);
+  }
+  const i = Math.min(3, Math.floor(k * 4));
+  const x = k * 4 - i;
+  const p =
+    (values[i] as number) +
+    ((values[i + 1] as number) - (values[i] as number)) * x * x * (3 - 2 * x);
+  return Math.max(0, Math.min(target, Math.round(target * p)));
+}
 
 export type RevealPhase = "drop" | "hush" | "totals" | "done";
 export interface RevealState {
@@ -34,8 +66,22 @@ export function revealSchedule(count: number) {
   const lastStep = steps[STEPS - 1] as number;
   const hushAt = lastStep + 500;
   const totalsAt = Array.from({ length: count }, (_, i) => lastStep + HUSH_MS + i * TOTAL_GAP_MS);
-  const doneAt = (totalsAt[count - 1] ?? lastStep) + SETTLE_MS;
+  const doneAt = (totalsAt[count - 1] ?? lastStep) + TOTAL_MS + SETTLE_MS;
   return { steps, hushAt, totalsAt, doneAt };
+}
+
+/** Stable, deterministic shuffle used by endgame reveals and shareable across devices. */
+export function seededShuffle<T>(items: readonly T[], seed: string): T[] {
+  let h = [...seed].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 0);
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    const j = Math.abs(h) % (i + 1);
+    [out[i], out[j]] = [out[j] as T, out[i] as T];
+  }
+  return out;
 }
 
 export function useReveal(

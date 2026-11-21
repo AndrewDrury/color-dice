@@ -7,11 +7,14 @@ import {
   _resetCelebrationForTests,
   FIRST_STEP_MS,
   HUSH_MS,
+  nonlinearTweenValue,
   PLAYER_STAGGER_MS,
   revealSchedule,
   SETTLE_MS,
   STEP_GAP_MS,
+  seededShuffle,
   TOTAL_GAP_MS,
+  TOTAL_MS,
 } from "../src/game/useReveal";
 import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { GameOver } from "../src/screens/GameOver";
@@ -97,6 +100,25 @@ afterEach(() => {
 });
 
 describe("reveal timeline", () => {
+  it("seeded shuffle is stable per seed and differs across seeds", () => {
+    const items = [0, 1, 2, 3, 4];
+    expect(seededShuffle(items, "room:1")).toEqual(seededShuffle(items, "room:1"));
+    expect(seededShuffle(items, "room:1")).not.toEqual(seededShuffle(items, "room:2"));
+  });
+
+  it("nonlinear total tween is bounded, independent, and finishes at target", () => {
+    for (const seed of [1, 2, 99]) {
+      let previous = 0;
+      for (let ms = 0; ms <= TOTAL_MS; ms += 100) {
+        const value = nonlinearTweenValue(37, ms, seed);
+        expect(value).toBeGreaterThanOrEqual(previous);
+        expect(value).toBeGreaterThanOrEqual(0);
+        expect(value).toBeLessThanOrEqual(37);
+        previous = value;
+      }
+      expect(nonlinearTweenValue(37, TOTAL_MS, seed)).toBe(37);
+    }
+  });
   it("all cards are visible from the start, scores hidden", () => {
     mount(overView([9, 2, 5], [0]));
     expect(screen.getByText("And the scores are…")).toBeTruthy();
@@ -126,7 +148,9 @@ describe("reveal timeline", () => {
     const delays = [...document.querySelectorAll<HTMLElement>(".rv-card")].map((c) =>
       c.style.getPropertyValue("--p"),
     );
-    expect(delays).toEqual(["0ms", `${PLAYER_STAGGER_MS}ms`, `${PLAYER_STAGGER_MS * 2}ms`]);
+    expect(new Set(delays)).toEqual(
+      new Set(["0ms", `${PLAYER_STAGGER_MS}ms`, `${PLAYER_STAGGER_MS * 2}ms`]),
+    );
     expect(PLAYER_STAGGER_MS).toBeLessThan(150);
   });
 
@@ -140,7 +164,7 @@ describe("reveal timeline", () => {
     expect(allShow(["RED", "YELLOW", "GREEN", "BLUE", "PEN"])).toBe(true);
     tick(HUSH_MS - 1);
     expect(totals()).toBe(0);
-    expect(screen.getByText("And the winner is…")).toBeTruthy();
+    expect(screen.getByText("And the scores are…")).toBeTruthy();
     expect(sound.playDrumRoll).toHaveBeenCalledTimes(1);
     tick(1);
     expect(totals()).toBe(1);
@@ -148,6 +172,9 @@ describe("reveal timeline", () => {
     tick(TOTAL_GAP_MS * 2);
     expect(totals()).toBe(3);
     expect(sound.playJingle).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".rv-card.is-winner")).toBeNull();
+    tick(TOTAL_MS);
+    expect(totals()).toBe(3);
     expect(screen.getByTestId("rv-title").textContent).toContain("You win!");
     expect(document.querySelector(".rv-card.is-winner")?.getAttribute("data-seat")).toBe("0");
     expect(
@@ -167,7 +194,9 @@ describe("reveal timeline", () => {
       card.querySelectorAll(".rv-pill.c-red, .rv-pill.c-yellow, .rv-pill.c-green, .rv-pill.c-blue"),
     ).toHaveLength(4);
     expect(card.querySelector('[data-term="PEN"]')).toBeTruthy();
-    expect(card.querySelector(".rv-name")?.textContent).toBe("Andrew");
+    expect(["Andrew", "Cleo"].includes(card.querySelector(".rv-name")?.textContent ?? "")).toBe(
+      true,
+    );
     expect(card.querySelector(".rv-q")).toBeTruthy(); // total still hidden
   });
 });
