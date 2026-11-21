@@ -1,4 +1,4 @@
-/* Device polish (H7, H10-H12): sheets, settings, help, confetti, hints. */
+/* Device polish (H7, H10-H12): sheets, settings, help, confetti. */
 
 /* ---------- Bottom sheet / popover ---------- */
 .bs-backdrop {
@@ -223,31 +223,6 @@ kbd {
   font-size: var(--fs-small);
 }
 
-/* ---------- Coaching hint ---------- */
-.g-hintline {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 2px var(--s2) 2px var(--s3);
-  border-radius: var(--r-box);
-  background: var(--paper);
-  box-shadow: var(--e1);
-  font-size: var(--fs-small);
-}
-.g-hintline p {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 13px;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-
 /* ---------- Confetti ---------- */
 .cf {
   position: absolute;
@@ -306,16 +281,6 @@ kbd {
 .g-results-card {
   position: relative;
 }
-.key-hint {
-  display: none;
-  font-size: var(--fs-small);
-}
-@media (hover: hover) {
-  .key-hint {
-    display: inline;
-  }
-}
-
 /* ---------- Motion pref "Reduced" (the OS setting is handled per stylesheet) ---------- */
 :root[data-motion="reduced"] *,
 :root[data-motion="reduced"] *::before,
@@ -329,10 +294,4 @@ kbd {
 }
 :root[data-motion="reduced"] .cf {
   display: none;
-}
-.g-hintline .btn {
-  white-space: nowrap;
-  flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 var(--s3);
 }

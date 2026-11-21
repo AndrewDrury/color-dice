@@ -44,7 +44,6 @@ import { clearView, dismissToast, showToast, useAppState } from "../store";
 import "../styles/flow.css";
 import "../styles/game.css";
 import "../styles/scoring.css";
-import { GameHint } from "./GameHint";
 
 /** Fallback if the tray never reports landing (so legal boxes can't stay dark). */
 const LAND_FALLBACK_MS = 4000;
@@ -301,7 +300,6 @@ export function Board({
     chat: openPanel,
   });
 
-  const hint = gameOver ? null : <GameHint view={view} />;
   // T-FIX-12: on desktop Roll lives in the sticky action bar (always in view); elsewhere under the dice.
   const rollButton = view.you.canRoll ? (
     <RollButton controls={rollControls} class="btn btn-primary g-primary" disabled={rolling}>
@@ -310,7 +308,6 @@ export function Board({
   ) : null;
   const actionBar = (
     <>
-      {hint}
       <ActionBar
         view={view}
         status={statusText(view)}

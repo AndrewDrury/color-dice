@@ -13,7 +13,6 @@ export const game: Record<keyof typeof en, string> = {
   "game.rematchTitle": "¿Empezar la revancha?",
   "game.rematchBody": "Todos siguen en la mesa.",
   "game.rematch": "Revancha",
-  "game.keyHint": "Espacio para tirar",
 
   "status.yourRoll": "Tu turno — tira los dados",
   "status.waitingRoll": "Esperando a que {name} tire…",
@@ -36,12 +35,6 @@ export const game: Record<keyof typeof en, string> = {
   "log.heading": "Jugadas",
   "log.empty": "Nada todavía.",
   "player.fallback": "Jugador {n}",
-
-  "hint.gotIt": "Entendido",
-  "hint.whiteSum": "Toca una casilla brillante, o pasa.",
-  "hint.yourTurn": "Combina 1 dado blanco + 1 de color.",
-  "hint.leftRight": "De izquierda a derecha; lo saltado se pierde.",
-  "hint.lock": "5 marcas en la fila abren el candado.",
 
   "action.roll": "Tirar",
   "action.sent": "Enviado…",
@@ -182,8 +175,6 @@ export const game: Record<keyof typeof en, string> = {
   "rolloff.tie": "Empate — se tira de nuevo",
   "rolloff.out": "Fuera",
   "rolloff.rule": "Empieza la tirada más alta",
-  "hint.tag": "Pista",
-  "hint.off": "No mostrar más",
   "opp.penaltiesPts_one": "{count} penalización (−{pts})",
   "opp.penaltiesPts_other": "{count} penalizaciones (−{pts})",
   "sheet.totalCaption": "total",
@@ -203,7 +194,6 @@ export const game: Record<keyof typeof en, string> = {
   "celebrate.scores": "Y las puntuaciones son…",
   "celebrate.showCards": "Ver las hojas de puntuación completas",
   "celebrate.skip": "Saltar",
-  "celebrate.youWin": "¡Ganaste!",
   "celebrate.points": "{n} puntos",
   "over.equationAria":
     "{name}: rojo {r}, amarillo {y}, verde {g}, azul {b}, penalizaciones {p}, total {total}",

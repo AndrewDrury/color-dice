@@ -12,7 +12,6 @@ export const game = {
   "game.rematchTitle": "Start a rematch?",
   "game.rematchBody": "Everyone stays at the table.",
   "game.rematch": "Rematch",
-  "game.keyHint": "Space to roll",
 
   "status.yourRoll": "Your turn — roll the dice",
   "status.waitingRoll": "Waiting for {name} to roll…",
@@ -35,12 +34,6 @@ export const game = {
   "log.heading": "Moves",
   "log.empty": "Nothing yet.",
   "player.fallback": "Player {n}",
-
-  "hint.gotIt": "Got it",
-  "hint.whiteSum": "Tap a glowing box, or Pass.",
-  "hint.yourTurn": "Combine 1 white + 1 coloured die.",
-  "hint.leftRight": "Mark left → right; skips are lost.",
-  "hint.lock": "5 marks in a row unlock its lock.",
 
   "action.roll": "Roll",
   "action.sent": "Sent…",
@@ -180,8 +173,6 @@ export const game = {
   "rolloff.tie": "Tie — roll again",
   "rolloff.out": "Out",
   "rolloff.rule": "Highest roll goes first",
-  "hint.tag": "Hint",
-  "hint.off": "Don't show hints",
   "opp.penaltiesPts_one": "{count} penalty (−{pts})",
   "opp.penaltiesPts_other": "{count} penalties (−{pts})",
   "sheet.totalCaption": "total",
@@ -200,7 +191,6 @@ export const game = {
   "celebrate.scores": "And the scores are…",
   "celebrate.showCards": "Show full score cards",
   "celebrate.skip": "Skip",
-  "celebrate.youWin": "You win!",
   "celebrate.points": "{n} points",
   "over.equationAria":
     "{name}: red {r}, yellow {y}, green {g}, blue {b}, penalties {p}, total {total}",

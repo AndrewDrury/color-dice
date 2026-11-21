@@ -216,17 +216,14 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
   const name = (p: (typeof ranked)[number]) =>
     seatInfo(view, p)?.name ?? t("player.fallback", { n: p.seat + 1 });
   const winners = ranked.filter((p) => winnerSeats.includes(p.seat));
-  const iWon = view.you.seat !== null && winnerSeats.includes(view.you.seat);
   const allIn = r.phase === "done" || totalsComplete;
   const heading = allTied
     ? t("over.tieAll")
     : tie
       ? t("over.tie") + winners.map(name).join(" & ")
-      : iWon
-        ? t("celebrate.youWin")
-        : winners[0]
-          ? name(winners[0])
-          : "";
+      : winners[0]
+        ? name(winners[0])
+        : "";
   const title = allIn ? heading : t("celebrate.scores");
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape and the Skip button cover the keyboard

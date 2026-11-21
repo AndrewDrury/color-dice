@@ -6,7 +6,7 @@ import { GameMenu } from "../src/components/GameMenu";
 import { GearButton } from "../src/components/Settings";
 import { Settings } from "../src/components/SettingsPanel";
 import { _resetInviteForTests, isInviteHash, parseInviteHash } from "../src/invite";
-import { _resetPrefsForTests, getPrefs, setPrefs } from "../src/prefs";
+import { _resetPrefsForTests } from "../src/prefs";
 import { _resetRememberedForTests, getRoomPassword, rememberSubmit } from "../src/remembered";
 import { getPendingInvite, getRoute, initialRoute, navigate, startRouter } from "../src/router";
 import { InviteJoin } from "../src/screens/InviteJoin";
@@ -171,12 +171,9 @@ describe("Settings", () => {
     expect(btn.querySelector("svg path")).toBeTruthy();
   });
 
-  it("Show hints again re-enables hints", () => {
-    setPrefs({ hintsOff: true, seenHints: ["roll", "mark"] });
+  it("has no hints control", () => {
     render(<Settings onClose={() => {}} onPanel={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show hints again" }));
-    expect(getPrefs().hintsOff).toBe(false);
-    expect(getPrefs().seenHints).toEqual([]);
+    expect(screen.queryByRole("button", { name: "Show hints again" })).toBeNull();
   });
 });
 

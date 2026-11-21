@@ -1,4 +1,4 @@
-/* Turn flow (T-UX-12): Roll under the dice, hint tag, lock popup, roll-off overlay. */
+/* Turn flow (T-UX-12): Roll under the dice, lock popup, roll-off overlay. */
 
 /* ---------- K4.3: dice tray + the one Roll button right under it ---------- */
 .g-dicegroup {
@@ -31,42 +31,6 @@
   flex: 1;
   white-space: normal;
   line-height: 1.2;
-}
-
-/* ---------- K4.5 / K4.6: hint card with a "Hint" tag set into its top edge ---------- */
-.g-hintline {
-  position: relative;
-  margin-top: 6px;
-  border: 1px solid var(--line, color-mix(in srgb, var(--ink) 25%, transparent));
-}
-.g-hint-tag {
-  position: absolute;
-  top: -7px;
-  left: 10px;
-  margin: 0;
-  padding: 0 6px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--on-accent, var(--paper));
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: var(--fw-heavy);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.g-hintline .g-hint-off {
-  background: none;
-  box-shadow: none;
-  color: var(--ink-muted);
-  text-decoration: underline;
-  font-size: 12px;
-  padding: 0 6px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  text-align: center;
-  flex: 0 1 6.5em;
-  min-width: 0;
-  line-height: 1.1;
 }
 
 /* ---------- Opponent penalties in words (K4.7) ---------- */

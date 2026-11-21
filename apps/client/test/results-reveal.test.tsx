@@ -191,7 +191,7 @@ describe("reveal timeline", () => {
     expect(document.querySelector(".rv-card.is-winner")).toBeNull();
     tick(TOTAL_MS);
     expect(totals()).toBe(3);
-    expect(screen.getByTestId("rv-title").textContent).toContain("You win!");
+    expect(screen.getByTestId("rv-title").textContent).toContain("Andrew");
     expect(document.querySelector(".rv-card.is-winner")?.getAttribute("data-seat")).toBe("0");
     expect(
       document.querySelector(".rv-card.is-winner .rv-total-num")?.getAttribute("data-value"),
@@ -342,6 +342,18 @@ function GameOverWithKind({ kind }: { kind: CelebrationKind }) {
 }
 
 describe("players, ties, names", () => {
+  it("uses the winner player name for both self and opponent viewers", () => {
+    mount(overView([9, 2], [0], 0));
+    tick(revealSchedule(2).doneAt);
+    expect(screen.getByTestId("rv-title").textContent).toContain("Andrew");
+    expect(screen.getByTestId("rv-title").textContent).not.toContain("You win");
+    cleanup();
+    mount(overView([9, 2], [0], 1));
+    tick(revealSchedule(2).doneAt);
+    expect(screen.getByTestId("rv-title").textContent).toContain("Andrew");
+    expect(screen.getByTestId("rv-title").textContent).not.toContain("You win");
+  });
+
   it("five players: all cards up front, every colour together, totals ascending", () => {
     mount(overView([4, 9, 1, 7, 7], [1]));
     expect(document.querySelectorAll(".rv-card")).toHaveLength(5);

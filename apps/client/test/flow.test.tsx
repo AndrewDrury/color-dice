@@ -8,9 +8,8 @@ import { Sheet } from "../src/components/Sheet";
 import { _resetPlayedRollsForTests } from "../src/fx/useRollAnimation";
 import { lockMessage } from "../src/game/flow";
 import { applyLanguage } from "../src/i18n";
-import { _resetPrefsForTests, getPrefs, setPrefs } from "../src/prefs";
+import { _resetPrefsForTests, setPrefs } from "../src/prefs";
 import { Game } from "../src/screens/Game";
-import { GameHint } from "../src/screens/GameHint";
 import { _resetMemoryForTests, saveSession } from "../src/session";
 import { _resetStoreForTests, applyView } from "../src/store";
 import { TOKEN } from "./fixtures";
@@ -146,42 +145,14 @@ describe("lock popup (K4.2)", () => {
   });
 });
 
-describe("hint card (K4.5, K4.6)", () => {
-  const hintView = () => view({ legal1: ["RED"] });
-
-  it("shows the Hint tag in EN, FR and ES", async () => {
-    for (const [lang, tag] of [
-      ["en", "Hint"],
-      ["fr", "Astuce"],
-      ["es", "Pista"],
-    ] as const) {
-      await applyLanguage(lang);
-      const { container, unmount } = render(<GameHint view={hintView()} />);
-      expect(container.querySelector(".g-hint-tag")?.textContent).toBe(tag);
-      expect(container.querySelector("section")?.getAttribute("aria-label")).toBe(tag);
-      unmount();
-    }
-  });
-
-  it("Got it hides only that hint; Don't show hints hides all, for good", () => {
-    const r = render(<GameHint view={hintView()} />);
-    fireEvent.click(screen.getByText("Got it"));
-    expect(getPrefs().hintsOff).toBe(false);
-    expect(getPrefs().seenHints).toEqual(["white-sum"]);
-    r.rerender(<GameHint view={view({ phase: "ACTION_2" })} />);
-    expect(screen.queryByText("Combine 1 white + 1 coloured die.")).not.toBeNull();
-    fireEvent.click(screen.getByText("Don't show hints"));
-    expect(getPrefs().hintsOff).toBe(true);
-    expect(r.container.querySelector(".g-hintline")).toBeNull();
-    r.rerender(<GameHint view={view({ phase: "ACTION_1", version: 9, legal1: ["GREEN"] })} />);
-    expect(r.container.querySelector(".g-hintline")).toBeNull();
-    expect(getPrefs().hintsOff).toBe(true);
-  });
-
-  it("treats an invalid stored hintsOff as false", () => {
-    localStorage.setItem("colorDice:prefs", JSON.stringify({ hintsOff: "yes" }));
-    _resetPrefsForTests();
-    expect(getPrefs().hintsOff).toBe(false);
+describe("gameplay hints (T-FIX-NEW-remove-hints-name-winner)", () => {
+  it("does not render coaching hints, desktop key hint, or hint actions", () => {
+    show(view({ phase: "ACTION_1", legal1: ["RED"], canRoll: true }));
+    const { container } = render(<Game code={CODE} />);
+    expect(container.querySelector(".g-hintline")).toBeNull();
+    expect(container.querySelector(".key-hint")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Don't show hints" })).toBeNull();
   });
 });
 

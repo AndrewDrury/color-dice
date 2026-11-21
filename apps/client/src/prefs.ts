@@ -57,15 +57,11 @@ export interface Prefs {
   /** UI language; "auto" follows the browser (navigator.languages). */
   language: LanguagePref;
   lastName: string;
-  seenHints: string[];
-  /** K4.6: never show the coaching hint card on this device. */
-  hintsOff: boolean;
 }
 
 export const PREFS_KEY = "colorDice:prefs";
 
 const MAX_NAME = 40;
-const MAX_HINTS = 50;
 
 export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   sound: true,
@@ -75,8 +71,6 @@ export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   theme: "classic-light",
   language: "auto",
   lastName: "",
-  seenHints: [],
-  hintsOff: false,
 });
 
 type Listener = (p: Prefs) => void;
@@ -116,7 +110,7 @@ function migrateTheme(value: unknown): ThemePref {
 
 /** Storage content is not trusted: keep only well-formed fields, defaults for the rest. */
 function sanitize(data: unknown): Prefs {
-  const out: Prefs = { ...DEFAULT_PREFS, seenHints: [] };
+  const out: Prefs = { ...DEFAULT_PREFS };
   if (typeof data !== "object" || data === null || Array.isArray(data)) return out;
   const d = data as Record<string, unknown>;
   if (typeof d.sound === "boolean") out.sound = d.sound;
@@ -125,18 +119,12 @@ function sanitize(data: unknown): Prefs {
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
   out.theme = migrateTheme(d.theme);
   if (LANGUAGES.includes(d.language as LanguagePref)) out.language = d.language as LanguagePref;
-  if (typeof d.hintsOff === "boolean") out.hintsOff = d.hintsOff;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);
-  if (Array.isArray(d.seenHints)) {
-    out.seenHints = d.seenHints
-      .filter((h): h is string => typeof h === "string" && h.length <= 64)
-      .slice(0, MAX_HINTS);
-  }
   return out;
 }
 
 function clone(p: Prefs): Prefs {
-  return { ...p, seenHints: [...p.seenHints] };
+  return { ...p };
 }
 
 export function getPrefs(): Prefs {

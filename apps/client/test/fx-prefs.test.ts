@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe("prefs", () => {
-  it("has the H12 defaults", () => {
+  it("has the defaults", () => {
     expect(getPrefs()).toEqual({ ...DEFAULT_PREFS });
     expect(getPrefs()).toMatchObject({
       sound: true,
@@ -43,6 +43,18 @@ describe("prefs", () => {
     );
     _resetPrefsForTests();
     expect(getPrefs()).toMatchObject({ sound: true, motion: "system", theme: "classic-dark" });
+  });
+
+  it("ignores legacy hint fields from stored preferences", () => {
+    localStorage.setItem(
+      PREFS_KEY,
+      JSON.stringify({ sound: false, hintsOff: true, seenHints: ["white-sum"] }),
+    );
+    _resetPrefsForTests();
+    expect(getPrefs()).toMatchObject({ sound: false, motion: "system" });
+    const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
+    expect(stored.hintsOff).toBeUndefined();
+    expect(stored.seenHints).toBeUndefined();
   });
 
   it("falls back to memory when localStorage throws", () => {

@@ -14,7 +14,6 @@ export const game: Record<keyof typeof en, string> = {
   "game.rematchTitle": "Lancer une revanche ?",
   "game.rematchBody": "Tout le monde reste à la table.",
   "game.rematch": "Revanche",
-  "game.keyHint": "Espace pour lancer",
 
   "status.yourRoll": "À toi — lance les dés",
   "status.waitingRoll": "{name} doit lancer les dés…",
@@ -37,12 +36,6 @@ export const game: Record<keyof typeof en, string> = {
   "log.heading": "Coups",
   "log.empty": "Rien pour l'instant.",
   "player.fallback": "Joueur {n}",
-
-  "hint.gotIt": "Compris",
-  "hint.whiteSum": "Touche une case lumineuse, ou passe.",
-  "hint.yourTurn": "Combine 1 blanc + 1 dé de couleur.",
-  "hint.leftRight": "Coche de gauche à droite ; sauts perdus.",
-  "hint.lock": "5 croix dans la ligne : verrou débloqué.",
 
   "action.roll": "Lancer",
   "action.sent": "Envoyé…",
@@ -183,8 +176,6 @@ export const game: Record<keyof typeof en, string> = {
   "rolloff.tie": "Égalité — on relance",
   "rolloff.out": "Éliminé",
   "rolloff.rule": "Le plus haut score commence",
-  "hint.tag": "Astuce",
-  "hint.off": "Ne plus afficher",
   "opp.penaltiesPts_one": "{count} pénalité (−{pts})",
   "opp.penaltiesPts_other": "{count} pénalités (−{pts})",
   "sheet.totalCaption": "total",
@@ -204,7 +195,6 @@ export const game: Record<keyof typeof en, string> = {
   "celebrate.scores": "Et les scores sont…",
   "celebrate.showCards": "Voir les feuilles de score complètes",
   "celebrate.skip": "Passer",
-  "celebrate.youWin": "Tu as gagné !",
   "celebrate.points": "{n} points",
   "over.equationAria":
     "{name} : rouge {r}, jaune {y}, vert {g}, bleu {b}, pénalités {p}, total {total}",

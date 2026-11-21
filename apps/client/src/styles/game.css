@@ -1077,11 +1077,6 @@
   .g-top {
     min-height: 44px;
   }
-  /* The banner's call to action already says what to press; the hint row (48 px) would push the
-     page into scrolling on 360x640 / 375x667 phones. */
-  .g-game .g-hintline {
-    display: none;
-  }
 }
 
 /* ---------- T-NEW-20: end-of-turn summary (over the moves card; centre sheet on phones) ---------- */
