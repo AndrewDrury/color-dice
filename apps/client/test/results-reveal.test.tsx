@@ -127,6 +127,22 @@ describe("reveal timeline", () => {
     expect(document.querySelector(".rv-rank")?.textContent).toBe(""); // no rank spoiler
   });
 
+  it("hides final scores from reveal-card aria labels until completion", () => {
+    mount(overView([9, 2], [0]));
+    for (const card of document.querySelectorAll<HTMLElement>(".rv-card")) {
+      const label = card.getAttribute("aria-label") ?? "";
+      expect(label).not.toContain("9");
+      expect(label).not.toContain("2");
+      expect(label).not.toContain("+");
+    }
+    tick(revealSchedule(2).doneAt);
+    for (const card of document.querySelectorAll<HTMLElement>(".rv-card")) {
+      const label = card.getAttribute("aria-label") ?? "";
+      expect(label).toMatch(/9|2/);
+      expect(label).not.toBe(card.querySelector(".rv-name")?.textContent);
+    }
+  });
+
   it("reveals one colour at a time for every player at once: red, yellow, green, blue, penalties", () => {
     mount(overView([9, 2, 5], [0]));
     const s = revealSchedule(3);

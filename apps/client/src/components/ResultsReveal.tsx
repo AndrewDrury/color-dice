@@ -273,15 +273,19 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
                 data-seat={p.seat}
                 data-order={order}
                 style={{ "--p": stag }}
-                aria-label={t("over.equationAria", {
-                  name: nm,
-                  r: rows?.RED ?? 0,
-                  y: rows?.YELLOW ?? 0,
-                  g: rows?.GREEN ?? 0,
-                  b: rows?.BLUE ?? 0,
-                  p: pen,
-                  total,
-                })}
+                aria-label={
+                  allIn
+                    ? t("over.equationAria", {
+                        name: nm,
+                        r: rows?.RED ?? 0,
+                        y: rows?.YELLOW ?? 0,
+                        g: rows?.GREEN ?? 0,
+                        b: rows?.BLUE ?? 0,
+                        p: pen,
+                        total,
+                      })
+                    : nm
+                }
               >
                 <span class="rv-who">
                   <span class="num rv-rank">{allIn ? `${ranks[i]}.` : ""}</span>
