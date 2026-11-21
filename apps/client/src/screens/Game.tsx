@@ -326,7 +326,7 @@ export function Board({
   );
 
   return (
-    <div class="g-game" data-viewport={viewport}>
+    <div class="g-game" data-viewport={viewport} data-idle-nudge-ready={!!IdleNudgeView}>
       <header class="g-top">
         <button type="button" class="btn g-home" onClick={() => setLeaving(true)}>
           {t("game.home")}

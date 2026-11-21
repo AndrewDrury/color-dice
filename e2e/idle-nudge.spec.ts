@@ -19,6 +19,7 @@ test("idle nudge shows after 10 s on your move and a tap dismisses it", async ({
     await roller.page.setViewportSize({ width: 360, height: 640 });
     await roller.page.clock.install();
     await roller.page.reload();
+    await expect(roller.page.locator(".g-game")).toHaveAttribute("data-idle-nudge-ready", "true");
     await expect(roller.page.getByTestId("turn-banner")).toHaveClass(/is-mine/);
     await expect(roller.page.getByTestId("idle-nudge")).toHaveCount(0);
     await roller.page.clock.runFor(9_999);
