@@ -177,10 +177,9 @@ export function contrastRatio(a: string, b: string): number {
 /**
  * T-NEW-16 themes (D-L6/D-L7): each is a light or dark base plus surface/text/accent overrides.
  * Mirrored in themes.css (checked by contrast.test.ts). Row, dice and profile colours never
- * change. classic, classic-light and classic-dark are the plain bases (no overrides, no pattern).
+ * change. classic-light and classic-dark are the plain bases (no overrides, no pattern).
  */
 export const THEME_BASE: Record<string, Theme> = {
-  classic: "light",
   "classic-light": "light",
   "classic-dark": "dark",
   hearts: "light",

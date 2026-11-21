@@ -17,20 +17,18 @@ import "./styles/polish.css";
 
 /**
  * Mirror the theme and motion prefs onto <html> (tokens.css, themes.css and polish.css key off
- * them): data-theme = theme id, data-scheme = its light/dark base. Classic (auto) has no
- * data-scheme, so CSS prefers-color-scheme decides and follows the system live.
+ * them): data-theme = explicit theme id, data-scheme = its light/dark base.
  */
 export function applyPrefs(root: HTMLElement = document.documentElement): void {
   const { theme, motion } = getPrefs();
   root.dataset.theme = theme;
   const scheme = THEME_SCHEME[theme];
-  if (scheme === "auto") delete root.dataset.scheme;
-  else root.dataset.scheme = scheme;
+  root.dataset.scheme = scheme;
   if (motion === "reduced") root.dataset.motion = motion;
   else delete root.dataset.motion;
   const bar = getComputedStyle(root).getPropertyValue("--table").trim();
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m, i) => {
-    m.setAttribute("content", theme === "classic" ? (["#EFE9DF", "#0E131C"][i] ?? bar) : bar);
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+    m.setAttribute("content", bar);
   });
 }
 

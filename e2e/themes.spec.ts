@@ -6,7 +6,6 @@ import { closeAll, newPlayer, settle, uid } from "./helpers";
 declare const process: { env: Record<string, string | undefined> };
 const OUT = new URL("./screenshots/themes/", import.meta.url).pathname;
 const THEMES: [string, string][] = [
-  ["classic", "Classic (auto)"],
   ["classic-light", "Classic light"],
   ["classic-dark", "Classic dark"],
   ["hearts", "Hearts"],
@@ -74,8 +73,7 @@ test.describe("themes @shots", () => {
               ([t, d]) => {
                 const r = document.documentElement;
                 r.dataset.theme = t;
-                if (t === "classic") delete r.dataset.scheme;
-                else r.dataset.scheme = d;
+                r.dataset.scheme = d;
               },
               [id, DARK.includes(id) ? "dark" : "light"] as [string, string],
             );

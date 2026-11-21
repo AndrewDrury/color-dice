@@ -10,6 +10,7 @@ import {
   THEME_SCHEME,
   THEMES,
 } from "../src/prefs";
+import cssText from "../src/styles/themes.css?raw";
 
 const root = document.documentElement;
 
@@ -31,14 +32,15 @@ const stored = (theme: unknown) => {
 };
 
 describe("theme pref", () => {
-  it("defaults to classic and migrates the old values", () => {
-    expect(getPrefs().theme).toBe("classic");
-    expect(stored("system")).toBe("classic");
+  it("defaults explicitly and migrates legacy or unknown values", () => {
+    expect(["classic-light", "classic-dark"]).toContain(getPrefs().theme);
+    expect(["classic-light", "classic-dark"]).toContain(stored("system"));
     expect(stored("light")).toBe("classic-light");
     expect(stored("dark")).toBe("classic-dark");
+    expect(stored("classic")).toBe(getPrefs().theme);
     expect(stored("hearts")).toBe("hearts");
-    expect(stored("neon")).toBe("classic");
-    expect(stored(7)).toBe("classic");
+    expect(["classic-light", "classic-dark"]).toContain(stored("neon"));
+    expect(["classic-light", "classic-dark"]).toContain(stored(7));
   });
 
   it("round-trips through localStorage and survives blocked storage", () => {
@@ -61,8 +63,7 @@ describe("applyPrefs", () => {
       applyPrefs();
       expect(root.dataset.theme).toBe(theme);
       const scheme = THEME_SCHEME[theme];
-      if (scheme === "auto") expect(root.dataset.scheme).toBeUndefined();
-      else expect(root.dataset.scheme).toBe(scheme);
+      expect(root.dataset.scheme).toBe(scheme);
     }
   });
 });
@@ -72,7 +73,7 @@ describe("ThemePicker", () => {
     startPrefs();
     render(<ThemePicker legend="Choose theme" />);
     expect(screen.getAllByRole("radio")).toHaveLength(THEMES.length);
-    expect(screen.getByRole("radio", { name: "Classic (auto)" })).toHaveProperty("checked", true);
+    expect(screen.queryByRole("radio", { name: "Classic (auto)" })).toBeNull();
     act(() => {
       fireEvent.click(screen.getByRole("radio", { name: "Hearts" }));
     });
@@ -80,5 +81,23 @@ describe("ThemePicker", () => {
     expect(root.dataset.scheme).toBe("light");
     expect(screen.getByRole("radio", { name: "Hearts" })).toHaveProperty("checked", true);
     expect(getPrefs().theme).toBe("hearts");
+  });
+});
+
+describe("theme allow-list", () => {
+  it("contains no classic auto id and finishes with an opaque graphite theme", () => {
+    expect(THEMES).not.toContain("classic");
+    expect(THEMES.at(-1)).toBe("graphite");
+    expect(cssText).toMatch(
+      /:root\[data-theme="graphite"\][\s\S]*\.th-graphite[\s\S]*--table:\s*#[0-9a-f]{6}/i,
+    );
+    expect(cssText).toMatch(/\.th-graphite[\s\S]*--paper:\s*#[0-9a-f]{6}/i);
+  });
+
+  it("persists a migrated legacy value as an explicit theme", () => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: "light" }));
+    _resetPrefsForTests();
+    expect(getPrefs().theme).toBe("classic-light");
+    expect(JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}").theme).toBe("classic-light");
   });
 });

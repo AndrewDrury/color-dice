@@ -409,6 +409,20 @@
     max-height: 140px;
   }
 }
+@media (max-height: 700px) {
+  .rv {
+    padding-top: env(safe-area-inset-top);
+  }
+  .rv-cat--top {
+    display: none;
+  }
+  .rv-stage {
+    padding-block: var(--s2);
+  }
+  .rv-foot {
+    padding-bottom: calc(var(--s2) + env(safe-area-inset-bottom));
+  }
+}
 
 /* ---- reduced motion: no drop, no slam, no moving backdrop ---- */
 .rv.is-reduced .rv-pill.is-in,

@@ -1,5 +1,6 @@
 import type { RematchOffer, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef } from "preact/hooks";
+import { useModalTrap } from "../fx/modal";
 import { t } from "../i18n";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
@@ -20,6 +21,12 @@ export function RematchPopup({
     .filter((s) => s.kind === "human" && s.left !== true)
     .filter((s) => s.seatId !== offer.fromSeatId && !offer.accepted.includes(s.seatId))
     .map((s) => s.name);
+  useModalTrap(
+    dialogRef,
+    () =>
+      document.querySelector<HTMLElement>(".rematch-popup-actions button, .rematch-popup button") ??
+      document.querySelector<HTMLElement>(".g-over-actions .btn, .g-over-actions button"),
+  );
   useEffect(() => {
     dialogRef.current?.focus();
   }, [offer.fromSeatId]);

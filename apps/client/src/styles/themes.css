@@ -259,18 +259,20 @@ body::before {
     linear-gradient(90deg, rgb(141 162 198 / 11%) 1px, transparent 1px) 0 0 / 24px 24px;
 }
 
-/* Classic swatches (the page itself uses tokens.css as is). */
+/* Explicit classic swatches (the page itself uses tokens.css as is). */
 .th-classic-light {
   --table: #efe9df;
+  --paper: #fffdf8;
+  --ink: #1c2230;
   --accent: #5b5bf0;
+  --on-accent: #ffffff;
 }
 .th-classic-dark {
   --table: #0e131c;
+  --paper: #171c27;
+  --ink: #f4f0e7;
   --accent: #8c8cff;
-}
-.tp-swatch.th-classic {
-  --accent: #5b5bf0;
-  background: linear-gradient(135deg, #efe9df 50%, #0e131c 50%);
+  --on-accent: #101226;
 }
 
 /* ---------- ThemePicker (lazy component; styles here so Settings and profile share them) ---------- */

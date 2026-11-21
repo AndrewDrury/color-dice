@@ -1,9 +1,8 @@
 /** Device preferences (H12). Stored in localStorage with an in-memory fallback, like session.ts. */
 
 export type MotionPref = "system" | "reduced" | "full";
-/** D-L6/D-L7 theme ids; "classic" follows the system light/dark setting. */
+/** D-L6/D-L7 explicit theme ids. "classic" is migration-only and never accepted by the UI. */
 export const THEMES = [
-  "classic",
   "classic-light",
   "classic-dark",
   "hearts",
@@ -25,8 +24,7 @@ export const THEMES = [
   "graphite",
 ] as const;
 export type ThemePref = (typeof THEMES)[number];
-export const THEME_SCHEME: Record<ThemePref, "auto" | "light" | "dark"> = {
-  classic: "auto",
+export const THEME_SCHEME: Record<ThemePref, "light" | "dark"> = {
   "classic-light": "light",
   "classic-dark": "dark",
   hearts: "light",
@@ -74,7 +72,7 @@ export const DEFAULT_PREFS: Readonly<Prefs> = Object.freeze({
   haptics: true,
   showChat: true,
   motion: "system",
-  theme: "classic",
+  theme: "classic-light",
   language: "auto",
   lastName: "",
   seenHints: [],
@@ -97,6 +95,25 @@ function storage(): Storage | null {
 const MOTIONS: readonly MotionPref[] = ["system", "reduced", "full"];
 const LANGUAGES: readonly LanguagePref[] = ["auto", "en", "fr", "es"];
 
+export function defaultTheme(): ThemePref {
+  try {
+    // i18n-ok: CSS media query, not user-facing copy.
+    return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "classic-dark"
+      : "classic-light";
+  } catch {
+    return "classic-light";
+  }
+}
+
+function migrateTheme(value: unknown): ThemePref {
+  if (value === "light") return "classic-light";
+  if (value === "dark") return "classic-dark";
+  if (value === "classic") return defaultTheme();
+  if (typeof value === "string" && THEMES.includes(value as ThemePref)) return value as ThemePref;
+  return defaultTheme();
+}
+
 /** Storage content is not trusted: keep only well-formed fields, defaults for the rest. */
 function sanitize(data: unknown): Prefs {
   const out: Prefs = { ...DEFAULT_PREFS, seenHints: [] };
@@ -106,9 +123,7 @@ function sanitize(data: unknown): Prefs {
   if (typeof d.haptics === "boolean") out.haptics = d.haptics;
   if (typeof d.showChat === "boolean") out.showChat = d.showChat;
   if (MOTIONS.includes(d.motion as MotionPref)) out.motion = d.motion as MotionPref;
-  // Old values: system -> classic, light/dark -> classic-light/-dark; anything unknown -> classic.
-  const th = d.theme === "light" || d.theme === "dark" ? `classic-${d.theme}` : d.theme;
-  if (THEMES.includes(th as ThemePref)) out.theme = th as ThemePref;
+  out.theme = migrateTheme(d.theme);
   if (LANGUAGES.includes(d.language as LanguagePref)) out.language = d.language as LanguagePref;
   if (typeof d.hintsOff === "boolean") out.hintsOff = d.hintsOff;
   if (typeof d.lastName === "string") out.lastName = d.lastName.slice(0, MAX_NAME);
@@ -132,6 +147,8 @@ export function getPrefs(): Prefs {
     try {
       const raw = ls.getItem(PREFS_KEY);
       if (raw !== null) p = sanitize(JSON.parse(raw));
+      else p = sanitize(null);
+      if (raw !== null) ls.setItem(PREFS_KEY, JSON.stringify(p));
     } catch {
       // Blocked or corrupt storage: defaults for this tab.
     }

@@ -26,7 +26,7 @@ describe("prefs", () => {
       sound: true,
       haptics: true,
       motion: "system",
-      theme: "classic",
+      theme: "classic-light",
     });
   });
 

@@ -271,4 +271,24 @@ describe("Settings saved info", () => {
     expect(screen.getByText("Nothing saved on this device.")).toBeTruthy();
     clearRemembered();
   });
+
+  it("clear saved info also removes name and profile and restores explicit theme", () => {
+    rememberSubmit({
+      code: "ABCDE",
+      name: "Cleo",
+      profile: { color: "teal", cat: "cat-laugh-gif" },
+    });
+    vi.mocked(api.createGame).mockResolvedValue({
+      code: "ABCDE",
+      token: TOKEN,
+      seatId: SEAT,
+      inviteKey: "A".repeat(43),
+    });
+    clearRemembered();
+    expect(getRemembered().name).toBe("");
+    expect(getRemembered().profile).toBeUndefined();
+    expect(["classic-light", "classic-dark"]).toContain(
+      JSON.parse(localStorage.getItem("colorDice:prefs") ?? "{}").theme,
+    );
+  });
 });

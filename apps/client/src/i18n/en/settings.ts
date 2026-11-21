@@ -10,7 +10,7 @@ export const settings = {
   "settings.reduced": "Reduced",
   "settings.full": "Full",
   "settings.themes":
-    "Classic (auto),Classic light,Classic dark,Hearts,Midnight,Ocean,Forest,Lavender,Sunset,Sakura,Candy,Synthwave,Aurora,Desert,Coffee,Mint,Space,Autumn,Ice,Graphite",
+    "Classic light,Classic dark,Hearts,Midnight,Ocean,Forest,Lavender,Sunset,Sakura,Candy,Synthwave,Aurora,Desert,Coffee,Mint,Space,Autumn,Ice,Graphite",
   "settings.auto": "Auto",
   "settings.help": "How to play",
   "settings.keys": "Keyboard shortcuts",

@@ -14,7 +14,7 @@ import {
   ProfileSchema,
   ROOM_NAME_MAX,
 } from "@cd/protocol";
-import { getPrefs, setPrefs } from "./prefs";
+import { defaultTheme, getPrefs, setPrefs } from "./prefs";
 import { listSessions } from "./session";
 
 export const REMEMBERED_KEY = "colorDice:remembered";
@@ -217,7 +217,7 @@ export function removeRoomPassword(code: string): void {
   save({ ...r, rooms: r.rooms.filter((x) => x.code !== code) });
 }
 
-/** Settings "Clear saved info": wipes the key and the last-name pref. */
+/** Settings "Clear saved info": wipes name/profile/room data and resets the theme and last name. */
 export function clearRemembered(): void {
   memory = null;
   const ls = storage();
@@ -228,7 +228,7 @@ export function clearRemembered(): void {
       // Storage blocked: nothing persisted anyway.
     }
   }
-  setPrefs({ lastName: "" });
+  setPrefs({ lastName: "", theme: defaultTheme() });
 }
 
 /** Test helper: drop the in-memory copy. */
