@@ -289,7 +289,7 @@ export function Home({ route }: HomeProps) {
           </div>
           <div class="stack" style={{ gap: "var(--s1)" }}>
             <Button variant="primary" busy={quickBusy} onClick={quickCreate}>
-              {t("home.quickCreate")}
+              {t("home.createGame")}
             </Button>
             {quickInvite ? (
               <div class="row" style={{ gap: "var(--s2)", flexWrap: "wrap" }}>

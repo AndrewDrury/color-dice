@@ -13,7 +13,6 @@ export const home: Record<keyof typeof en, string> = {
   "home.inviteLabel": "Un code d'invitation ?",
   "home.createGame": "Créer une partie",
   "home.openGames": "Parties ouvertes (en direct)",
-  "home.quickCreate": "Création auto avec réglages enregistrés",
   "home.quickCreateNeedsCache":
     "Enregistre d'abord des réglages valides de salle/nom/mot de passe, puis réessaie.",
   "home.quickCreateCopied": "Le lien d'invitation a été copié automatiquement.",

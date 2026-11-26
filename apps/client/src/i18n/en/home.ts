@@ -11,7 +11,6 @@ export const home = {
   "home.inviteLabel": "Have an invite code?",
   "home.createGame": "Create game",
   "home.openGames": "Open games (live)",
-  "home.quickCreate": "Auto-create with saved settings",
   "home.quickCreateNeedsCache": "Save valid room/name/password settings first, then try again.",
   "home.quickCreateCopied": "Invite link copied automatically.",
   "home.copyLinkAgain": "Copy link again",
