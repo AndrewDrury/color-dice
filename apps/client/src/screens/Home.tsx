@@ -214,7 +214,10 @@ export function Home({ route }: HomeProps) {
             name={remembered.name || t("waiting.you")}
             onClick={() => setPanel("profile")}
           />
-          <GearButton onClick={() => setPanel("settings")} />
+          <GearButton
+            onClick={() => setPanel("settings")}
+            title={`${t("settings.version")}: ${typeof __DEPLOY_VERSION__ === "undefined" ? "dev" : __DEPLOY_VERSION__}`}
+          />
         </div>
       </header>
       <Panels

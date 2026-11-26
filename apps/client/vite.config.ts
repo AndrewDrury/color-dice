@@ -15,15 +15,6 @@ function versionFile(): Plugin {
     name: "cd-version-json",
     transformIndexHtml() {
       return [
-        {
-          tag: "div",
-          attrs: {
-            class: "deploy-version",
-            "aria-label": `Deploy version ${DEPLOY_VERSION}`,
-          },
-          children: `v${DEPLOY_VERSION}`,
-          injectTo: "body",
-        },
       ];
     },
     generateBundle() {

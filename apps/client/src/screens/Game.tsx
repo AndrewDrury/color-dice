@@ -396,7 +396,10 @@ export function Board({
             name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
             onClick={() => setPanel("profile")}
           />
-          <GearButton onClick={() => setPanel("settings")} />
+          <GearButton
+            onClick={() => setPanel("settings")}
+            title={`${t("settings.version")}: ${typeof __DEPLOY_VERSION__ === "undefined" ? "dev" : __DEPLOY_VERSION__}`}
+          />
         </span>
       </header>
       <TurnBanner view={view} staged={anyStaged} noMove={noMove} />

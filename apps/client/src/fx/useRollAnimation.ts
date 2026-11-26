@@ -19,7 +19,7 @@ const SETTLE_MS = 350;
 
 /** Tuned in the Dice Lab. */
 export const ROLL_TIMING = Object.freeze({
-  minTumble: 550,
+  minTumble: 400,
   settle: SETTLE_MS,
   stagger: 70,
   /** First contact inside the settle: the short bounce (≤ 120 ms, K3.1) follows it. */
@@ -35,7 +35,7 @@ export const ROLL_TIMING = Object.freeze({
  * Gameplay reveal (D-L9): 400 ms between landings. Kept apart from `ROLL_TIMING` (shared with
  * the roll-off and turn summary, whose 70 ms stagger is unchanged).
  */
-export const GAMEPLAY_TIMING = Object.freeze({ landGap: 400 });
+export const GAMEPLAY_TIMING = Object.freeze({ landGap: 220 });
 
 export interface RollLike {
   white: readonly number[];

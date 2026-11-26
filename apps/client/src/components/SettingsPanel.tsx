@@ -2,7 +2,7 @@
 import { useState } from "preact/hooks";
 import { ApiError, leaveGame } from "../api";
 import { hapticsSupported } from "../fx/haptics";
-import { clearHistory, exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
+import { exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
 import { LANGUAGE_NAMES, LOCALES, type MessageKey, setLanguage, t, tn, useT } from "../i18n";
 import { type LanguagePref, type MotionPref, setPrefs } from "../prefs";
 import { clearRemembered, getRemembered } from "../remembered";
@@ -95,18 +95,6 @@ function RecordSection() {
     <section class="stack" aria-label={t("settings.recordAria")}>
       <div class="st-row">
         <span>{t("home.record", record)}</span>
-        {total > 0 ? (
-          <button
-            type="button"
-            class="btn"
-            onClick={() => {
-              clearHistory();
-              setNote(t("settings.recordCleared"));
-            }}
-          >
-            {t("settings.recordReset")}
-          </button>
-        ) : null}
       </div>
       {total > 0 ? (
         <button
@@ -198,12 +186,23 @@ export function Settings({
   gameCode?: string;
 }) {
   const prefs = usePrefs();
+  const deployVersion =
+    typeof __DEPLOY_VERSION__ === "undefined" ? "dev" : __DEPLOY_VERSION__;
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
   useT();
   return (
     <BottomSheet title={t("settings.title")} onClose={onClose}>
+      <p class="muted" style={{ textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+        {t("settings.version")}: v{deployVersion}
+      </p>
+      <button type="button" class="btn btn-primary" onClick={() => onPanel("help")}>
+        {t("settings.help")}
+      </button>
+      <button type="button" class="btn only-desktop" onClick={() => onPanel("keys")}>
+        {t("settings.keys")}
+      </button>
       {gameCode ? (
         <section class="stack" aria-label={t("settings.gameActions")}>
           <InviteButton code={gameCode} token={getSession(gameCode)?.token ?? ""} />
@@ -290,12 +289,6 @@ export function Settings({
       />
       <RecordSection />
       <SavedInfoSection />
-      <button type="button" class="btn" onClick={() => onPanel("help")}>
-        {t("settings.help")}
-      </button>
-      <button type="button" class="btn only-desktop" onClick={() => onPanel("keys")}>
-        {t("settings.keys")}
-      </button>
     </BottomSheet>
   );
 }

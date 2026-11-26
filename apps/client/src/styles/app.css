@@ -116,24 +116,32 @@ output {
 
 .demo-scenarios {
   position: relative;
-  z-index: 1;
+  z-index: 80;
+  display: inline-flex;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.demo-scenario-head {
+  display: inline-flex;
+}
+.demo-scenarios #demo-scenario-grid {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  right: 0;
+  width: min(96vw, 720px);
+  max-height: min(56dvh, 420px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  z-index: 81;
   display: grid;
   gap: var(--s1);
   padding: var(--s2);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--paper);
-}
-.demo-scenario-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s2);
-}
-.demo-scenarios #demo-scenario-grid {
-  max-height: min(42vh, 360px);
-  overflow: auto;
-  overscroll-behavior: contain;
+  box-shadow: var(--e2, 0 8px 24px rgb(0 0 0 / 0.3));
 }
 
 .demo-scenario-nav,
@@ -163,8 +171,23 @@ output {
 
 @media (max-width: 359px) {
   .demo-scenarios {
-    padding-inline: var(--s1);
+    position: static;
   }
+  .demo-scenarios #demo-scenario-grid {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+}
+
+.demo-inline-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.demo-topbar {
+  margin-bottom: var(--s2);
 }
 
 /* ---------- Controls ---------- */
@@ -357,18 +380,3 @@ summary,
   background: var(--paper);
 }
 
-.deploy-version {
-  position: fixed;
-  right: max(var(--s2), env(safe-area-inset-right));
-  bottom: max(var(--s2), env(safe-area-inset-bottom));
-  z-index: 1000;
-  pointer-events: none;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 72%, transparent);
-  color: var(--paper);
-  padding: 2px 6px;
-  font-size: 10px;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.72;
-}

@@ -19,10 +19,16 @@ export function usePrefs(): Prefs {
   return p;
 }
 
-export function GearButton({ onClick }: { onClick: () => void }) {
+export function GearButton({ onClick, title }: { onClick: () => void; title?: string }) {
   useT();
   return (
-    <button type="button" class="btn st-gear" aria-label={t("settings.gear")} onClick={onClick}>
+    <button
+      type="button"
+      class="btn st-gear"
+      aria-label={t("settings.gear")}
+      title={title}
+      onClick={onClick}
+    >
       <GearIcon />
     </button>
   );

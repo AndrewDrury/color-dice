@@ -23,6 +23,7 @@ test("CPU opponents: roll-off waits for the human to roll", async ({ browser }) 
   test.setTimeout(120_000);
   const human = await newPlayer(browser, "CPU Roll Human");
   try {
+    await human.page.removeLocatorHandler(human.page.getByTestId("rolloff-go"));
     await createGame(human, {
       roomName: `CPU Roll Off ${Date.now() % 10000}`,
       password: "pw-roll-cpu",
@@ -34,6 +35,8 @@ test("CPU opponents: roll-off waits for the human to roll", async ({ browser }) 
     await expect(roll).toBeVisible({ timeout: 30_000 });
     await expect(roll).toBeEnabled();
     await roll.click();
+    await expect(human.page.getByTestId("rolloff-go")).toBeVisible({ timeout: 30_000 });
+    await human.page.getByTestId("rolloff-go").click();
     await expect(human.page.locator(".g-main")).toBeVisible({ timeout: 30_000 });
   } finally {
     await closeAll([human]);

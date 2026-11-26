@@ -1,5 +1,6 @@
 export const settings = {
   "settings.title": "Settings",
+  "settings.version": "Version",
   "settings.gameActions": "Game actions",
   "settings.sound": "Sound",
   "settings.showChat": "Show chat messages",

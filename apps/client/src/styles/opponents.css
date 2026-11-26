@@ -38,19 +38,25 @@
 }
 /* Phone: chips share the row (4 fit at 360 px); avatar above, clipped name below. */
 .g-opp.is-phone .g-chip {
-  flex: 1 1 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  max-width: 160px;
-  padding-inline: 4px;
+  flex: 1 1 calc(50% - 4px);
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 6px;
+  max-width: none;
+  min-width: 0;
+  padding-inline: 6px;
 }
 .g-opp.is-phone .g-chip-body {
   align-self: stretch;
+  align-items: flex-start;
+  flex-direction: row;
   align-items: center;
+  gap: 6px;
 }
 .g-opp.is-phone .g-chip-top {
   max-width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 2px;
 }
 .g-chip-penboxes {
@@ -138,4 +144,8 @@
   width: 18px;
   height: 15px;
   font-size: 8px;
+}
+.g-opp.is-phone .g-chip-penboxes {
+  flex: 0 0 auto;
+  margin-left: auto;
 }

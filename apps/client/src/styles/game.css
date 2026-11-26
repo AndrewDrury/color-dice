@@ -209,6 +209,7 @@
   position: relative;
   display: grid;
   place-items: center;
+  touch-action: manipulation;
   height: 40px;
   min-width: 0;
   padding: 0;
@@ -520,6 +521,9 @@
 .g-actionbar {
   min-width: 0;
 }
+.g-actionbar > .g-status {
+  display: none;
+}
 .g-status-text {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -544,8 +548,9 @@
   font-weight: var(--fw-heavy);
 }
 .g-actions .g-rollbtn {
-  min-height: 56px;
-  min-width: 220px;
+  width: 100%;
+  min-height: 64px;
+  min-width: 0;
 }
 .g-btn-main {
   line-height: 1.2;

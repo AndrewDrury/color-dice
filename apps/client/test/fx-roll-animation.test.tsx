@@ -61,7 +61,7 @@ describe("useRollAnimation", () => {
     expect(result.current.phase).toBe("idle");
   });
 
-  it("tumbles at least 550 ms even if the result arrives after 10 ms", async () => {
+  it("tumbles at least 400 ms even if the result arrives after 10 ms", async () => {
     const { result, rerender, onLanded, onDieLand } = setup({
       code: "A",
       turnNumber: 1,
@@ -71,9 +71,9 @@ describe("useRollAnimation", () => {
     expect(result.current.phase).toBe("tumbling");
     await step(10);
     rerender({ code: "A", turnNumber: 1, roll: ROLL });
-    await step(500);
+    await step(350);
     expect(result.current.phase).toBe("tumbling");
-    await step(40);
+    await step(50);
     expect(result.current.phase).toBe("settling");
     await step(3000);
     expect(result.current.phase).toBe("settled");
@@ -81,7 +81,7 @@ describe("useRollAnimation", () => {
     expect(onLanded).toHaveBeenCalledTimes(1);
   });
 
-  it("dice land left to right, 400 ms apart; gated (no onLanded) until the last", async () => {
+  it("dice land left to right, 220 ms apart; gated (no onLanded) until the last", async () => {
     const { result, rerender, onDieLand, onLanded } = setup({
       code: "S",
       turnNumber: 1,
@@ -89,9 +89,9 @@ describe("useRollAnimation", () => {
     });
     act(() => result.current.throwDice());
     rerender({ code: "S", turnNumber: 1, roll: ROLL });
-    await step(550);
+    await step(400);
     expect(result.current.phase).toBe("settling");
-    expect(GAMEPLAY_TIMING.landGap).toBe(400);
+    expect(GAMEPLAY_TIMING.landGap).toBe(220);
     const base = ROLL_TIMING.landAt;
     const order: number[] = [];
     onDieLand.mockImplementation((i: number) => order.push(i));
@@ -109,10 +109,9 @@ describe("useRollAnimation", () => {
     await step(ROLL_TIMING.settle - ROLL_TIMING.landAt);
     expect(result.current.phase).toBe("settled");
     expect(onLanded).toHaveBeenCalledTimes(1);
-    // Whole sequence for six dice ≈ 2.4–2.8 s after the tumble (last landing ≈ 2.8 s in).
-    const lastLanding = 550 + base + 5 * GAMEPLAY_TIMING.landGap;
-    expect(lastLanding).toBeGreaterThanOrEqual(2400);
-    expect(lastLanding).toBeLessThanOrEqual(2800);
+    // Whole sequence for six dice is quicker: tumble plus staggered landings.
+    const lastLanding = 400 + base + 5 * GAMEPLAY_TIMING.landGap;
+    expect(lastLanding).toBeLessThan(1800);
   });
 
   it("fewer dice (locked colours) land back to back with no timing gaps", async () => {
@@ -123,7 +122,7 @@ describe("useRollAnimation", () => {
       roll: null,
     });
     rerender({ code: "L", turnNumber: 1, roll: short });
-    await step(550 + ROLL_TIMING.landAt + 3 * GAMEPLAY_TIMING.landGap);
+    await step(400 + ROLL_TIMING.landAt + 3 * GAMEPLAY_TIMING.landGap);
     expect(onDieLand).toHaveBeenCalledTimes(4);
     expect(onDieLand).toHaveBeenLastCalledWith(3);
     await step(ROLL_TIMING.settle - ROLL_TIMING.landAt);
@@ -139,7 +138,7 @@ describe("useRollAnimation", () => {
     });
     act(() => result.current.throwDice());
     rerender({ code: "K", turnNumber: 1, roll: ROLL });
-    await step(550 + ROLL_TIMING.landAt + GAMEPLAY_TIMING.landGap);
+    await step(400 + ROLL_TIMING.landAt + GAMEPLAY_TIMING.landGap);
     expect(onDieLand).toHaveBeenCalledTimes(2);
     act(() => result.current.skip());
     expect(result.current.phase).toBe("settled");
@@ -197,11 +196,11 @@ describe("useRollAnimation", () => {
     expect(again.onLanded).not.toHaveBeenCalled();
   });
 
-  it("another player's roll tumbles 550 ms from arrival, then settles", async () => {
+  it("another player's roll tumbles 400 ms from arrival, then settles", async () => {
     const { result, rerender } = setup({ code: "A", turnNumber: 4, roll: null });
     rerender({ code: "A", turnNumber: 4, roll: ROLL });
     expect(result.current.phase).toBe("tumbling");
-    await step(549);
+    await step(399);
     expect(result.current.phase).toBe("tumbling");
     await step(1);
     expect(result.current.phase).toBe("settling");

@@ -2,6 +2,7 @@ import type { settings as en } from "../en/settings";
 
 export const settings: Record<keyof typeof en, string> = {
   "settings.title": "Ajustes",
+  "settings.version": "Versión",
   "settings.gameActions": "Acciones de la partida",
   "settings.sound": "Sonido",
   "settings.showChat": "Mostrar mensajes del chat",

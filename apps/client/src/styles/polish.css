@@ -149,6 +149,13 @@
   padding: 0;
 }
 
+.bs-sheet .bs-body > .btn:not(.btn-primary):not(.btn-danger) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--ink));
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper));
+  color: var(--ink);
+  box-shadow: var(--e1);
+}
+
 /* ---------- How to play / shortcuts ---------- */
 .htp-list {
   margin: 0;
