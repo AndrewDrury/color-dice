@@ -1,12 +1,12 @@
-/** K4.2: a short, non-blocking popup in the row's colour whenever a row locks; queued, aria-live. */
+/** K4.2: short, non-blocking queued popups (locks, penalties, game end); aria-live. */
 import { useEffect } from "preact/hooks";
-import type { LockItem } from "../game/flow";
+import type { FlowItem } from "../game/flow";
 import { cssColor } from "../game/model";
-import { LockIcon } from "./icons";
+import { LockIcon, WarningIcon } from "./icons";
 
 export const LOCK_POPUP_MS = 2200;
 
-export function LockPopup({ queue, shift }: { queue: readonly LockItem[]; shift: () => void }) {
+export function LockPopup({ queue, shift }: { queue: readonly FlowItem[]; shift: () => void }) {
   const head = queue[0];
   useEffect(() => {
     if (!head) return;
@@ -16,8 +16,13 @@ export function LockPopup({ queue, shift }: { queue: readonly LockItem[]; shift:
   return (
     <div class="lp-wrap" role="status" aria-live="polite">
       {head ? (
-        <div key={head.id} class={`lp-card c-${cssColor(head.color)}`}>
-          <LockIcon size={20} />
+        <div
+          key={head.id}
+          class={`lp-card${head.kind === "lock" ? ` c-${cssColor(head.color ?? "RED")}` : ""}${
+            head.kind === "penalty" ? " is-penalty" : ""
+          }${head.kind === "end" ? " is-end" : ""}`}
+        >
+          {head.kind === "lock" ? <LockIcon size={20} /> : <WarningIcon size={20} />}
           <span>{head.text}</span>
         </div>
       ) : null}

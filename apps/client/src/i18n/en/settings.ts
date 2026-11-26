@@ -75,7 +75,7 @@ export const settings = {
 
   "keys.title": "Keyboard shortcuts",
   "keys.cap.roll": "Space / R",
-  "keys.cap.pass": "P",
+  "keys.cap.pass": "Space / P",
   "keys.cap.move": "← → ↑ ↓",
   "keys.cap.enter": "Enter",
   "keys.cap.esc": "Esc",

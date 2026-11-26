@@ -53,10 +53,17 @@
   max-width: 100%;
   gap: 2px;
 }
-.g-chip-pen {
-  font-size: var(--fs-small, 12px);
-  color: var(--ink-muted);
-  white-space: nowrap;
+.g-chip-penboxes {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.g-chip-pbox {
+  width: 20px;
+  height: 16px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 0;
 }
 
 /* Game over: every player's full card, ranked, scrolling inside the results panel. */
@@ -127,10 +134,8 @@
 .g-opp.is-phone .g-chip > .av {
   margin: 1px;
 }
-.g-opp.is-phone .g-chip-pen {
-  font-size: 11px;
-  line-height: 1.1;
-}
-.g-opp.is-phone .g-chip-pen[data-penalties="0"] {
-  display: none;
+.g-opp.is-phone .g-chip-pbox {
+  width: 18px;
+  height: 15px;
+  font-size: 8px;
 }

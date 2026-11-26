@@ -91,7 +91,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
   const g = view.game;
   const st = opponentState(view, player);
   const strikes = Math.round(-player.score.penalties / 5);
-  const penText = strikes > 0 ? tn("opp.penaltiesPts", strikes, { pts: strikes * 5 }) : "";
+  const penaltyAria = strikes > 0 ? tn("opp.penalties", strikes) : t("opp.none");
   return (
     <div
       class={`g-chip${st.active ? " is-active" : g?.phase !== "GAME_OVER" ? " is-dim" : ""}${flash ? " is-flash" : ""}`}
@@ -100,7 +100,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
       role="img"
       aria-label={t("opp.chip", {
         name,
-        strikes: strikes > 0 ? penText : t("opp.none"),
+        strikes: penaltyAria,
       })}
     >
       <AvatarHover profile={seat?.profile} size={OPP_AVATAR} name={name} />
@@ -112,8 +112,12 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
           {cpu ? <span class="cpu-badge">{t("waiting.cpu")}</span> : null}
           <StatusGlyph state={st} />
         </span>
-        <span class="g-chip-pen" data-penalties={strikes} aria-hidden="true">
-          {strikes > 0 ? penText : "\u00a0"}
+        <span class="g-chip-penboxes" data-penalties={strikes} aria-hidden="true">
+          {Array.from({ length: 4 }, (_, i) => (
+            <span key={i} class={`g-pbox g-chip-pbox${i < strikes ? " is-on" : ""}`}>
+              {i < strikes ? "✕" : "−5"}
+            </span>
+          ))}
         </span>
       </span>
     </div>

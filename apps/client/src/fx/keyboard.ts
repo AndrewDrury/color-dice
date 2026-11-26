@@ -103,7 +103,18 @@ export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
     return false; // dialogs listen for Escape too
   }
   if (e.repeat) return false;
-  if (k === " " || k === "Spacebar" || k === "r" || k === "R") {
+  if (k === " " || k === "Spacebar") {
+    if (a.canRoll) {
+      a.roll();
+      return done();
+    }
+    if (a.canPass) {
+      a.pass();
+      return done();
+    }
+    return false;
+  }
+  if (k === "r" || k === "R") {
     if (!a.canRoll) return false;
     a.roll();
     return done();

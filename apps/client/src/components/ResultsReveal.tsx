@@ -135,14 +135,12 @@ export interface ResultsRevealProps {
   onDone: () => void;
   /** Rematch / Back home buttons, always visible in the footer. */
   actions: ComponentChildren;
-  /** Chat and emoji controls, kept usable above the celebration. */
-  chat?: ComponentChildren;
   /** Tests: fixes the celebration. */
   kind?: CelebrationKind;
   rand?: () => number;
 }
 
-export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: ResultsRevealProps) {
+export function ResultsReveal({ view, onDone, actions, kind, rand }: ResultsRevealProps) {
   useT();
   const reduced = useReducedMotion();
   const { winnerSeats, tie, allTied } = tieInfo(view);
@@ -334,7 +332,6 @@ export function ResultsReveal({ view, onDone, actions, chat, kind, rand }: Resul
         </ol>
       </div>
       <div class="rv-foot">
-        {chat ? <div class="rv-chat">{chat}</div> : null}
         {done ? (
           <button
             type="button"

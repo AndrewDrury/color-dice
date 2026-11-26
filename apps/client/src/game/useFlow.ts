@@ -1,10 +1,10 @@
-/** Turn-flow side effects: auto-pass (K4.9), lock popup queue (K4.2), voided early Action 2 toast. */
+/** Turn-flow side effects: auto-pass (K4.9), popup queue (K4.2), voided early Action 2 toast. */
 import type { Color, GameEvent } from "@cd/engine";
 import type { ClientMessage, ViewMessage } from "@cd/protocol";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { colorName, t } from "../i18n";
 import { showToast } from "../store";
-import { type LockItem, lockMessage } from "./flow";
+import { endMessage, type FlowItem, lockMessage, penaltyMessage } from "./flow";
 import { seatOfPlayer } from "./model";
 import { currentStep, noWhiteSumMove } from "./staging";
 
@@ -32,20 +32,26 @@ export function useAutoPass(
   return noMove || (done.current === key && view.game?.phase === "ACTION_1");
 }
 
-/** New ROW_LOCKED events feed a queue (one popup at a time); ACTION2_VOIDED toasts the active player. */
+/** New turn events feed a queue (one popup at a time); ACTION2_VOIDED toasts the active player. */
 export function useFlowEvents(
   view: ViewMessage,
   fresh: readonly GameEvent[],
   lastEarly: { current: Color | null },
 ) {
-  const [queue, setQueue] = useState<LockItem[]>([]);
+  const [queue, setQueue] = useState<FlowItem[]>([]);
   const seq = useRef(0);
   useEffect(() => {
-    const items: LockItem[] = [];
+    const items: FlowItem[] = [];
     for (const e of fresh) {
       if (e.type === "ROW_LOCKED") {
         seq.current += 1;
-        items.push({ id: seq.current, color: e.color, text: lockMessage(view, e) });
+        items.push({ id: seq.current, kind: "lock", color: e.color, text: lockMessage(view, e) });
+      } else if (e.type === "PENALTY") {
+        seq.current += 1;
+        items.push({ id: seq.current, kind: "penalty", text: penaltyMessage(view, e) });
+      } else if (e.type === "GAME_ENDED") {
+        seq.current += 1;
+        items.push({ id: seq.current, kind: "end", text: endMessage(view, e) });
       } else if (
         e.type === "ACTION2_VOIDED" &&
         seatOfPlayer(e.playerId, view.game) === view.you.seat

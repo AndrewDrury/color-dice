@@ -1,15 +1,18 @@
-/** Pure helpers for the roll-off overlay (K4.1) and the lock popup (K4.2). */
+/** Pure helpers for the roll-off overlay (K4.1) and flow popups (K4.2). */
 import type { Color, GameEvent } from "@cd/engine";
 import type { ViewMessage } from "@cd/protocol";
 import { colorName, joinNames, t } from "../i18n";
 import { seatName, seatOfPlayer } from "./model";
 
 type RowLocked = Extract<GameEvent, { type: "ROW_LOCKED" }>;
+type Penalty = Extract<GameEvent, { type: "PENALTY" }>;
+type Ended = Extract<GameEvent, { type: "GAME_ENDED" }>;
 type FirstChosen = Extract<GameEvent, { type: "FIRST_PLAYER_CHOSEN" }>;
 
-export interface LockItem {
+export interface FlowItem {
   id: number;
-  color: Color;
+  kind: "lock" | "penalty" | "end";
+  color?: Color;
   text: string;
 }
 
@@ -24,6 +27,21 @@ export function lockMessage(view: ViewMessage, e: RowLocked): string {
   const color = colorName(e.color);
   if (others.length === 0 && mine.length > 0) return t("lock.byYou", { color });
   return t(names.length > 1 ? "lock.byMany" : "lock.by", { names: joinNames(names), color });
+}
+
+export function penaltyMessage(view: ViewMessage, e: Penalty): string {
+  const seat = seatOfPlayer(e.playerId, view.game);
+  if (seat === view.you.seat) return t("penalty.you");
+  return t("penalty.by", { name: seatName(view, seat) });
+}
+
+export function endMessage(view: ViewMessage, e: Ended): string {
+  if (e.reason.kind === "PENALTIES") {
+    const names = e.reason.playerIds.map((id) => seatName(view, seatOfPlayer(id, view.game)));
+    return t("end.popup.penalty", { names: joinNames(names) });
+  }
+  const colors = e.reason.lockedColors.map((c) => colorName(c));
+  return t("end.popup.twoRows", { colors: joinNames(colors) });
 }
 
 /** The roll-off that decided who starts, while nobody has rolled yet (or null). */

@@ -37,6 +37,7 @@ export function ActionBar(p: ActionBarProps) {
   const hasUndoableDecision = view.you.action1Decision !== null || view.you.pendingAction2 !== null;
   // D-L11: Undo exists only while there is something to undo (a staged box or an undoable decision).
   const canUndo = staged || (view.you.canUndo && !p.sent && hasUndoableDecision);
+  const disableUndo = p.noMove && !staged;
 
   let primary: preact.ComponentChildren = null;
   if (p.noMove) {
@@ -56,7 +57,8 @@ export function ActionBar(p: ActionBarProps) {
         disabled={p.gated}
         onClick={p.onSubmit}
       >
-        {submitLabel(view, staged)}
+        <span class="g-btn-main">{submitLabel(view, staged)}</span>
+        <em class="g-btn-key">{t("keys.cap.pass")}</em>
       </button>
     );
   } else {
@@ -78,8 +80,9 @@ export function ActionBar(p: ActionBarProps) {
       {primary || canUndo ? (
         <div class="g-actions">
           {canUndo ? (
-            <button type="button" class="btn g-undo" onClick={p.onUndo}>
-              {t("action.undo")}
+            <button type="button" class="btn g-undo" onClick={p.onUndo} disabled={disableUndo}>
+              <span class="g-btn-main">{t("action.undo")}</span>
+              <em class="g-btn-key">{t("keys.cap.undo")}</em>
             </button>
           ) : null}
           {primary}

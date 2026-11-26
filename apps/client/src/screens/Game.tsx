@@ -1,10 +1,12 @@
 /** The game screen (D1 item 5, H3): top bar, opponents, dice tray, your sheet, action bar, log. */
 import type { ErrorMessage, RematchOffer, ViewMessage } from "@cd/protocol";
+import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { openPanel, useChat } from "../chat/store";
 import { ActionBar } from "../components/ActionBar";
 import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
 import { GameMenu } from "../components/GameMenu";
 import { LockPopup } from "../components/LockPopup";
@@ -28,9 +30,8 @@ import { useWakeLock } from "../fx/wakeLock";
 import { diffViews, type FeedbackEvent, isResync, newEvents } from "../game/feedback";
 import { rollOffEvent } from "../game/flow";
 import { youPlayer } from "../game/model";
-import { candidates, currentStep, decidedMarks, isActive } from "../game/staging";
+import { candidates, currentStep, decidedMarks, isActive, passTakesPenalty } from "../game/staging";
 import { revealAnnouncement, rollAnnouncement, statusText } from "../game/status";
-import { type TurnSummary as Summary, summarizeTurn } from "../game/turnSummary";
 import { useBackGuard } from "../game/useBackGuard";
 import { useAutoPass, useFlowEvents } from "../game/useFlow";
 import { useFx } from "../game/useFx";
@@ -64,6 +65,7 @@ export function Game({ code }: { code: string }) {
   const [rollFailed, setRollFailed] = useState(0);
   const [failSignal, setFailSignal] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const [progressStalled, setProgressStalled] = useState(false);
   useBackGuard(() => setLeaving(true));
   const { view: storeView, status, toast, epoch, rematch } = useAppState();
   const view = storeView?.code === code ? storeView : null;
@@ -85,6 +87,16 @@ export function Game({ code }: { code: string }) {
     return () => clearTimeout(t);
   }, [toast?.id]);
 
+  useEffect(() => {
+    if (view) {
+      setProgressStalled(false);
+      return;
+    }
+    setProgressStalled(false);
+    const timer = setTimeout(() => setProgressStalled(true), 12_000);
+    return () => clearTimeout(timer);
+  }, [code, !!view]);
+
   // The live roll-off: this player watched the rounds happen, so only the deciding one replays
   // (its already-landed dice stay put); the result then waits for "Let's go" (D-L2).
   const sawLive = useRef(false);
@@ -94,7 +106,11 @@ export function Game({ code }: { code: string }) {
     return (
       <main class="stack" style={{ paddingTop: "var(--s8)" }}>
         <p class="muted" role="status">
-          {status === "reconnecting" ? t("conn.reconnecting") : t("conn.joining")}
+          {progressStalled
+            ? "Still no game view — reconnect or leave and reclaim this seat."
+            : status === "reconnecting"
+              ? t("conn.reconnecting")
+              : t("conn.joining")}
         </p>
       </main>
     );
@@ -127,6 +143,8 @@ interface BoardProps {
   setLeaving: (v: boolean) => void;
   liveRollOff: boolean;
   rematch?: RematchOffer | null;
+  topBarAddon?: ComponentChildren;
+  stickyTopBar?: boolean;
 }
 
 export function Board({
@@ -140,11 +158,25 @@ export function Board({
   setLeaving,
   liveRollOff,
   rematch = null,
+  topBarAddon,
+  stickyTopBar = false,
 }: BoardProps) {
   const game = view.game;
+  if (!game) return null;
+  const [cpuStalled, setCpuStalled] = useState(false);
+  useEffect(() => {
+    setCpuStalled(false);
+    const active = game.turn?.activeSeat;
+    const cpuTurn =
+      active !== undefined && game.phase !== "GAME_OVER" && view.seats[active]?.kind === "cpu";
+    if (!cpuTurn) return;
+    const timer = setTimeout(() => setCpuStalled(true), 12_000);
+    return () => clearTimeout(timer);
+  }, [view.version, game.phase, game.turn?.number, view.code]);
   const viewport = useViewport();
   const [rematching, setRematching] = useState(false);
   const [rematchBusy, setRematchBusy] = useState(false);
+  const [confirmPenaltyOpen, setConfirmPenaltyOpen] = useState(false);
   const chat = useChat();
   const previousRematch = useRef(rematch);
   const [panel, setPanel] = useState<Panel>(null);
@@ -234,6 +266,7 @@ export function Board({
   const colour = new Set([...(cand?.colour ?? [])].filter((k) => !cand?.white.has(k)));
   const act = isActive(view);
   const anyStaged = st.s1 !== null || st.s2 !== null;
+  const pendingPenaltyPass = !anyStaged && passTakesPenalty(view);
   const staged = [st.s1 && { ...st.s1, step: 1 as const }, st.s2 && { ...st.s2, step: 2 as const }]
     .filter((m) => m !== null)
     .map((m) => (act ? m : { color: m.color, number: m.number }));
@@ -242,20 +275,11 @@ export function Board({
   );
   const noMove = useAutoPass(view, conn.send, landed);
   const flow = useFlowEvents(view, cur.fresh, st.lastEarly);
-  // T-NEW-12: summary of the turn that just ended; a newer turn replaces it.
-  const [summary, setSummary] = useState<Summary | null>(null);
-  useEffect(() => {
-    if (cur.resync) return setSummary(null);
-    const next = summarizeTurn(view, cur.fresh);
-    if (next) setSummary(next);
-  }, [view.version]);
-  // Lazy: the summary UI is loaded on the first summary (keeps the initial bundle small).
   const [late, setLate] = useState<typeof import("../components/lateUi") | null>(null);
   useEffect(() => {
     import("../components/lateUi").then(setLate);
   }, []);
   const IdleNudgeView = late?.IdleNudge;
-  const SummaryCard = late?.TurnSummary;
   const GameOverView = late?.GameOver; // lazy: the results + reveal only run at game over
   const [rollOffDone, setRollOffDone] = useState(false);
   const rollOff = rollOffEvent(view);
@@ -270,12 +294,18 @@ export function Board({
   const rollControls = useRef<RollControls | null>(null);
   const [rolling, setRolling] = useState(false);
   const gameOver = g.phase === "GAME_OVER";
-  const summaryShown = summary !== null && !gameOver;
   const mine = view.seats.find((s) => s.seatId === view.you.seatId);
 
   const myMove =
     view.you.canRoll ||
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
+  const submitAction = () => {
+    if (pendingPenaltyPass) {
+      setConfirmPenaltyOpen(true);
+      return;
+    }
+    st.submit();
+  };
   // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
   useWakeLock(!gameOver);
   useGameKeys({
@@ -291,10 +321,10 @@ export function Board({
       panel === null &&
       !leaving &&
       !gameOver,
-    canUndo: st.s1 !== null || st.s2 !== null || view.you.canUndo,
+    canUndo: st.s1 !== null || st.s2 !== null || (view.you.canUndo && !noMove),
     undo: st.undo,
     roll: onRoll,
-    pass: st.submit,
+    pass: submitAction,
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
@@ -303,22 +333,27 @@ export function Board({
 
   // T-FIX-12: on desktop Roll lives in the sticky action bar (always in view); elsewhere under the dice.
   const rollButton = view.you.canRoll ? (
-    <RollButton controls={rollControls} class="btn btn-primary g-primary" disabled={rolling}>
-      {t("action.roll")}
+    <RollButton controls={rollControls} class="btn btn-primary g-primary g-rollbtn" disabled={rolling}>
+      <span class="g-btn-main">{t("action.roll")}</span>
+      <em class="g-btn-key">{t("keys.cap.roll")}</em>
     </RollButton>
   ) : null;
   const actionBar = (
     <>
       <ActionBar
         view={view}
-        status={statusText(view)}
+        status={
+          cpuStalled
+            ? "CPU turn stalled — reconnect or retry; no move will be made for you."
+            : statusText(view)
+        }
         announce={cur.announce}
         s1={st.s1}
         s2={st.s2}
         sent={st.sent !== null}
         gated={!landed}
         noMove={noMove}
-        onSubmit={st.submit}
+        onSubmit={submitAction}
         onUndo={st.undo}
         roll={viewport === "desktop" ? rollButton : null}
       />
@@ -327,7 +362,7 @@ export function Board({
 
   return (
     <div class="g-game" data-viewport={viewport} data-idle-nudge-ready={!!IdleNudgeView}>
-      <header class="g-top">
+      <header class={`g-top${stickyTopBar ? " is-sticky" : ""}`}>
         <button type="button" class="btn g-home" onClick={() => setLeaving(true)}>
           {t("game.home")}
         </button>
@@ -340,6 +375,7 @@ export function Board({
           ) : null}
         </span>
         <span class="row">
+          {topBarAddon}
           <span
             class={`g-conn is-${status}`}
             role="img"
@@ -404,20 +440,14 @@ export function Board({
           <aside class="g-right">
             <OpponentStrip view={view} viewport={viewport} flash={fx.flash} />
             <div class="g-logslot">
-              <MoveLog view={view} paused={summaryShown} />
-              {summaryShown && SummaryCard ? (
-                <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="log" />
-              ) : null}
+              <MoveLog view={view} />
             </div>
           </aside>
         ) : null}
       </main>
       {viewport !== "desktop" ? actionBar : null}
-      <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} />
+      {!gameOver ? <ChatLayer send={conn.send} myMove={myMove} phone={viewport === "phone"} /> : null}
       {toast ? <div class="g-toast">{toast}</div> : null}
-      {summaryShown && SummaryCard && viewport === "phone" ? (
-        <SummaryCard summary={summary} onClose={() => setSummary(null)} placement="sheet" />
-      ) : null}
       <LockPopup queue={flow.queue} shift={flow.shift} />
       {IdleNudgeView ? (
         <IdleNudgeView
@@ -432,7 +462,6 @@ export function Board({
               st.sent ||
               rolling ||
               showRollOff ||
-              summaryShown ||
               flow.queue.length ||
               panel ||
               chat.panelOpen ||
@@ -480,6 +509,19 @@ export function Board({
         name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
       />
       {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
+      {confirmPenaltyOpen ? (
+        <ConfirmDialog
+          title={t("action.confirmPenaltyTitle")}
+          body={t("action.confirmPenaltyBody")}
+          confirmLabel={t("action.confirmPenaltyConfirm")}
+          danger
+          onCancel={() => setConfirmPenaltyOpen(false)}
+          onConfirm={() => {
+            setConfirmPenaltyOpen(false);
+            st.submit();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

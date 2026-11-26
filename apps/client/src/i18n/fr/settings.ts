@@ -77,7 +77,7 @@ export const settings: Record<keyof typeof en, string> = {
 
   "keys.title": "Raccourcis clavier",
   "keys.cap.roll": "Espace / R",
-  "keys.cap.pass": "P",
+  "keys.cap.pass": "Espace / P",
   "keys.cap.move": "← → ↑ ↓",
   "keys.cap.enter": "Entrée",
   "keys.cap.esc": "Échap",

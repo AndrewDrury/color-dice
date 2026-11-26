@@ -161,7 +161,6 @@ export function Sheet(p: SheetProps) {
           aria-label={t("sheet.penaltyAria", { n: sheet.penalties })}
           title={t("sheet.penaltyTip")}
         >
-          <span class="g-pen-label">{t("sheet.penaltyLabel")}</span>
           {Array.from({ length: 4 }, (_, i) => (
             <span
               key={i}

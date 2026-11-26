@@ -4,7 +4,6 @@ import type { ComponentType } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { AvatarHover } from "../components/AvatarHover";
 import { Button } from "../components/Button";
-import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { CrownIcon, TieIcon } from "../components/icons";
 import { RematchPopup } from "../components/RematchPopup";
 import type { ResultsRevealProps } from "../components/ResultsReveal";
@@ -152,9 +151,6 @@ export function GameOver({
         <div>
           <ScoreTable view={view} />
         </div>
-        <div class="chat-over">
-          <ChatControls send={send} />
-        </div>
         <div class="g-over-actions" hidden={celebrating}>
           {actions}
         </div>
@@ -167,12 +163,6 @@ export function GameOver({
             setShowFullCards(true);
           }}
           actions={actions}
-          chat={
-            <>
-              <ChatControls send={send} />
-              <ChatLayer send={send} />
-            </>
-          }
         />
       ) : null}
       {showFullCards ? (

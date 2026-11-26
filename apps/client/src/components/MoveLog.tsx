@@ -6,20 +6,20 @@ import { cssColor } from "../game/model";
 import { useTypewriter } from "../game/useTypewriter";
 import { t, useT } from "../i18n";
 import { AvatarHover } from "./AvatarHover";
-import { LockIcon } from "./icons";
 
 const NEAR_PX = 24;
 
 /** Recent moves, oldest first; the title stays put and only the entries scroll. */
-export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: boolean }) {
+export function MoveLog({ view }: { view: ViewMessage }) {
   useT();
   const lines = logLines(view).reverse();
+  const yourSeat = view.you.seat;
   const box = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const lastTop = useRef(0);
   const shown = useTypewriter(
     lines.map((l) => ({ id: l.id, text: l.typed })),
-    paused,
+    false,
   );
   const [more, setMore] = useState({ above: false, below: false });
 
@@ -75,47 +75,60 @@ export function MoveLog({ view, paused = false }: { view: ViewMessage; paused?: 
                         </>
                       )}
                     </span>
-                    <span class="lg-actors" aria-hidden="true">
-                      {l.actors.map((a, i) => (
-                        <span class="lg-actor" key={`${l.id}:${a.seat}`}>
-                          <AvatarHover profile={a.profile} size={20} name={a.name} />
-                          <span class="lg-name" title={a.name} aria-hidden="true">
-                            {a.name}
-                          </span>
-                          <span class="lg-actions">
-                            {a.marks.map((m) => (
-                              <span
-                                key={`${a.seat}:${m.color}:${m.number}`}
-                                class={`ts-box lg-box c-${cssColor(m.color)}`}
-                                aria-hidden="true"
-                              >
-                                {m.number}
+                    <div class="lg-split" aria-hidden="true">
+                      <div class="lg-side is-others">
+                        <span class="lg-side-title">{t("opp.aria")}</span>
+                        <div class="lg-side-list">
+                          {l.actors
+                            .filter((a) => yourSeat === null || a.seat !== yourSeat)
+                            .filter((a) => a.marks.length > 0)
+                            .map((a) => (
+                              <span class="lg-actor" key={`${l.id}:opp:${a.seat}`}>
+                                <AvatarHover profile={a.profile} size={20} name={a.name} />
+                                <span class="lg-name" title={a.name}>
+                                  {a.name}
+                                </span>
+                                <span class="lg-actions">
+                                  {a.marks.map((m) => (
+                                    <span
+                                      key={`${a.seat}:${m.color}:${m.number}`}
+                                      class={`ts-box lg-box c-${cssColor(m.color)}`}
+                                    >
+                                      {m.number}
+                                    </span>
+                                  ))}
+                                </span>
                               </span>
                             ))}
-                            {a.passed ? (
-                              <span class="lg-pass" aria-hidden="true">
-                                {t("summary.none")}
-                              </span>
-                            ) : null}
-                            {a.penalty ? (
-                              <span class="ts-penalty lg-pen" aria-hidden="true">
-                                −5
-                              </span>
-                            ) : null}
-                            {a.locks.map((c) => (
-                              <span
-                                key={`${a.seat}:${c}`}
-                                class={`lg-lock c-${cssColor(c)}`}
-                                aria-hidden="true"
-                              >
-                                <LockIcon size={14} />
+                        </div>
+                      </div>
+                      <div class="lg-side is-mine">
+                        <span class="lg-side-title">{t("profile.you")}</span>
+                        <div class="lg-side-list">
+                          {l.actors
+                            .filter((a) => yourSeat !== null && a.seat === yourSeat)
+                            .filter((a) => a.marks.length > 0)
+                            .map((a) => (
+                              <span class="lg-actor" key={`${l.id}:me:${a.seat}`}>
+                                <AvatarHover profile={a.profile} size={20} name={a.name} />
+                                <span class="lg-name" title={a.name}>
+                                  {a.name}
+                                </span>
+                                <span class="lg-actions">
+                                  {a.marks.map((m) => (
+                                    <span
+                                      key={`${a.seat}:${m.color}:${m.number}`}
+                                      class={`ts-box lg-box c-${cssColor(m.color)}`}
+                                    >
+                                      {m.number}
+                                    </span>
+                                  ))}
+                                </span>
                               </span>
                             ))}
-                          </span>
-                          {i < l.actors.length - 1 ? <span class="lg-sep">·</span> : null}
-                        </span>
-                      ))}
-                    </span>
+                        </div>
+                      </div>
+                    </div>
                   </li>
                 );
               })}
