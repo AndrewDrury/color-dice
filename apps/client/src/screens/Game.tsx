@@ -187,17 +187,6 @@ export function Board({
     }
     previousRematch.current = rematch;
   }, [rematch]);
-  useEffect(() => {
-    if (!confirmPenaltyOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== " " && e.key !== "Spacebar") return;
-      e.preventDefault();
-      setConfirmPenaltyOpen(false);
-      st.submit();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [confirmPenaltyOpen, st]);
 
   // ---- diff against the previous view (once per applied version) ----
   const prev = useRef<ViewMessage | null>(null);
@@ -261,6 +250,17 @@ export function Board({
 
   // ---- staging, errors, effects ----
   const st = useStaging(view, conn.send);
+  useEffect(() => {
+    if (!confirmPenaltyOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.key !== "Spacebar") return;
+      e.preventDefault();
+      setConfirmPenaltyOpen(false);
+      st.submit();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmPenaltyOpen, st]);
   const failedOnce = useRef(failSignal);
   useEffect(() => {
     if (failSignal !== failedOnce.current) {
