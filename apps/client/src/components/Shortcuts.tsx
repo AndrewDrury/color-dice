@@ -6,6 +6,7 @@ import { BottomSheet } from "./BottomSheet";
 export const SHORTCUTS: readonly (readonly [MessageKey, MessageKey])[] = [
   ["keys.cap.roll", "keys.roll"],
   ["keys.cap.pass", "keys.pass"],
+  ["keys.cap.passPenalty", "keys.passPenalty"],
   ["keys.cap.move", "keys.move"],
   ["keys.cap.enter", "keys.enter"],
   ["keys.cap.esc", "keys.esc"],

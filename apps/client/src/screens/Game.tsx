@@ -187,6 +187,17 @@ export function Board({
     }
     previousRematch.current = rematch;
   }, [rematch]);
+  useEffect(() => {
+    if (!confirmPenaltyOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.key !== "Spacebar") return;
+      e.preventDefault();
+      setConfirmPenaltyOpen(false);
+      st.submit();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmPenaltyOpen, st]);
 
   // ---- diff against the previous view (once per applied version) ----
   const prev = useRef<ViewMessage | null>(null);
@@ -299,6 +310,14 @@ export function Board({
   const myMove =
     view.you.canRoll ||
     (!gameOver && g.phase === "ACTION_2" && g.turn?.activeSeat === view.you.seat);
+  const canPrimaryAction =
+    currentStep(view) !== null &&
+    !noMove &&
+    !st.sent &&
+    !view.you.canRoll &&
+    panel === null &&
+    !leaving &&
+    !gameOver;
   const submitAction = () => {
     if (pendingPenaltyPass) {
       setConfirmPenaltyOpen(true);
@@ -306,25 +325,22 @@ export function Board({
     }
     st.submit();
   };
+  const submitPenaltyAction = () => {
+    if (!pendingPenaltyPass) return;
+    setConfirmPenaltyOpen(true);
+  };
   // T-NEW-22: lazy idle nudge; it decides itself whether the game waits on me.
   useWakeLock(!gameOver);
   useGameKeys({
     canRoll:
       view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
-    canPass:
-      currentStep(view) !== null &&
-      st.s1 === null &&
-      st.s2 === null &&
-      !noMove &&
-      !st.sent &&
-      !view.you.canRoll &&
-      panel === null &&
-      !leaving &&
-      !gameOver,
+    canPass: canPrimaryAction && !pendingPenaltyPass,
+    canPenaltyPass: canPrimaryAction && pendingPenaltyPass,
     canUndo: st.s1 !== null || st.s2 !== null || (view.you.canUndo && !noMove),
     undo: st.undo,
     roll: onRoll,
     pass: submitAction,
+    penaltyPass: submitPenaltyAction,
     cancel: st.cancel,
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
@@ -513,7 +529,7 @@ export function Board({
         <ConfirmDialog
           title={t("action.confirmPenaltyTitle")}
           body={t("action.confirmPenaltyBody")}
-          confirmLabel={t("action.confirmPenaltyConfirm")}
+          confirmLabel={`${t("action.confirmPenaltyConfirm")} (${t("keys.cap.roll")})`}
           danger
           onCancel={() => setConfirmPenaltyOpen(false)}
           onConfirm={() => {

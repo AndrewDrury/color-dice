@@ -654,6 +654,12 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--s2);
 }
+.lg-head {
+  margin-bottom: 2px;
+}
+.g-log ol.is-two-player .lg:not(.lg-head) .lg-side-title {
+  display: none;
+}
 .lg-side {
   display: flex;
   flex-direction: column;
@@ -689,6 +695,9 @@
 }
 .lg-side.is-mine .lg-actor {
   justify-content: flex-end;
+}
+.lg-actor.is-marks-only {
+  min-height: 28px;
 }
 .lg-actions {
   display: inline-flex;
@@ -827,7 +836,7 @@
   z-index: 3;
 }
 .g-over-actions .btn {
-  min-width: 150px;
+  min-width: 210px;
 }
 
 /* ---------- Layouts (H3) ---------- */

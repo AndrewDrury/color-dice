@@ -5,8 +5,10 @@ import { modalOpen } from "./modal";
 export interface KeyActions {
   canRoll: boolean;
   canPass: boolean;
+  canPenaltyPass: boolean;
   roll: () => void;
   pass: () => void;
+  penaltyPass: () => void;
   canUndo: boolean;
   undo: () => void;
   /** Escape: cancel staging (dialogs close themselves). */
@@ -86,12 +88,6 @@ const ARROWS: Record<string, "left" | "right" | "up" | "down"> = {
 export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
   // T-FIX-12: while a modal dialog (reveal, results, sheet, chat) is open, the board's shortcuts stand down.
   if (modalOpen()) return false;
-  if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
-    if (isTyping(e.target) || !a.canUndo) return false;
-    e.preventDefault();
-    a.undo();
-    return true;
-  }
   if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return false;
   const k = e.key;
   const done = () => {
@@ -112,19 +108,15 @@ export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
       a.pass();
       return done();
     }
-    return false;
-  }
-  if (k === "r" || k === "R") {
-    if (!a.canRoll) return false;
-    a.roll();
+    // Never let Space click a focused button by accident (for example Undo).
     return done();
   }
-  if (k === "p" || k === "P") {
-    if (!a.canPass) return false;
-    a.pass();
+  if (k === "x" || k === "X") {
+    if (!a.canPenaltyPass) return false;
+    a.penaltyPass();
     return done();
   }
-  if (k === "u" || k === "U") {
+  if (k === "z" || k === "Z") {
     if (!a.canUndo) return false;
     a.undo();
     return done();
