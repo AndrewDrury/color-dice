@@ -44,10 +44,7 @@ interface SeatInfo {
 
 const rollOffSeatName = (view: ViewMessage, seat: number): string => {
   const record = view.seats[seat];
-  if (record?.kind === "cpu") {
-    const number = record.name.match(/(\d+)$/)?.[1] ?? "";
-    return t("waiting.cpuName", { n: number });
-  }
+  if (record?.kind === "cpu") return record.name;
   return seatName(view, seat);
 };
 

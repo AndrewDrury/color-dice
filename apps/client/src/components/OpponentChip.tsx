@@ -84,10 +84,7 @@ export function OpponentChip({ view, player, flash }: ChipProps) {
   const seat = seatInfo(view, player);
   const cpu = seat ? isCpuSeat(seat) : false;
   const rawName = seat?.name;
-  const cpuNumber = rawName?.match(/(\d+)$/)?.[1];
-  const name = cpu
-    ? t("waiting.cpuName", { n: cpuNumber ?? "" })
-    : (rawName ?? t("player.fallback", { n: player.seat + 1 }));
+  const name = rawName ?? t("player.fallback", { n: player.seat + 1 });
   const g = view.game;
   const st = opponentState(view, player);
   const strikes = Math.round(-player.score.penalties / 5);

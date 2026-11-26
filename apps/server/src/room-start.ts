@@ -3,7 +3,7 @@
  * fires when the last seat fills (T-UX-17). Callers run inside the room's serial queue,
  * so a racing Start + join can start the game at most once (the loser sees "playing").
  */
-import { createGame, toJSON } from "@cd/engine";
+import { createGame, rollFace, toJSON } from "@cd/engine";
 import {
   DEFAULT_PROFILE_CAT,
   MIN_PLAYERS,
@@ -13,7 +13,7 @@ import {
 } from "@cd/protocol";
 import { fail, type OpResult, ok, playerId } from "./room-lobby-ops";
 import { ROLL_OFF_KEY, type RollOffState, type RoomMeta, type SeatRecord } from "./room-store";
-import { DICE_KEY, hooksEnabled, startDice } from "./test-hooks";
+import { DICE_KEY, hooksEnabled, loadDice, startDice } from "./test-hooks";
 
 export interface Started {
   seats: SeatRecord[];
@@ -103,14 +103,16 @@ export async function startLobbyGame(
     hooksEnabled(env) &&
     ((diceOverride?.length ?? 0) > 0 || ((await storage.get<number[]>(DICE_KEY)) ?? []).length > 0);
   if (!scripted) {
+    const dice = await loadDice(env, storage);
     const roll: RollOffState = {
       round: 1,
-      current: ordered.map(() => null),
+      current: ordered.map((seat) => (seat.kind === "cpu" ? rollFace(dice.dice) : null)),
       completed: [],
       startedAt: Date.now(),
       updatedAt: Date.now(),
     };
     await storage.put(ROLL_OFF_KEY, roll);
+    await dice.save();
     meta.status = "playing";
     return ok({ seats: ordered, state: null });
   }

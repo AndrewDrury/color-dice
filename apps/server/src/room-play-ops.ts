@@ -42,6 +42,9 @@ export const MAX_INVALID_FRAMES = 5;
 /** Per-socket message cap: this many messages per window, then close 4008. */
 export const MAX_MESSAGES = 30;
 export const MESSAGE_WINDOW_MS = 10_000;
+/** CPU loops are intentionally bounded even if a decision/source becomes malformed. */
+export const CPU_MAX_ITERATIONS = 24;
+export const CPU_TURN_BUDGET_MS = 8_000;
 
 export interface PlayAttachment {
   seatId: string | null;
@@ -272,6 +275,7 @@ export class RoomPlay {
       commit: (m, s, st) => d.commit(m, s, st),
       broadcast: (m, s) => d.broadcast(m, s),
       rearm: () => d.rearm(),
+      progressCpu: (meta, seats, state, dice) => this.runCpuTurns(meta, seats, state, dice),
     });
   }
 
@@ -281,6 +285,24 @@ export class RoomPlay {
     if (offer && offer.expiresAt <= this.d.now()) {
       await this.rematchOps.clearExpired(meta, seats);
     }
+  }
+
+  /** Bound opening roll-off progress when no human/CPU submission completes it. */
+  async guardRollOff(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
+    await this.rollOff.guard(meta, seats);
+  }
+
+  /** Alarm watchdog: retry CPU work if a turn did not complete or a restart interrupted it. */
+  async guardCpu(meta: RoomMeta, seats: SeatRecord[]): Promise<void> {
+    if (meta.status !== "playing") return;
+    const state = await this.loadState();
+    if (!state || state.phase === "GAME_OVER") return;
+    const active = state.turn?.activeSeat;
+    if (active === undefined) return;
+    const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
+    if (!cpu) return;
+    const dice = await loadDice(this.d.env(), this.d.storage);
+    await this.runCpuTurns(meta, seats, state, dice);
   }
 
   /** New socket: unauthenticated until a valid `auth`. */
@@ -433,6 +455,7 @@ export class RoomPlay {
     state: GameState,
     dice: { dice: DiceSource; save(): Promise<void> },
   ): Promise<void> {
+    if (meta.cpuError) delete meta.cpuError;
     // T-NEW-3: while the game is paused nothing advances, not even auto-pass for left seats.
     const paused = pausedSeatIds(seats, this.d.sockets(), state).length > 0;
     const next = paused ? state : autopass(state, leftSeats(seats), dice.dice);
@@ -459,7 +482,17 @@ export class RoomPlay {
     dice: { dice: DiceSource; save(): Promise<void> },
   ): Promise<void> {
     let next = state;
+    const deadline = this.d.now() + CPU_TURN_BUDGET_MS;
+    let iterations = 0;
     for (;;) {
+      if (++iterations > CPU_MAX_ITERATIONS) {
+        await this.persistCpuError(meta, seats, next, "CPU turn iteration limit reached");
+        return;
+      }
+      if (this.d.now() >= deadline) {
+        await this.persistCpuError(meta, seats, next, "CPU turn processing timeout");
+        return;
+      }
       if (next.phase === "GAME_OVER") return;
       if (pausedSeatIds(seats, this.d.sockets(), next).length > 0) return;
       const active = next.turn?.activeSeat;
@@ -467,22 +500,49 @@ export class RoomPlay {
       const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
       if (!cpu) return;
       let command: Command;
-      if (next.phase === "AWAIT_ROLL") {
-        command = { type: "ROLL", playerId: playerId(active) };
-      } else if (next.phase === "ACTION_1") {
-        const decision = cpuAction1(next, active);
-        command = { type: "ACTION1", playerId: playerId(active), decision };
-      } else if (next.phase === "ACTION_2") {
-        const decision = cpuAction2(next, active);
-        command = { type: "ACTION2", playerId: playerId(active), decision };
-      } else {
+      try {
+        if (next.phase === "AWAIT_ROLL") {
+          command = { type: "ROLL", playerId: playerId(active) };
+        } else if (next.phase === "ACTION_1") {
+          const decision = cpuAction1(next, active);
+          command = { type: "ACTION1", playerId: playerId(active), decision };
+        } else if (next.phase === "ACTION_2") {
+          const decision = cpuAction2(next, active);
+          command = { type: "ACTION2", playerId: playerId(active), decision };
+        } else {
+          return;
+        }
+      } catch (e) {
+        await this.persistCpuError(
+          meta,
+          seats,
+          next,
+          `CPU decision failed: ${e instanceof Error ? e.message : "unknown"}`,
+        );
         return;
       }
       const before = toJSON(next);
-      const result = dispatch(next, command, dice.dice);
-      if (!result.ok) return;
+      let result: ReturnType<typeof dispatch>;
+      try {
+        result = dispatch(next, command, dice.dice);
+      } catch (e) {
+        await this.persistCpuError(
+          meta,
+          seats,
+          next,
+          `CPU dispatch threw: ${e instanceof Error ? e.message : "unknown"}`,
+        );
+        return;
+      }
+      if (!result.ok) {
+        await this.persistCpuError(meta, seats, next, `CPU dispatch failed: ${result.error.code}`);
+        return;
+      }
       next = autopass(result.state, leftSeats(seats), dice.dice);
-      if (toJSON(next) === before) return;
+      if (toJSON(next) === before) {
+        await this.persistCpuError(meta, seats, next, "CPU command made no state progress");
+        return;
+      }
       if (next.phase === "GAME_OVER") {
         if (meta.status !== "finished") {
           tallyRecord(seats, winners(next));
@@ -496,8 +556,26 @@ export class RoomPlay {
       await dice.save();
       await this.d.commit(meta, seats, toJSON(next));
       const paceMs = this.d.env().ALLOW_TEST_HOOKS === "1" ? 0 : 650;
-      if (paceMs > 0) await new Promise((resolve) => setTimeout(resolve, paceMs));
+      if (paceMs > 0) await new Promise<void>((resolve) => setTimeout(resolve, paceMs));
     }
+  }
+
+  private async persistCpuError(
+    meta: RoomMeta,
+    seats: SeatRecord[],
+    state: GameState,
+    message: string,
+  ): Promise<void> {
+    const active = state.turn?.activeSeat;
+    const cpu = seats.find((s) => s.kind === "cpu" && s.seatIndex === active);
+    meta.cpuError = {
+      at: this.d.now(),
+      seatId: cpu?.seatId ?? "",
+      phase: state.phase,
+      message,
+    };
+    console.error("CPU progress stopped", meta.cpuError);
+    await this.d.commit(meta, seats, toJSON(state));
   }
 
   private async rollOffRoll(ws: WebSocket, seatId: string, round: number): Promise<void> {

@@ -418,6 +418,8 @@ export class GameRoom extends DurableObject<Env> {
       }
       const seats = await this.store.getSeats();
       await this.play.expireRematch(meta, seats);
+      await this.play.guardRollOff(meta, seats);
+      await this.play.guardCpu(meta, seats);
       if (this.now() >= this.deleteAt(meta, seats)) await this.destroy(meta.code);
       else await this.store.setAlarm(await this.alarmAt(meta, seats));
     });
@@ -448,7 +450,31 @@ export class GameRoom extends DurableObject<Env> {
     const sweep = this.play.sweepUnauthed() ?? Number.POSITIVE_INFINITY;
     const offer = await this.store.getRematch();
     const rematch = offer?.expiresAt ?? Number.POSITIVE_INFINITY;
-    return Math.min(meta ? this.deleteAt(meta, seats) : this.now() + 60_000, sweep, rematch);
+    const rollOff = await this.store.getRollOff();
+    const rollOffDeadline = rollOff
+      ? (rollOff.updatedAt ?? rollOff.startedAt ?? this.now()) + 20_000
+      : Number.POSITIVE_INFINITY;
+    let cpuDeadline = Number.POSITIVE_INFINITY;
+    const stateRaw = await this.store.getState();
+    if (stateRaw !== undefined) {
+      const state = fromJSON(stateRaw);
+      const active = state.turn?.activeSeat;
+      if (
+        meta?.status === "playing" &&
+        active !== undefined &&
+        state.phase !== "GAME_OVER" &&
+        seats.some((s) => s.kind === "cpu" && s.seatIndex === active)
+      ) {
+        cpuDeadline = this.now() + 1000;
+      }
+    }
+    return Math.min(
+      meta ? this.deleteAt(meta, seats) : this.now() + 60_000,
+      sweep,
+      rematch,
+      rollOffDeadline,
+      cpuDeadline,
+    );
   }
 
   private async rearm(): Promise<void> {
