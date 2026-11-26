@@ -1,15 +1,22 @@
-import { CODE_LENGTH, GameCodeSchema, type PublicGame, type RoomStatus } from "@cd/protocol";
+import {
+  CODE_LENGTH,
+  CreateGameReqSchema,
+  GameCodeSchema,
+  type PublicGame,
+  type RoomStatus,
+} from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
-import { ApiError, getMe } from "../api";
+import { ApiError, createGame, getMe } from "../api";
 import { Button } from "../components/Button";
-import { Field } from "../components/Field";
+import { Field, requestErrorText } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { SelfBadge } from "../components/SelfBadge";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { type MessageKey, t, useT } from "../i18n";
-import { getRemembered, removeRoomPassword } from "../remembered";
+import { inviteLink, primeInvite } from "../invite";
+import { getRemembered, rememberedName, rememberedProfile, rememberSubmit, removeRoomPassword } from "../remembered";
 import { navigate, type Route } from "../router";
-import { forgetSession, getSession, listSessions, type Session } from "../session";
+import { forgetSession, getSession, listSessions, saveSession, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
 import { JoinDialog } from "./JoinDialog";
 import { cleanCode } from "./Reclaim";
@@ -175,6 +182,9 @@ export function Home({ route }: HomeProps) {
   const [games, setGames] = useState<PublicGame[] | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null);
+  const [quickInvite, setQuickInvite] = useState<string | null>(null);
 
   useEffect(() => {
     const lobby = new LobbySocket();
@@ -191,6 +201,54 @@ export function Home({ route }: HomeProps) {
   const joinCode = route.screen === "join" ? route.code : null;
   const statusKey = LOBBY_STATUS_KEY[lobbyStatus];
   const statusText = statusKey ? t(statusKey) : undefined;
+  const quickCreate = async () => {
+    if (quickBusy) return;
+    setQuickError(null);
+    const parsed = CreateGameReqSchema.safeParse({
+      roomName: remembered.roomName,
+      name: rememberedName(),
+      password: remembered.password,
+      maxPlayers: remembered.maxPlayers,
+      listed: true,
+      profile: rememberedProfile(),
+      cpuCount: 0,
+    });
+    if (!parsed.success) {
+      setQuickError(t("home.quickCreateNeedsCache"));
+      return;
+    }
+    setQuickBusy(true);
+    try {
+      const res = await createGame(parsed.data);
+      saveSession(res.code, {
+        token: res.token,
+        seatId: res.seatId,
+        name: parsed.data.name,
+        roomName: parsed.data.roomName,
+      });
+      rememberSubmit({
+        code: res.code,
+        name: parsed.data.name,
+        roomName: parsed.data.roomName,
+        password: parsed.data.password,
+        maxPlayers: parsed.data.maxPlayers,
+        profile: parsed.data.profile,
+      });
+      primeInvite(res.code, res.inviteKey);
+      const url = inviteLink(res.code, res.inviteKey);
+      setQuickInvite(url);
+      try {
+        await navigator.clipboard?.writeText(url);
+      } catch {
+        // Clipboard access depends on browser permission/user gesture.
+      }
+      navigate("waiting", res.code);
+    } catch (err) {
+      setQuickError(requestErrorText(err));
+    } finally {
+      setQuickBusy(false);
+    }
+  };
 
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
@@ -227,6 +285,30 @@ export function Home({ route }: HomeProps) {
               <span class="muted" role="status" style={{ fontSize: "var(--fs-small)" }}>
                 {statusText}
               </span>
+            ) : null}
+          </div>
+          <div class="stack" style={{ gap: "var(--s1)" }}>
+            <Button variant="primary" busy={quickBusy} onClick={quickCreate}>
+              {t("home.quickCreate")}
+            </Button>
+            {quickInvite ? (
+              <div class="row" style={{ gap: "var(--s2)", flexWrap: "wrap" }}>
+                <span class="muted" style={{ fontSize: "var(--fs-small)" }}>
+                  {t("home.quickCreateCopied")}
+                </span>
+                <Button
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(quickInvite);
+                  }}
+                >
+                  {t("home.copyLinkAgain")}
+                </Button>
+              </div>
+            ) : null}
+            {quickError ? (
+              <p role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-small)", margin: 0 }}>
+                {quickError}
+              </p>
             ) : null}
           </div>
           <GameList games={games} onJoin={(g) => openCode(g.code)} />

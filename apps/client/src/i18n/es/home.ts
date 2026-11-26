@@ -13,6 +13,11 @@ export const home: Record<keyof typeof en, string> = {
   "home.inviteLabel": "¿Tienes un código de invitación?",
   "home.createGame": "Crear partida",
   "home.openGames": "Partidas abiertas (en vivo)",
+  "home.quickCreate": "Auto-crear con ajustes guardados",
+  "home.quickCreateNeedsCache":
+    "Guarda primero ajustes válidos de sala/nombre/contraseña y vuelve a intentarlo.",
+  "home.quickCreateCopied": "El enlace de invitación se copió automáticamente.",
+  "home.copyLinkAgain": "Copiar enlace otra vez",
   "home.looking": "Buscando partidas abiertas…",
   "home.noGames": "No hay partidas abiertas ahora. ¡Crea una!",
   "home.openGamesAria": "Partidas abiertas",
