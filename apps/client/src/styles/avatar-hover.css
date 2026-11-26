@@ -16,7 +16,7 @@
 
 .avh-tip {
   position: fixed;
-  z-index: 1200; /* always above game overlays/cards */
+  z-index: 2000; /* always above game overlays, move cards, and panels */
   display: inline-flex;
   flex-direction: column;
   align-items: center;

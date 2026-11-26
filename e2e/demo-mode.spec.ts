@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("demo scenario panel navigates every scenario locally", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto("/");
-  await page.getByRole("button", { name: "Create game" }).first().click();
+  await page.getByRole("button", { name: "Setup Game" }).first().click();
   await page.getByRole("button", { name: "Start demo / test mode" }).click();
   await expect(page.getByTestId("scenario-panel")).toBeVisible();
   await expect(page.getByTestId("demo-view")).toBeVisible();
@@ -45,7 +45,7 @@ test("demo scenario panel navigates every scenario locally", async ({ page }) =>
 test("demo winner celebration opens immediately and does not mutate history", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => localStorage.removeItem("colorDice:history"));
-  await page.getByRole("button", { name: "Create game" }).first().click();
+  await page.getByRole("button", { name: "Setup Game" }).first().click();
   await page.getByRole("button", { name: "Start demo / test mode" }).click();
   await page.getByRole("button", { name: "Show scenarios" }).click();
   await page.getByTestId("demo-scenario-winner-celebration").getByRole("button").click();

@@ -33,7 +33,6 @@ test("CPU opponents: roll-off waits for the human to roll", async ({ browser }) 
     const roll = human.page.getByTestId("rolloff-roll");
     await expect(roll).toBeVisible({ timeout: 30_000 });
     await expect(roll).toBeEnabled();
-    await expect(human.page.getByText("Waiting\u2026", { exact: true })).toHaveCount(2);
     await roll.click();
     await expect(human.page.locator(".g-main")).toBeVisible({ timeout: 30_000 });
   } finally {

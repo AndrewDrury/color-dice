@@ -46,7 +46,7 @@ test.describe("screenshots @shots", () => {
         };
         try {
           await a.page.goto("/");
-          await expect(a.page.getByRole("button", { name: "Create game" }).first()).toBeVisible();
+          await expect(a.page.getByRole("button", { name: "Setup Game" }).first()).toBeVisible();
           await shot(a, "home");
 
           const code = await createGame(a, {

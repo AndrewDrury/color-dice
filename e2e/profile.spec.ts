@@ -11,7 +11,7 @@ test("two players pick different profiles; both show on each screen and are reme
   try {
     const room = `Cats ${uid()}`;
     await a.page.goto("/");
-    await a.page.getByRole("button", { name: "Create game" }).first().click();
+    await a.page.getByRole("button", { name: "Setup Game" }).first().click();
     await a.page.getByLabel("Room name").fill(room);
     await a.page.getByLabel("Your name").fill("Alma");
     await a.page.getByLabel("Password", { exact: true }).fill("pw-cats");
@@ -53,7 +53,7 @@ test("two players pick different profiles; both show on each screen and are reme
       a.page.getByRole("list", { name: "Players" }).locator(".av.pc-indigo"),
     ).toHaveCount(1);
     await a.page.goto("/");
-    await a.page.getByRole("button", { name: "Create game" }).first().click();
+    await a.page.getByRole("button", { name: "Setup Game" }).first().click();
     await expect(a.page.getByRole("radio", { name: "Indigo", exact: true })).toBeChecked();
   } finally {
     await closeAll([a, b]);
@@ -78,7 +78,7 @@ test("max-length names fit at 360 px and 1280 px", async ({ browser }) => {
   try {
     await a.page.setViewportSize({ width: 360, height: 800 });
     await a.page.goto("/");
-    await a.page.getByRole("button", { name: "Create game" }).first().click();
+    await a.page.getByRole("button", { name: "Setup Game" }).first().click();
     await a.page.getByLabel("Your name").fill(a.name);
     await expect(a.page.getByRole("group", { name: "Choose avatar" })).toBeVisible();
     await fits(a.page);
@@ -103,7 +103,7 @@ test("the second player cannot pick the first player's colour", async ({ browser
   const b = await newPlayer(browser, "Bert");
   try {
     await a.page.goto("/");
-    await a.page.getByRole("button", { name: "Create game" }).first().click();
+    await a.page.getByRole("button", { name: "Setup Game" }).first().click();
     await a.page.getByLabel("Room name").fill(`Uniq ${uid()}`);
     await a.page.getByLabel("Your name").fill("Ada");
     await a.page.getByLabel("Password", { exact: true }).fill("pw-uniq");

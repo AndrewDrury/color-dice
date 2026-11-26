@@ -3,8 +3,9 @@ import type { game as en } from "../en/game";
 export const game: Record<keyof typeof en, string> = {
   "game.home": "Menu",
   "game.menuTitle": "Menu de la partie",
-  "game.backHome": "Retour à l'accueil",
-  "game.menuNote": "Retour à l'accueil garde ta place. Quitter l'abandonne pour de bon.",
+  "game.backHome": "Retour au lobby",
+  "game.backLobby": "Retour au lobby",
+  "game.menuNote": "Retour au lobby garde ta place. Quitter l'abandonne pour de bon.",
   "game.leaveGameTitle": "Quitter cette partie ?",
   "game.leaveGameBody":
     "Tu abandonnes ta place et ne pourras pas revenir. Les autres continuent sans toi.",
@@ -152,7 +153,7 @@ export const game: Record<keyof typeof en, string> = {
   "rematch.waiting": "En attente de {names}",
   "rematch.accept": "Accepter la revanche",
   "rematch.decline": "Plus tard",
-  "over.home": "Retour à l'accueil",
+  "over.home": "Retour au lobby",
   "table.player": "Joueur",
   "table.pen": "Pén.",
   "table.total": "Total",

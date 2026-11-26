@@ -2,6 +2,7 @@ import type { settings as en } from "../en/settings";
 
 export const settings: Record<keyof typeof en, string> = {
   "settings.title": "Réglages",
+  "settings.gameActions": "Actions de la partie",
   "settings.sound": "Son",
   "settings.showChat": "Afficher les messages du chat",
   "settings.haptics": "Vibrations",
@@ -76,6 +77,7 @@ export const settings: Record<keyof typeof en, string> = {
   "attention.title": "● À toi — Color Dice",
 
   "keys.title": "Raccourcis clavier",
+  "keys.type": "Tape",
   "keys.cap.roll": "Espace",
   "keys.cap.pass": "Espace",
   "keys.cap.passPenalty": "X",
@@ -84,6 +86,8 @@ export const settings: Record<keyof typeof en, string> = {
   "keys.cap.esc": "Échap",
   "keys.cap.undo": "Z",
   "keys.cap.chat": "C ou /",
+  "keys.cap.emoji": "E",
+  "keys.cap.settings": "S",
   "keys.cap.mute": "M",
   "keys.cap.help": "?",
   "keys.roll": "Lancer les dés",
@@ -91,6 +95,8 @@ export const settings: Record<keyof typeof en, string> = {
   "keys.passPenalty": "Passer et prendre −5",
   "keys.undo": "Annuler ton choix",
   "keys.chat": "Ouvrir le chat",
+  "keys.emoji": "Ouvrir les émoticônes",
+  "keys.settings": "Ouvrir les réglages",
   "keys.move": "Se déplacer entre les cases cochables",
   "keys.enter": "Choisir une case, puis confirmer",
   "keys.esc": "Annuler ton choix, fermer les panneaux",

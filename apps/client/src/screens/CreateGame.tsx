@@ -14,7 +14,13 @@ import { PasswordField } from "../components/PasswordField";
 import { ProfileField } from "../components/ProfileField";
 import { t, useT } from "../i18n";
 import { primeInvite } from "../invite";
-import { getRemembered, rememberedName, rememberedProfile, rememberSubmit } from "../remembered";
+import {
+  getRemembered,
+  rememberedName,
+  rememberedProfile,
+  rememberMaxPlayers,
+  rememberSubmit,
+} from "../remembered";
 import { navigate } from "../router";
 import { saveSession } from "../session";
 
@@ -43,10 +49,17 @@ const segStyle = (on: boolean) => ({
 export function CreateGame() {
   useT();
   const [initial] = useState(getRemembered);
+  const setupParam = new URLSearchParams(globalThis.location?.search ?? "").get("players");
+  const setupNumber = setupParam === null ? null : Number(setupParam);
+  const setupPlayers =
+    setupNumber !== null && Number.isInteger(setupNumber) && setupNumber >= MIN_PLAYERS &&
+    setupNumber <= MAX_PLAYERS
+      ? setupNumber
+      : null;
   const [roomName, setRoomName] = useState(initial.roomName);
   const [name, setName] = useState(rememberedName);
   const [password, setPassword] = useState(initial.password);
-  const [maxPlayers, setMaxPlayers] = useState(initial.maxPlayers);
+  const [maxPlayers, setMaxPlayers] = useState(setupPlayers ?? initial.maxPlayers);
   const [listed, setListed] = useState(true);
   const [profile, setProfile] = useState(rememberedProfile);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,6 +69,7 @@ export function CreateGame() {
 
   useEffect(() => {
     alive.current = true;
+    if (setupPlayers !== null) rememberMaxPlayers(setupPlayers);
     return () => {
       alive.current = false;
     };
@@ -172,7 +186,10 @@ export function CreateGame() {
                   value={String(n)}
                   aria-label={String(n)}
                   checked={n === maxPlayers}
-                  onChange={() => setMaxPlayers(n)}
+                  onChange={() => {
+                    setMaxPlayers(n);
+                    rememberMaxPlayers(n);
+                  }}
                 />
                 <span class="num" aria-hidden="true">
                   {n}

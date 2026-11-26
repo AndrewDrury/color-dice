@@ -1,22 +1,26 @@
 import {
   CODE_LENGTH,
-  CreateGameReqSchema,
   GameCodeSchema,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
   type PublicGame,
   type RoomStatus,
 } from "@cd/protocol";
 import { useEffect, useState } from "preact/hooks";
-import { ApiError, createGame, getMe } from "../api";
+import { ApiError, getMe } from "../api";
 import { Button } from "../components/Button";
-import { Field, requestErrorText } from "../components/Field";
+import { Field } from "../components/Field";
 import { GameList } from "../components/GameList";
 import { SelfBadge } from "../components/SelfBadge";
 import { GearButton, type Panel, Panels } from "../components/Settings";
 import { type MessageKey, t, useT } from "../i18n";
-import { inviteLink, primeInvite } from "../invite";
-import { getRemembered, rememberedName, rememberedProfile, rememberSubmit, removeRoomPassword } from "../remembered";
+import {
+  getRemembered,
+  removeRoomPassword,
+  rememberMaxPlayers,
+} from "../remembered";
 import { navigate, type Route } from "../router";
-import { forgetSession, getSession, listSessions, saveSession, type Session } from "../session";
+import { forgetSession, getSession, listSessions, type Session } from "../session";
 import { LobbySocket, type SocketStatus } from "../ws";
 import { JoinDialog } from "./JoinDialog";
 import { cleanCode } from "./Reclaim";
@@ -182,9 +186,7 @@ export function Home({ route }: HomeProps) {
   const [games, setGames] = useState<PublicGame[] | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [lobbyStatus, setLobbyStatus] = useState<SocketStatus>("connecting");
-  const [quickBusy, setQuickBusy] = useState(false);
-  const [quickError, setQuickError] = useState<string | null>(null);
-  const [quickInvite, setQuickInvite] = useState<string | null>(null);
+  const [setupPlayers, setSetupPlayers] = useState(remembered.maxPlayers);
 
   useEffect(() => {
     const lobby = new LobbySocket();
@@ -201,54 +203,6 @@ export function Home({ route }: HomeProps) {
   const joinCode = route.screen === "join" ? route.code : null;
   const statusKey = LOBBY_STATUS_KEY[lobbyStatus];
   const statusText = statusKey ? t(statusKey) : undefined;
-  const quickCreate = async () => {
-    if (quickBusy) return;
-    setQuickError(null);
-    const parsed = CreateGameReqSchema.safeParse({
-      roomName: remembered.roomName,
-      name: rememberedName(),
-      password: remembered.password,
-      maxPlayers: remembered.maxPlayers,
-      listed: true,
-      profile: rememberedProfile(),
-      cpuCount: 0,
-    });
-    if (!parsed.success) {
-      setQuickError(t("home.quickCreateNeedsCache"));
-      return;
-    }
-    setQuickBusy(true);
-    try {
-      const res = await createGame(parsed.data);
-      saveSession(res.code, {
-        token: res.token,
-        seatId: res.seatId,
-        name: parsed.data.name,
-        roomName: parsed.data.roomName,
-      });
-      rememberSubmit({
-        code: res.code,
-        name: parsed.data.name,
-        roomName: parsed.data.roomName,
-        password: parsed.data.password,
-        maxPlayers: parsed.data.maxPlayers,
-        profile: parsed.data.profile,
-      });
-      primeInvite(res.code, res.inviteKey);
-      const url = inviteLink(res.code, res.inviteKey);
-      setQuickInvite(url);
-      try {
-        await navigator.clipboard?.writeText(url);
-      } catch {
-        // Clipboard access depends on browser permission/user gesture.
-      }
-      navigate("waiting", res.code);
-    } catch (err) {
-      setQuickError(requestErrorText(err));
-    } finally {
-      setQuickBusy(false);
-    }
-  };
 
   return (
     <main class="stack" style={{ paddingBlock: "var(--s6)" }}>
@@ -261,9 +215,6 @@ export function Home({ route }: HomeProps) {
             onClick={() => setPanel("profile")}
           />
           <GearButton onClick={() => setPanel("settings")} />
-          <Button variant="primary" onClick={() => navigate("create")}>
-            {t("home.createGame")}
-          </Button>
         </div>
       </header>
       <Panels
@@ -287,29 +238,43 @@ export function Home({ route }: HomeProps) {
               </span>
             ) : null}
           </div>
-          <div class="stack" style={{ gap: "var(--s1)" }}>
-            <Button variant="primary" busy={quickBusy} onClick={quickCreate}>
-              {t("home.createGame")}
+          <div class="stack" style={{ gap: "var(--s2)" }}>
+            <Button variant="primary" onClick={() => navigate("create")}>
+              {t("home.setupGame")}
             </Button>
-            {quickInvite ? (
-              <div class="row" style={{ gap: "var(--s2)", flexWrap: "wrap" }}>
-                <span class="muted" style={{ fontSize: "var(--fs-small)" }}>
-                  {t("home.quickCreateCopied")}
-                </span>
-                <Button
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(quickInvite);
+            <div class="row" style={{ gap: "var(--s2)", alignItems: "flex-end", flexWrap: "wrap" }}>
+              <label class="stack" style={{ gap: "var(--s1)", flex: "1 1 160px" }}>
+                <span>{t("home.setupPlayers")}</span>
+                <input
+                  class="input"
+                  type="number"
+                  min={MIN_PLAYERS}
+                  max={MAX_PLAYERS}
+                  step={1}
+                  inputmode="numeric"
+                  value={String(setupPlayers)}
+                  aria-label={t("home.setupPlayers")}
+                  onInput={(e) => {
+                    const n = Number((e.currentTarget as HTMLInputElement).value);
+                    if (!Number.isInteger(n) || n < MIN_PLAYERS || n > MAX_PLAYERS) return;
+                    setSetupPlayers(n);
+                    rememberMaxPlayers(n);
                   }}
-                >
-                  {t("home.copyLinkAgain")}
-                </Button>
-              </div>
-            ) : null}
-            {quickError ? (
-              <p role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-small)", margin: 0 }}>
-                {quickError}
-              </p>
-            ) : null}
+                />
+              </label>
+              <Button
+                onClick={() => {
+                  const url = new URL(globalThis.location.href);
+                  url.search = "";
+                  url.hash = "";
+                  url.searchParams.set("setup", "1");
+                  url.searchParams.set("players", String(setupPlayers));
+                  void navigator.clipboard?.writeText(url.href);
+                }}
+              >
+                {t("home.copySetupLink")}
+              </Button>
+            </div>
           </div>
           <GameList games={games} onJoin={(g) => openCode(g.code)} />
         </section>

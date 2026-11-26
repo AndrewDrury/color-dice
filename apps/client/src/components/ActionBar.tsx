@@ -36,7 +36,12 @@ export function ActionBar(p: ActionBarProps) {
   const staged = p.s1 !== null || p.s2 !== null;
   const hasUndoableDecision = view.you.action1Decision !== null || view.you.pendingAction2 !== null;
   // D-L11: Undo exists only while there is something to undo (a staged box or an undoable decision).
-  const canUndo = staged || (view.you.canUndo && !p.sent && hasUndoableDecision);
+  const canUndo =
+    staged ||
+    (view.game?.turn?.activeSeat === view.you.seat &&
+      view.you.canUndo &&
+      !p.sent &&
+      hasUndoableDecision);
   const disableUndo = p.noMove && !staged;
   const dangerPass = !staged && passTakesPenalty(view);
 

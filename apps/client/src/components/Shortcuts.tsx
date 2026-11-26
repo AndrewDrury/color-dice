@@ -12,6 +12,8 @@ export const SHORTCUTS: readonly (readonly [MessageKey, MessageKey])[] = [
   ["keys.cap.esc", "keys.esc"],
   ["keys.cap.undo", "keys.undo"],
   ["keys.cap.chat", "keys.chat"],
+  ["keys.cap.emoji", "keys.emoji"],
+  ["keys.cap.settings", "keys.settings"],
   ["keys.cap.mute", "keys.mute"],
   ["keys.cap.help", "keys.help"],
 ];
@@ -24,7 +26,11 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
         {SHORTCUTS.map(([keys, what]) => (
           <div key={keys} class="kb-item">
             <dt>
-              <kbd>{t(keys)}</kbd>
+              {["keys.cap.passPenalty", "keys.cap.undo", "keys.cap.chat", "keys.cap.emoji", "keys.cap.settings", "keys.cap.mute"].includes(keys) ? (
+                <><span>{t("keys.type")} </span><kbd>{t(keys)}</kbd></>
+              ) : (
+                <kbd>{t(keys)}</kbd>
+              )}
             </dt>
             <dd>{t(what)}</dd>
           </div>

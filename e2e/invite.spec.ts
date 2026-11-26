@@ -108,11 +108,11 @@ test("both players leave mid-game: the room is gone from the list and /me no lon
     const tokens = [await token(host), await token(guest)];
 
     const leave = async (p: Player) => {
-      await p.page.getByRole("button", { name: "Menu" }).click();
+      await p.page.getByRole("button", { name: "Settings" }).click();
       const dialog = p.page.getByRole("dialog");
       await dialog.getByRole("button", { name: "Leave game" }).click();
       await dialog.getByRole("button", { name: "Leave game" }).click();
-      await expect(p.page.getByRole("button", { name: "Create game" }).first()).toBeVisible();
+      await expect(p.page.getByRole("button", { name: "Setup Game" }).first()).toBeVisible();
     };
 
     await leave(host);

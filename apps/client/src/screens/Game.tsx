@@ -8,7 +8,6 @@ import { AwayControls } from "../components/AwayControls";
 import { ChatControls, ChatLayer } from "../components/ChatButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { DiceTray, RollButton, type RollControls } from "../components/DiceTray";
-import { GameMenu } from "../components/GameMenu";
 import { LockPopup } from "../components/LockPopup";
 import { MoveLog } from "../components/MoveLog";
 import { OpponentStrip } from "../components/OpponentStrip";
@@ -64,9 +63,11 @@ interface Info {
 export function Game({ code }: { code: string }) {
   const [rollFailed, setRollFailed] = useState(0);
   const [failSignal, setFailSignal] = useState(0);
-  const [leaving, setLeaving] = useState(false);
   const [progressStalled, setProgressStalled] = useState(false);
-  useBackGuard(() => setLeaving(true));
+  useBackGuard(() => {
+    clearView();
+    navigate("home");
+  });
   const { view: storeView, status, toast, epoch, rematch } = useAppState();
   const view = storeView?.code === code ? storeView : null;
   const conn = useGameSocket(code, (e: ErrorMessage) => {
@@ -124,8 +125,6 @@ export function Game({ code }: { code: string }) {
       conn={conn}
       rollFailed={rollFailed}
       failSignal={failSignal}
-      leaving={leaving}
-      setLeaving={setLeaving}
       liveRollOff={sawLive.current}
       rematch={rematch}
     />
@@ -139,8 +138,6 @@ interface BoardProps {
   conn: ReturnType<typeof useGameSocket>;
   rollFailed: number;
   failSignal: number;
-  leaving: boolean;
-  setLeaving: (v: boolean) => void;
   liveRollOff: boolean;
   rematch?: RematchOffer | null;
   topBarAddon?: ComponentChildren;
@@ -154,8 +151,6 @@ export function Board({
   conn,
   rollFailed,
   failSignal,
-  leaving,
-  setLeaving,
   liveRollOff,
   rematch = null,
   topBarAddon,
@@ -316,7 +311,6 @@ export function Board({
     !st.sent &&
     !view.you.canRoll &&
     panel === null &&
-    !leaving &&
     !gameOver;
   const submitAction = () => {
     if (pendingPenaltyPass) {
@@ -333,7 +327,7 @@ export function Board({
   useWakeLock(!gameOver);
   useGameKeys({
     canRoll:
-      view.you.canRoll && panel === null && !leaving && !rematching && !gameOver && !showRollOff,
+      view.you.canRoll && panel === null && !rematching && !gameOver && !showRollOff,
     canPass: canPrimaryAction && !pendingPenaltyPass,
     canPenaltyPass: canPrimaryAction && pendingPenaltyPass,
     canUndo: st.s1 !== null || st.s2 !== null || (view.you.canUndo && !noMove),
@@ -345,6 +339,8 @@ export function Board({
     mute: () => setPrefs({ sound: !getPrefs().sound }),
     help: () => setPanel((p) => (p === "keys" ? null : "keys")),
     chat: openPanel,
+    emoji: () => document.querySelector<HTMLButtonElement>(".rx-btn")?.click(),
+    settings: () => setPanel((p) => (p === "settings" ? null : "settings")),
   });
 
   // T-FIX-12: on desktop Roll lives in the sticky action bar (always in view); elsewhere under the dice.
@@ -379,9 +375,6 @@ export function Board({
   return (
     <div class="g-game" data-viewport={viewport} data-idle-nudge-ready={!!IdleNudgeView}>
       <header class={`g-top${stickyTopBar ? " is-sticky" : ""}`}>
-        <button type="button" class="btn g-home" onClick={() => setLeaving(true)}>
-          {t("game.home")}
-        </button>
         <span class="g-code">
           {view.room.name ? <span class="g-code-room">{view.room.name}</span> : null}
           {g.turn ? (
@@ -481,7 +474,6 @@ export function Board({
               flow.queue.length ||
               panel ||
               chat.panelOpen ||
-              leaving ||
               rematching ||
               rematch ||
               status !== "online"
@@ -523,8 +515,8 @@ export function Board({
         onPanel={setPanel}
         profile={mine?.profile}
         name={mine?.name ?? t("player.fallback", { n: (view.you.seat ?? 0) + 1 })}
+        gameCode={view.code}
       />
-      {leaving ? <GameMenu code={view.code} onClose={() => setLeaving(false)} /> : null}
       {confirmPenaltyOpen ? (
         <ConfirmDialog
           title={t("action.confirmPenaltyTitle")}

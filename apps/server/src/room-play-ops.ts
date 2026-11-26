@@ -504,8 +504,14 @@ export class RoomPlay {
         if (next.phase === "AWAIT_ROLL") {
           command = { type: "ROLL", playerId: playerId(active) };
         } else if (next.phase === "ACTION_1") {
-          const decision = cpuAction1(next, active);
-          command = { type: "ACTION1", playerId: playerId(active), decision };
+          const cpuView = viewFor(next, active);
+          if (cpuView.you.action1Decision !== null) {
+            const decision = cpuAction2(next, active);
+            command = { type: "ACTION2", playerId: playerId(active), decision };
+          } else {
+            const decision = cpuAction1(next, active);
+            command = { type: "ACTION1", playerId: playerId(active), decision };
+          }
         } else if (next.phase === "ACTION_2") {
           const decision = cpuAction2(next, active);
           command = { type: "ACTION2", playerId: playerId(active), decision };

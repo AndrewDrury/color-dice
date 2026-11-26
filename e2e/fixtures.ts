@@ -57,7 +57,7 @@ export function codeOf(page: Page): string {
 export async function createGame(player: Player, o: CreateOpts): Promise<string> {
   const { page } = player;
   await page.goto("/");
-  await page.getByRole("button", { name: "Create game" }).first().click();
+  await page.getByRole("button", { name: "Setup Game" }).first().click();
   await page.getByLabel("Room name").fill(o.roomName);
   await page.getByLabel("Your name").fill(player.name);
   await page.getByLabel("Password", { exact: true }).fill(o.password);

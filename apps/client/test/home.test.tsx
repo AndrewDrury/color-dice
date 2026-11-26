@@ -96,7 +96,7 @@ describe("Home", () => {
     expect(screen.getByText(XSS)).toBeTruthy();
     expect(container.querySelectorAll("img")).toHaveLength(0);
     expect(screen.getAllByText("3 min ago")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "Create game" }).className).toContain("btn-primary");
+    expect(screen.getByRole("button", { name: "Setup Game" }).className).toContain("btn-primary");
   });
 
   it("shows the empty state", () => {

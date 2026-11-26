@@ -1,5 +1,6 @@
 export const settings = {
   "settings.title": "Settings",
+  "settings.gameActions": "Game actions",
   "settings.sound": "Sound",
   "settings.showChat": "Show chat messages",
   "settings.haptics": "Haptics",
@@ -74,6 +75,7 @@ export const settings = {
   "attention.title": "● Your turn — Color Dice",
 
   "keys.title": "Keyboard shortcuts",
+  "keys.type": "Type",
   "keys.cap.roll": "Space",
   "keys.cap.pass": "Space",
   "keys.cap.passPenalty": "X",
@@ -82,6 +84,8 @@ export const settings = {
   "keys.cap.esc": "Esc",
   "keys.cap.undo": "Z",
   "keys.cap.chat": "C or /",
+  "keys.cap.emoji": "E",
+  "keys.cap.settings": "S",
   "keys.cap.mute": "M",
   "keys.cap.help": "?",
   "keys.roll": "Roll the dice",
@@ -89,6 +93,8 @@ export const settings = {
   "keys.passPenalty": "Pass and take −5",
   "keys.undo": "Undo your pick",
   "keys.chat": "Open the chat",
+  "keys.emoji": "Open emoji reactions",
+  "keys.settings": "Open settings",
   "keys.move": "Move between boxes you can mark",
   "keys.enter": "Pick a box, then confirm",
   "keys.esc": "Cancel your pick, close panels",

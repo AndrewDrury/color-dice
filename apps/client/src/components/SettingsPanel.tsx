@@ -1,11 +1,19 @@
 /** Settings sheet body (H12). Lazy chunk: Settings.tsx loads it when the sheet is first opened. */
 import { useState } from "preact/hooks";
+import { ApiError, leaveGame } from "../api";
 import { hapticsSupported } from "../fx/haptics";
 import { clearHistory, exportTransferCode, importTransferCode, useHistoryTotals } from "../history";
 import { LANGUAGE_NAMES, LOCALES, type MessageKey, setLanguage, t, tn, useT } from "../i18n";
 import { type LanguagePref, type MotionPref, setPrefs } from "../prefs";
 import { clearRemembered, getRemembered } from "../remembered";
+import { forgetRoom, markLeaving } from "../roomEnd";
+import { navigate } from "../router";
+import { getSession } from "../session";
+import { clearView, showToast } from "../store";
 import { BottomSheet } from "./BottomSheet";
+import { Button } from "./Button";
+import { InviteButton } from "./CopyButton";
+import { FieldError, requestErrorText } from "./Field";
 import { type Panel, usePrefs } from "./Settings";
 import { ThemePicker } from "./ThemePicker";
 
@@ -183,14 +191,72 @@ function SavedInfoSection() {
 export function Settings({
   onClose,
   onPanel,
+  gameCode,
 }: {
   onClose: () => void;
   onPanel: (p: Panel) => void;
+  gameCode?: string;
 }) {
   const prefs = usePrefs();
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
   useT();
   return (
     <BottomSheet title={t("settings.title")} onClose={onClose}>
+      {gameCode ? (
+        <section class="stack" aria-label={t("settings.gameActions")}>
+          <InviteButton code={gameCode} token={getSession(gameCode)?.token ?? ""} />
+          <Button
+            block
+            onClick={() => {
+              clearView();
+              navigate("home");
+            }}
+          >
+            {t("game.backLobby")}
+          </Button>
+          {confirmLeave ? (
+            <div class="stack">
+              <p>{t("game.leaveGameBody")}</p>
+              <FieldError text={leaveError} />
+              <div class="row" style={{ justifyContent: "flex-end" }}>
+                <Button onClick={() => setConfirmLeave(false)}>{t("waiting.stay")}</Button>
+                <Button
+                  variant="primary"
+                  busy={leaving}
+                  onClick={async () => {
+                    if (leaving) return;
+                    setLeaving(true);
+                    setLeaveError(null);
+                    markLeaving(gameCode, true);
+                    try {
+                      await leaveGame(gameCode, getSession(gameCode)?.token ?? "");
+                    } catch (err) {
+                      if (!(err instanceof ApiError && (err.status === 401 || err.status === 404))) {
+                        markLeaving(gameCode, false);
+                        setLeaving(false);
+                        setLeaveError(requestErrorText(err));
+                        return;
+                      }
+                    }
+                    forgetRoom(gameCode);
+                    clearView();
+                    navigate("home");
+                    showToast(t("toast.left"));
+                  }}
+                >
+                  {t("waiting.leaveGame")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button block onClick={() => setConfirmLeave(true)}>
+              {t("waiting.leaveGame")}
+            </Button>
+          )}
+        </section>
+      ) : null}
       <Toggle
         label={t("settings.sound")}
         on={prefs.sound}

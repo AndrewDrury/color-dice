@@ -17,6 +17,10 @@ export interface KeyActions {
   help: () => void;
   /** `/` or `c`: open the chat panel (I3). */
   chat?: () => void;
+  /** `e`: open the emoji/reaction picker. */
+  emoji?: () => void;
+  /** `s`: open settings. */
+  settings?: () => void;
 }
 
 export function isTyping(t: EventTarget | null): boolean {
@@ -127,6 +131,14 @@ export function handleKey(e: KeyboardEvent, a: KeyActions): boolean {
   }
   if ((k === "/" || k === "c" || k === "C") && a.chat) {
     a.chat();
+    return done();
+  }
+  if ((k === "e" || k === "E") && a.emoji) {
+    a.emoji();
+    return done();
+  }
+  if ((k === "s" || k === "S") && a.settings) {
+    a.settings();
     return done();
   }
   if (k === "?") {

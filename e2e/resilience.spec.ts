@@ -89,7 +89,7 @@ test("reclaim in a new context ends the old session", async ({ browser }) => {
     // The old device comes back: its token is dead.
     await b.page.goto(`/?game=${code}`);
     await expect(b.page.getByText(/session ended/i)).toBeVisible({ timeout: 20_000 });
-    await expect(b.page.getByRole("button", { name: "Create game" }).first()).toBeVisible();
+    await expect(b.page.getByRole("button", { name: "Setup Game" }).first()).toBeVisible();
   } finally {
     await closeAll([a, b, b2]);
   }

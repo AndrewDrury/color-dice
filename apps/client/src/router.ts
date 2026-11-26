@@ -44,6 +44,7 @@ export function getPendingInvite(code: string): string | null {
 export function initialRoute(search: string, hash = ""): Route {
   const inv = parseInviteHash(hash);
   if (inv) return { screen: getSession(inv.code) ? "waiting" : "invite", code: inv.code };
+  if (new URLSearchParams(search).get("setup") === "1") return { screen: "create", code: null };
   const code = readGameCode(search);
   if (code === null) return { screen: "home", code: null };
   return { screen: getSession(code) ? "waiting" : "join", code };

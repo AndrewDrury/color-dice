@@ -52,7 +52,7 @@ test.describe("themes @shots", () => {
           await p.page.emulateMedia({ colorScheme: scheme });
         }
         await a.page.goto("/");
-        await a.page.getByRole("button", { name: "Create game" }).first().click();
+        await a.page.getByRole("button", { name: "Setup Game" }).first().click();
         for (const [id, name] of THEMES) {
           await a.page.getByRole("radio", { name }).check({ force: true });
           await expect(a.page.locator("html")).toHaveAttribute("data-theme", id);

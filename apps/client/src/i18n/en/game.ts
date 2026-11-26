@@ -1,8 +1,9 @@
 export const game = {
   "game.home": "Menu",
   "game.menuTitle": "Game menu",
-  "game.backHome": "Back to home",
-  "game.menuNote": "Back to home keeps your seat. Leaving gives it up for good.",
+  "game.backHome": "Back to lobby",
+  "game.backLobby": "Back to lobby",
+  "game.menuNote": "Back to lobby keeps your seat. Leaving gives it up for good.",
   "game.leaveGameTitle": "Leave this game?",
   "game.leaveGameBody":
     "You give up your seat and can't come back. The others keep playing without you.",
@@ -154,7 +155,7 @@ export const game = {
   "rematch.waiting": "Waiting for {names}",
   "rematch.accept": "Accept Rematch",
   "rematch.decline": "Not now",
-  "over.home": "Back to home",
+  "over.home": "Back to lobby",
   "table.player": "Player",
   "table.pen": "Pen.",
   "table.total": "Total",

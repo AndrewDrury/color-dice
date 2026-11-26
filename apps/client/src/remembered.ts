@@ -165,6 +165,13 @@ export function rememberedProfile(): Profile {
   return firstRun;
 }
 
+/** Update the cached player count used by Setup Game and generated setup links. */
+export function rememberMaxPlayers(maxPlayers: number): void {
+  if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_PLAYERS || maxPlayers > MAX_PLAYERS) return;
+  const r = load();
+  save(sanitizeRemembered({ ...r, maxPlayers }));
+}
+
 /** Keep a profile changed in the waiting room for the next create/join. */
 export function rememberProfile(profile: Profile): void {
   const r = load();

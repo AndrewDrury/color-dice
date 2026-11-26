@@ -17,7 +17,7 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
     // Host creates an unlisted room. "./" keeps the baseURL's /color-dice/ path.
     const h = host.page;
     await h.goto("./");
-    await h.getByRole("button", { name: "Create game" }).first().click();
+    await h.getByRole("button", { name: "Setup Game" }).first().click();
     await h.getByLabel("Room name").fill(roomName);
     await h.getByLabel("Your name").fill(host.name);
     await h.getByLabel("Password", { exact: true }).fill(password);
@@ -85,10 +85,10 @@ test("prod: create unlisted room, guest joins, start, roll, host leaves", async 
         .toBe(0);
     }
 
-    // Host goes back to Home from the game menu; the unlisted room then expires by alarm.
-    await h.getByRole("button", { name: /Menu/ }).click();
-    await h.getByRole("dialog").getByRole("button", { name: "Back to home" }).click();
-    await expect(h.getByRole("button", { name: "Create game" }).first()).toBeVisible();
+    // Host goes back to lobby from Settings; the unlisted room then expires by alarm.
+    await h.getByRole("button", { name: "Settings" }).click();
+    await h.getByRole("dialog").getByRole("button", { name: "Back to lobby" }).click();
+    await expect(h.getByRole("button", { name: "Setup Game" }).first()).toBeVisible();
   } catch (e) {
     console.log(frames.slice(-25).join("\n"));
     throw e;

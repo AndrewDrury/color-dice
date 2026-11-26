@@ -39,6 +39,7 @@ export function Panels({
   name,
   editable,
   onProfile,
+  gameCode,
 }: {
   panel: Panel;
   onPanel: (p: Panel) => void;
@@ -46,6 +47,7 @@ export function Panels({
   name?: string;
   editable?: boolean;
   onProfile?: (profile: Profile) => void;
+  gameCode?: string;
 }) {
   const [Sheet, setSheet] = useState<typeof import("./SettingsPanel").Settings | null>(null);
   const [ProfileSheet, setProfileSheet] = useState<
@@ -68,7 +70,9 @@ export function Panels({
       />
     ) : null;
   if (panel === "settings")
-    return Sheet ? <Sheet onClose={() => onPanel(null)} onPanel={onPanel} /> : null;
+    return Sheet ? (
+      <Sheet onClose={() => onPanel(null)} onPanel={onPanel} gameCode={gameCode} />
+    ) : null;
   if (panel === "help") return <HowToPlay onClose={() => onPanel(null)} />;
   if (panel === "keys") return <Shortcuts onClose={() => onPanel(null)} />;
   return null;
