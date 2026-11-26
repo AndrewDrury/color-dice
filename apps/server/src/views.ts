@@ -19,7 +19,16 @@ import { pausedSeatIds } from "./pause";
 import { byJoinOrder, isOnline, playerId, seatIdOf } from "./room-lobby-ops";
 import type { RollOffState, RoomMeta, SeatRecord } from "./room-store";
 
-const CPU_NAMES = ["Mochi", "Pixel", "Biscuit", "Nova"];
+const CPU_NAMES = [
+  "Mochi", "Pixel", "Biscuit", "Nova", "Pebble", "Mango",
+  "Luna", "Poppy", "Noodle", "Gizmo", "Coco", "Ziggy",
+];
+
+function previewSeed(text: string): number {
+  let seed = 0;
+  for (let i = 0; i < text.length; i++) seed = (seed * 31 + text.charCodeAt(i)) >>> 0;
+  return seed;
+}
 
 function viewSeats(meta: RoomMeta, seats: SeatRecord[], sockets: WebSocket[]): ViewSeat[] {
   const rows: ViewSeat[] = byJoinOrder(seats).map((s) => ({
@@ -39,9 +48,9 @@ function viewSeats(meta: RoomMeta, seats: SeatRecord[], sockets: WebSocket[]): V
   }));
   if (meta.status === "lobby") {
     const existingCpuRows = rows.filter((s) => s.kind === "cpu").length;
-    const baseJoinOrder = Math.max(100, ...seats.map((s) => s.joinOrder + 1));
+    const seed = previewSeed(meta.code);
     for (let i = existingCpuRows; i < (meta.cpuCount ?? 0); i++) {
-      const n = i % CPU_NAMES.length;
+      const n = (seed + i * 7) % CPU_NAMES.length;
       rows.push({
         seatId: `cpu-preview-${i + 1}`,
         name: `${CPU_NAMES[n]} CPU`,
@@ -51,11 +60,8 @@ function viewSeats(meta: RoomMeta, seats: SeatRecord[], sockets: WebSocket[]): V
         away: false,
         left: false,
         profile: {
-          color: PROFILE_COLORS[(baseJoinOrder + i) % PROFILE_COLORS.length] ?? "slate",
-          cat:
-            i % 2 === 0
-              ? DEFAULT_PROFILE_CAT
-              : (PROFILE_CATS[(i + 2) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT),
+          color: PROFILE_COLORS[(seed + i * 3) % PROFILE_COLORS.length] ?? "slate",
+          cat: PROFILE_CATS[(seed + i * 5) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT,
         },
         record: { wins: 0, ties: 0, losses: 0 },
       });

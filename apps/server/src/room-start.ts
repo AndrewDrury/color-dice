@@ -39,17 +39,32 @@ export async function startLobbyGame(
   const cpuCount = meta.cpuCount ?? 0;
   const neededCpu = cpuCount - existingCpuSeats.length;
   const added: SeatRecord[] = [];
-  const cpuNames = ["Mochi", "Pixel", "Biscuit", "Nova"];
+  const cpuNames = [
+    "Mochi", "Pixel", "Biscuit", "Nova", "Pebble", "Mango",
+    "Luna", "Poppy", "Noodle", "Gizmo", "Coco", "Ziggy",
+  ];
+  const shuffledNames = [...cpuNames];
+  for (let i = shuffledNames.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j] as string, shuffledNames[i] as string];
+  }
+  const usedNames = new Set(seats.map((s) => s.name.toLowerCase()));
+  const usedColors = new Set(seats.map((s) => s.profile?.color).filter((c) => c !== undefined));
   if (neededCpu > 0) {
     const usedIds = new Set(seats.map((s) => s.seatId));
     const nextOrder = Math.max(0, ...seats.map((s) => s.joinOrder));
     for (let i = 0; i < neededCpu; i++) {
-      let n = i + 1;
-      let name = `${cpuNames[i % cpuNames.length] ?? "CPU"} CPU`;
-      while (seats.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
-        n++;
-        name = `${cpuNames[n % cpuNames.length] ?? "CPU"} CPU`;
+      let name = `${shuffledNames[i % shuffledNames.length] ?? "CPU"} CPU`;
+      let suffix = 2;
+      while (usedNames.has(name.toLowerCase())) {
+        name = `${shuffledNames[i % shuffledNames.length] ?? "CPU"} ${suffix++} CPU`;
       }
+      usedNames.add(name.toLowerCase());
+      const availableColors = PROFILE_COLORS.filter((color) => !usedColors.has(color));
+      const colorPool = availableColors.length > 0 ? availableColors : [...PROFILE_COLORS];
+      const color = colorPool[Math.floor(Math.random() * colorPool.length)] ?? "slate";
+      usedColors.add(color);
+      const cat = PROFILE_CATS[Math.floor(Math.random() * PROFILE_CATS.length)] ?? DEFAULT_PROFILE_CAT;
       let seatId = `cpu${(nextOrder + i + 1).toString(36).padStart(5, "0")}`;
       while (usedIds.has(seatId)) seatId += "x";
       seatId = seatId.slice(0, 8).padEnd(8, "0");
@@ -67,11 +82,8 @@ export async function startLobbyGame(
         kind: "cpu",
         policy: "balanced",
         profile: {
-          color: PROFILE_COLORS[(nextOrder + i + 2) % PROFILE_COLORS.length] ?? "slate",
-          cat:
-            i % 2 === 0
-              ? DEFAULT_PROFILE_CAT
-              : (PROFILE_CATS[(i + 2) % PROFILE_CATS.length] ?? DEFAULT_PROFILE_CAT),
+          color,
+          cat,
         } satisfies Profile,
       });
     }
@@ -95,6 +107,8 @@ export async function startLobbyGame(
       round: 1,
       current: ordered.map(() => null),
       completed: [],
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
     };
     await storage.put(ROLL_OFF_KEY, roll);
     meta.status = "playing";
