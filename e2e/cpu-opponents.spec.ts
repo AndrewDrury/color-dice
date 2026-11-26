@@ -19,6 +19,28 @@ test("CPU opponents: create a CPU game and expose CPU controls", async ({ browse
   }
 });
 
+test("CPU opponents: roll-off waits for the human to roll", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const human = await newPlayer(browser, "CPU Roll Human");
+  try {
+    await createGame(human, {
+      roomName: `CPU Roll Off ${Date.now() % 10000}`,
+      password: "pw-roll-cpu",
+      max: 2,
+      cpu: 1,
+    });
+    await human.page.getByRole("button", { name: "Start game" }).click();
+    const roll = human.page.getByTestId("rolloff-roll");
+    await expect(roll).toBeVisible({ timeout: 30_000 });
+    await expect(roll).toBeEnabled();
+    await expect(human.page.getByText("Waiting\u2026", { exact: true })).toHaveCount(2);
+    await roll.click();
+    await expect(human.page.locator(".g-main")).toBeVisible({ timeout: 30_000 });
+  } finally {
+    await closeAll([human]);
+  }
+});
+
 test("CPU opponents: mixed-game smoke reaches live CPU play", async ({ browser }) => {
   test.setTimeout(120_000);
   const human = await newPlayer(browser, "Mixed CPU Human");
